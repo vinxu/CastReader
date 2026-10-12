@@ -1,0 +1,441 @@
+{
+  "schemaVersion": 1,
+  "revision": "2026-10-11-full-copy-v2",
+  "status": "reviewed target; deployment state is recorded separately in the ASO report",
+  "scope": "29 ASC localizations for 27 directly supported app languages; Filipino handled explicitly below",
+  "keywordLimitBytes": 100,
+  "keywordLimitRationale": "ASC platform-version reference says 100 bytes; App Store search marketing page says 100 characters. Use UTF-8 <=100 to satisfy both.",
+  "evidenceBoundary": "Native wording checked against localized Apple documentation and product fit. Queries are hypotheses, not verified search volumes or guaranteed ranking.",
+  "localizations": {
+    "en-US": {
+      "language": "en",
+      "label": "英语",
+      "market": "us",
+      "name": "CastReader: Read Aloud Books",
+      "subtitle": "Audiobook from PDF, EPUB, Web",
+      "keywords": "tts,text to speech,voice,reader,ocr,scan,article,dyslexia,study,listen,document,highlight,ebook",
+      "searchQueries": [
+        "text to speech",
+        "read aloud",
+        "pdf to audio"
+      ],
+      "terminologySource": "https://support.apple.com/en-us/guide/iphone/iph96b214f0/ios"
+    },
+    "zh-Hans": {
+      "language": "zh",
+      "label": "简体中文",
+      "market": "cn",
+      "name": "CastReader：朗读 · AI解读",
+      "subtitle": "PDF·网页·电子书·拍照转语音",
+      "keywords": "听书,有声书,文字识别,扫描,英语听力,学习,语音合成,文章,TTS,OCR,跟读",
+      "searchQueries": [
+        "文字转语音",
+        "PDF朗读",
+        "听书"
+      ],
+      "terminologySource": "https://support.apple.com/zh-cn/guide/iphone/iph96b214f0/ios"
+    },
+    "zh-Hant": {
+      "language": "zh",
+      "label": "繁体中文",
+      "market": "tw",
+      "name": "CastReader：朗讀 · AI解讀",
+      "subtitle": "PDF·網頁·電子書·拍照轉語音",
+      "keywords": "聽書,有聲書,文字辨識,掃描,英語聽力,學習,語音合成,文章,TTS,OCR,跟讀",
+      "searchQueries": [
+        "文字轉語音",
+        "PDF朗讀",
+        "聽書"
+      ],
+      "terminologySource": "https://support.apple.com/zh-tw/guide/iphone/iph96b214f0/ios"
+    },
+    "ja": {
+      "language": "ja",
+      "label": "日语",
+      "market": "jp",
+      "name": "CastReader：読み上げ・AI解説",
+      "subtitle": "PDF・Web・本を音声で聴く",
+      "keywords": "音声合成,テキスト,文字認識,スキャン,電子書籍,オーディオブック,TTS,OCR",
+      "searchQueries": [
+        "テキスト読み上げ",
+        "PDF読み上げ",
+        "音声合成"
+      ],
+      "terminologySource": "https://support.apple.com/ja-jp/guide/iphone/iph96b214f0/ios"
+    },
+    "de-DE": {
+      "language": "de",
+      "label": "德语",
+      "market": "de",
+      "name": "CastReader: Vorlesen mit KI",
+      "subtitle": "PDF, Web & Bücher anhören",
+      "keywords": "tts,text zu sprache,sprachsynthese,ocr,scan,artikel,epub,dokumente,lernen,legasthenie,hörbuch",
+      "searchQueries": [
+        "text zu sprache",
+        "pdf vorlesen",
+        "vorlesen"
+      ],
+      "terminologySource": "https://support.apple.com/de-de/guide/iphone/iph96b214f0/ios"
+    },
+    "es-ES": {
+      "language": "es",
+      "label": "西班牙语（西班牙）",
+      "market": "es",
+      "name": "CastReader: Texto a voz con IA",
+      "subtitle": "Escucha PDF, web y libros",
+      "keywords": "tts,lector,lectura,audio,ocr,escanear,epub,artículos,documentos,estudiar,dislexia,narrador",
+      "searchQueries": [
+        "texto a voz",
+        "leer en voz alta",
+        "escuchar pdf"
+      ],
+      "terminologySource": "https://support.apple.com/es-es/guide/iphone/iph96b214f0/ios"
+    },
+    "es-MX": {
+      "language": "es",
+      "label": "西班牙语（墨西哥）",
+      "market": "mx",
+      "name": "CastReader: Texto a voz con IA",
+      "subtitle": "Escucha PDF, web y libros",
+      "keywords": "tts,lector,lectura,audio,ocr,escáner,epub,artículos,documentos,estudio,dislexia,narrador",
+      "searchQueries": [
+        "texto a voz",
+        "leer en voz alta",
+        "escuchar pdf"
+      ],
+      "terminologySource": "https://support.apple.com/es-mx/guide/iphone/iph96b214f0/ios"
+    },
+    "fr-FR": {
+      "language": "fr",
+      "label": "法语",
+      "market": "fr",
+      "name": "CastReader: Lecteur de texte",
+      "subtitle": "PDF, livres et lecture vocale",
+      "keywords": "tts,synthèse,voix,ocr,scanner,epub,articles,documents,étude,dyslexie,audio,prononciation",
+      "searchQueries": [
+        "synthèse vocale",
+        "lecture à voix haute",
+        "écouter pdf",
+        "lecteur de texte"
+      ],
+      "terminologySource": "https://support.apple.com/fr-fr/guide/iphone/iph96b214f0/ios"
+    },
+    "pt-BR": {
+      "language": "pt",
+      "label": "葡萄牙语（巴西）",
+      "market": "br",
+      "name": "CastReader: Texto para Voz",
+      "subtitle": "Ouça PDF, livros e páginas web",
+      "keywords": "tts,leitor,leitura,áudio,ocr,scanner,epub,artigos,documentos,estudo,dislexia,sintetizador",
+      "searchQueries": [
+        "texto em fala",
+        "ler em voz alta",
+        "ouvir pdf",
+        "texto para voz"
+      ],
+      "terminologySource": "https://support.apple.com/pt-br/guide/iphone/iph96b214f0/ios"
+    },
+    "it": {
+      "language": "it",
+      "label": "意大利语",
+      "market": "it",
+      "name": "CastReader: Leggi ad alta voce",
+      "subtitle": "Ascolta PDF, web e libri",
+      "keywords": "tts,sintesi,testo,lettore,ocr,scanner,epub,articoli,documenti,studio,dislessia,audiolibri",
+      "searchQueries": [
+        "sintesi vocale",
+        "leggere ad alta voce",
+        "ascoltare pdf",
+        "leggi ad alta voce"
+      ],
+      "terminologySource": "https://support.apple.com/it-it/guide/iphone/iph96b214f0/ios"
+    },
+    "hi": {
+      "language": "hi",
+      "label": "印地语",
+      "market": "in",
+      "name": "CastReader: टेक्स्ट से आवाज़",
+      "subtitle": "PDF, किताबें और लेख सुनें",
+      "keywords": "पढ़कर सुनाना,स्कैन,text to speech,tts,ocr,epub,पाठक",
+      "searchQueries": [
+        "टेक्स्ट से आवाज़",
+        "पढ़कर सुनाना",
+        "किताब सुनें",
+        "text to speech"
+      ],
+      "terminologySource": "https://support.apple.com/hi-in/guide/iphone/iph96b214f0/ios"
+    },
+    "nl-NL": {
+      "language": "nl",
+      "label": "荷兰语",
+      "market": "nl",
+      "name": "CastReader: Voorlezen",
+      "subtitle": "Luister naar PDF, boeken & web",
+      "keywords": "tekst naar spraak,stem,ocr,scanner,epub,artikelen,documenten,studie,dyslexie,luisterboek",
+      "searchQueries": [
+        "tekst naar spraak",
+        "pdf voorlezen",
+        "voorlezen"
+      ],
+      "terminologySource": "https://support.apple.com/nl-nl/guide/iphone/iph96b214f0/ios"
+    },
+    "ko": {
+      "language": "ko",
+      "label": "韩语",
+      "market": "kr",
+      "name": "CastReader: 텍스트 음성 변환",
+      "subtitle": "PDF·전자책·웹페이지 읽어주기",
+      "keywords": "tts,낭독,문서,기사,스캔,글자 인식,오디오북,학습,듣기,ocr,epub,소리 내어",
+      "searchQueries": [
+        "텍스트 음성 변환",
+        "PDF 읽어주기",
+        "텍스트 읽어주기"
+      ],
+      "terminologySource": "https://support.apple.com/ko-kr/guide/iphone/iph96b214f0/ios"
+    },
+    "ar-SA": {
+      "language": "ar",
+      "label": "阿拉伯语",
+      "market": "sa",
+      "name": "CastReader: قراءة النصوص",
+      "subtitle": "استمع إلى PDF والكتب والمواقع",
+      "keywords": "تحويل النص إلى كلام,قارئ,صوت,مسح,OCR,EPUB,مقالات,دراسة",
+      "searchQueries": [
+        "تحويل النص إلى كلام",
+        "قراءة النصوص",
+        "قراءة PDF"
+      ],
+      "terminologySource": "https://support.apple.com/ar-sa/guide/iphone/iph96b214f0/ios"
+    },
+    "ru": {
+      "language": "ru",
+      "label": "俄语",
+      "market": "ru",
+      "name": "CastReader: Чтение вслух",
+      "subtitle": "Слушайте PDF, книги и статьи",
+      "keywords": "текст в речь,озвучка,голос,ocr,epub,сканер,учеба,читалка",
+      "searchQueries": [
+        "текст в речь",
+        "чтение вслух",
+        "озвучка текста"
+      ],
+      "terminologySource": "https://support.apple.com/ru-ru/guide/iphone/iph96b214f0/ios"
+    },
+    "pl": {
+      "language": "pl",
+      "label": "波兰语",
+      "market": "pl",
+      "name": "CastReader: Czytanie na głos",
+      "subtitle": "Słuchaj PDF, książek i stron",
+      "keywords": "tekst na mowę,lektor,ocr,skaner,epub,artykuły,dokumenty,nauka,dysleksja,syntezator mowy",
+      "searchQueries": [
+        "tekst na mowę",
+        "czytanie na głos",
+        "czytnik pdf"
+      ],
+      "terminologySource": "https://support.apple.com/pl-pl/guide/iphone/iph96b214f0/ios"
+    },
+    "sv": {
+      "language": "sv",
+      "label": "瑞典语",
+      "market": "se",
+      "name": "CastReader: Uppläsning",
+      "subtitle": "Lyssna på PDF, böcker och webb",
+      "keywords": "text till tal,röst,ocr,skanner,epub,artiklar,dokument,studier,dyslexi,ljudbok",
+      "searchQueries": [
+        "text till tal",
+        "läsa upp text",
+        "lyssna på pdf"
+      ],
+      "terminologySource": "https://support.apple.com/sv-se/guide/iphone/iph96b214f0/ios"
+    },
+    "da": {
+      "language": "da",
+      "label": "丹麦语",
+      "market": "dk",
+      "name": "CastReader: Oplæsning",
+      "subtitle": "Lyt til PDF, bøger og websider",
+      "keywords": "tekst til tale,stemme,ocr,scanner,epub,artikler,dokumenter,studie,ordblind,lydbog,læsehjælp",
+      "searchQueries": [
+        "tekst til tale",
+        "læs tekst op",
+        "oplæsning"
+      ],
+      "terminologySource": "https://support.apple.com/da-dk/guide/iphone/iph96b214f0/ios"
+    },
+    "no": {
+      "language": "nb",
+      "label": "挪威语",
+      "market": "no",
+      "name": "CastReader: Les høyt",
+      "subtitle": "Lytt til PDF og bøker",
+      "keywords": "tekst til tale,opplesning,stemme,ocr,skanner,epub,artikler,dokumenter,nettsider,dysleksi,lydbok",
+      "searchQueries": [
+        "tekst til tale",
+        "lese opp tekst",
+        "pdf opplesning"
+      ],
+      "terminologySource": "https://support.apple.com/no-no/guide/iphone/iph96b214f0/ios"
+    },
+    "fi": {
+      "language": "fi",
+      "label": "芬兰语",
+      "market": "fi",
+      "name": "CastReader: Lue ääneen",
+      "subtitle": "PDF, kirjat ja verkkosivut",
+      "keywords": "puhesynteesi,teksti puheeksi,ääni,ocr,skannaus,epub,artikkelit,opiskelu,lukivaikeus,äänikirja",
+      "searchQueries": [
+        "teksti puheeksi",
+        "lue ääneen",
+        "pdf ääneen"
+      ],
+      "terminologySource": "https://support.apple.com/fi-fi/guide/iphone/iph96b214f0/ios"
+    },
+    "cs": {
+      "language": "cs",
+      "label": "捷克语",
+      "market": "cz",
+      "name": "CastReader: Čtení nahlas",
+      "subtitle": "Poslech PDF, knih a webu",
+      "keywords": "převod textu na řeč,hlas,čtečka,ocr,skenování,epub,články,dokumenty,studium,dyslexie",
+      "searchQueries": [
+        "převod textu na řeč",
+        "čtení nahlas",
+        "předčítání pdf"
+      ],
+      "terminologySource": "https://support.apple.com/cs-cz/guide/iphone/iph96b214f0/ios"
+    },
+    "el": {
+      "language": "el",
+      "label": "希腊语",
+      "market": "gr",
+      "name": "CastReader: Εκφώνηση κειμένου",
+      "subtitle": "PDF, βιβλία και ιστοσελίδες",
+      "keywords": "μετατροπή σε ομιλία,φωνή,ocr,epub,σάρωση,άρθρα",
+      "searchQueries": [
+        "κείμενο σε ομιλία",
+        "εκφώνηση κειμένου",
+        "ανάγνωση PDF"
+      ],
+      "terminologySource": "https://support.apple.com/el-gr/guide/iphone/iph96b214f0/ios"
+    },
+    "hu": {
+      "language": "hu",
+      "label": "匈牙利语",
+      "market": "hu",
+      "name": "CastReader: Szövegfelolvasó",
+      "subtitle": "Hallgass PDF-et és könyveket",
+      "keywords": "szöveg,beszéd,hang,ocr,szkenner,epub,cikkek,tanulás,diszlexia,weboldal",
+      "searchQueries": [
+        "szövegfelolvasó",
+        "szöveg felolvasás",
+        "pdf felolvasó"
+      ],
+      "terminologySource": "https://support.apple.com/hu-hu/guide/iphone/iph96b214f0/ios"
+    },
+    "he": {
+      "language": "he",
+      "label": "希伯来语",
+      "market": "il",
+      "name": "CastReader: הקראת טקסט",
+      "subtitle": "האזנה ל-PDF, ספרים ואתרים",
+      "keywords": "טקסט לדיבור,קורא,קול,סריקה,ocr,epub,מאמרים,למידה,מסמכים",
+      "searchQueries": [
+        "טקסט לדיבור",
+        "הקראת טקסט",
+        "הקראת PDF"
+      ],
+      "terminologySource": "https://support.apple.com/he-il/guide/iphone/iph96b214f0/ios"
+    },
+    "id": {
+      "language": "id",
+      "label": "印尼语",
+      "market": "id",
+      "name": "CastReader: Teks ke Suara",
+      "subtitle": "Dengarkan PDF, buku & artikel",
+      "keywords": "pembaca,nyaring,audio,ocr,pindai,epub,dokumen,belajar,disleksia,tts,situs,ucapan,sintesis",
+      "searchQueries": [
+        "teks ke suara",
+        "pembaca teks",
+        "baca pdf"
+      ],
+      "terminologySource": "https://support.apple.com/id-id/guide/iphone/iph96b214f0/ios"
+    },
+    "ms": {
+      "language": "ms",
+      "label": "马来语",
+      "market": "my",
+      "name": "CastReader: Pembaca Teks",
+      "subtitle": "Dengar PDF, buku dan laman web",
+      "keywords": "teks ke pertuturan,sebutan,audio,ocr,imbas,epub,artikel,dokumen,belajar,disleksia,tts",
+      "searchQueries": [
+        "teks ke pertuturan",
+        "pembaca teks",
+        "baca pdf"
+      ],
+      "terminologySource": "https://support.apple.com/ms-my/guide/iphone/iph96b214f0/ios"
+    },
+    "ro": {
+      "language": "ro",
+      "label": "罗马尼亚语",
+      "market": "ro",
+      "name": "CastReader: Text în vorbire",
+      "subtitle": "Ascultă PDF, cărți și articole",
+      "keywords": "citire cu voce tare,ocr,scanare,epub,documente,studiu,dislexie,audiobook,cititor,lectură",
+      "searchQueries": [
+        "text în vorbire",
+        "citire cu voce tare",
+        "cititor pdf"
+      ],
+      "terminologySource": "https://support.apple.com/ro-ro/guide/iphone/iph96b214f0/ios"
+    },
+    "tr": {
+      "language": "tr",
+      "label": "土耳其语",
+      "market": "tr",
+      "name": "CastReader: Sesli Okuma",
+      "subtitle": "PDF, kitap ve makaleleri dinle",
+      "keywords": "metin,seslendirme,tts,ocr,tarama,epub,belge,dinleme,ders,disleksi,yazıyı sese çevir",
+      "searchQueries": [
+        "metin seslendirme",
+        "sesli okuma",
+        "pdf sesli okuma"
+      ],
+      "terminologySource": "https://support.apple.com/tr-tr/guide/iphone/iph96b214f0/ios"
+    },
+    "vi": {
+      "language": "vi",
+      "label": "越南语",
+      "market": "vn",
+      "name": "CastReader: Đọc văn bản",
+      "subtitle": "Nghe PDF, sách và trang web",
+      "keywords": "chuyển chữ thành giọng nói,tts,ocr,quét,epub,tài liệu,học tập,đọc to",
+      "searchQueries": [
+        "chuyển văn bản thành giọng nói",
+        "đọc văn bản",
+        "đọc PDF"
+      ],
+      "terminologySource": "https://support.apple.com/vi-vn/guide/iphone/iph96b214f0/ios"
+    }
+  },
+  "unsupportedStoreLanguages": {
+    "fil": {
+      "label": "菲律宾语",
+      "reason": "Apple does not offer a Filipino metadata locale. Philippines default store language is English (UK); display fallback also depends on device and primary locale.",
+      "market": "ph",
+      "currentFallback": "Primary English (en-US), no dedicated en-GB record",
+      "strategy": "Keep store English accurate; mention Filipino support in English description. Evaluate a complete en-GB localization with screenshots as separate expansion; do not stuff Filipino words into shared English keywords.",
+      "searchQueries": [
+        "text to speech",
+        "read aloud",
+        "Filipino text to speech"
+      ],
+      "nativeQueries": [
+        "basahin nang malakas",
+        "teksto sa pagsasalita"
+      ],
+      "descriptionAudit": "Both current platform English descriptions explicitly list Filipino support."
+    }
+  },
+  "descriptionCatalog": "ios-description-localizations.json"
+}

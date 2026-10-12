@@ -144,6 +144,8 @@ xcodebuild test -workspace CastReader.xcworkspace -scheme CastReader -destinatio
 
 ## App Store 发布自动化
 
+- **ASO 29 locale 门禁（2026-10-11）**：名称、副标题与关键词的当前目标在 `docs/aso/search-localizations.json`；iOS 完整说明在 `docs/aso/ios-description-localizations.json`。28 种应用语言中菲律宾语无独立 ASC 栏位；其余 27 种加既有 `zh-Hant` / `es-MX` 共 29 个条目。不得给新增语言回填英文占位。发布前后运行 `ruby scripts/verify_aso_keywords.rb --platform IOS --version-id <ID> --app-info-id <ID>`，完整分页比对三个搜索字段和说明；Mac 显式指定 `MAC_OS`，不套用 iOS 说明。`--catalog-only` 做本地预检。目标文案是否上线须看 ASC 回读，不能以本地文件代替。
+
 当用户说“提交到 App Store 审核”“提交到应用市场去审核”“发布 iOS 新版本”或等价表达时，必须使用个人 Skill `$submit-castreader-ios-to-app-store`：
 
 `/Users/xuxuheng/.codex/skills/submit-castreader-ios-to-app-store/SKILL.md`
