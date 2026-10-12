@@ -1,8 +1,42 @@
 # iOS 1.2.49 release report
 
-Updated 2026-10-12. **Build 84 physical Kobo acceptance PASS; the user explicitly authorized submission.** The 14:35:43–14:39:43 locked interval contains four confirmed automatic page transitions (169 → 173) and 49 background audio-ready events. The user independently confirmed “kobo测试没问题 可以继续提交”. WeRead and Google physical checks passed on Build 83; Kindle continuity passed on Build 81. Those results and the task-specific Duo simulator acceptance remain scoped as recorded below. The final candidate is 1.2.49 (84), application/config SHA-256 `5ccb668e3352175c05c46e4ac71e28697b89746b852283a0d779f30837868bc3`. Official distribution archive, refreshed iPad navigation screenshots and submission are in progress. Historical holds and earlier Build 78–83 results below are retained as history, not the current delivery state.
+Updated 2026-10-12. **SUBMITTED — iOS 1.2.49 (84), WAITING_FOR_REVIEW.** Apple accepted the submission at **2026-10-12 15:09:30 Asia/Shanghai**. Both the version and Review Submission were read back as `WAITING_FOR_REVIEW`; release behavior remains `AFTER_APPROVAL`. Approval/public availability has not yet occurred.
+
+| Final delivery | Verified value |
+| --- | --- |
+| Source / PR | main merge `6e200ad7f109a750579a2be3e242478e01546ab9`, PR #9 |
+| Frozen application/config | 356 files, SHA-256 `5ccb668e3352175c05c46e4ac71e28697b89746b852283a0d779f30837868bc3` |
+| App Store version | `680b0b6d-968f-4a0c-a5a2-b8c25496e078` |
+| Build | `52b4fe60-e03c-4fe6-97fa-94cbec9e51b5`, 84, VALID / APP_STORE_ELIGIBLE |
+| Review Submission | `7516b784-66d1-4f0b-b04f-b3604c0d67b7` |
+| Screenshots | 29 ASC locales, 87 sets, **464 COMPLETE images**, all exact checksum/order matches: 145 iPhone + 145 iPad + 174 Duo |
+| Local language coverage | 28 languages; Filipino has no ASC locale, Traditional Chinese and Mexican Spanish retain documented image fallbacks |
+| Distribution archive | `reports/ios-duo-20261011/CastReader-1.2.49-84.xcarchive` |
+| Official uploaded IPA | `reports/ios-duo-20261011/export-84/CastReader.ipa`, SHA-256 `fc45772bbb8190d6259e8f5b52465550a92c3f7727d715d0f30829a1703050b4` |
+
+**Acceptance:** the user accepted physical Kobo Build 84 and authorized submission. Its 14:35:43–14:39:43 locked interval includes four confirmed automatic transitions (169 → 173) and 49 background audio-ready events. WeRead and Google physical checks passed on Build 83; Kindle continuity passed on Build 81. Final Kobo's 24 affected Swift cases and both browser regression fixtures pass. The unchanged application/config was verified again immediately before submission. Existing Duo simulator Read/Explain/fold and ordinary iPhone/iPad navigation evidence is retained; the full current CN/Global four-cell physical matrix was not rerun. The user explicitly accepted the documented Duo simulator scope, and the unchanged TTS/account/quota pipeline reuses the scoped 1.2.48 evidence. Earlier failures/skips remain visible below; this is not a claim that a new full test suite is all green.
+
+**Store:** approved 1.2.49 ASO titles, subtitles, descriptions, keywords and links were preserved. All 378 local/remote copy fields and strict approved-target checks pass. Only the review introduction's Build changed from 82 to 84; other review details remain exact. All 28-language iPad navigation recaptures pass, and every Duo locale has the sixth closed + expanded screenshot. iPhone images and iPad reading/explanation scenes remain exact originals. One screenshot order readback saw Apple's stale list cache; a later exact read was correct. The uploader now retries only readback, retaining strict IDs, order and COMPLETE requirements. No unrelated review was changed.
+
+Final evidence: `build84-submission-result.json`, `build84-submission-readiness.json`, `build84-final-release-audit.json`, `build84-final-screenshot-inventory.json`, `build84-final-preservation-audit.json`, `build84-copy-audit-final.json`, `build84-export-validation.json`, `build84-physical-kobo-lock-evidence.json`. These private artifacts remain outside Git. The iPhone retains the user's accepted development-signed Release Build 84 with its accounts and shelves intact. The iPad screenshot device was returned to Simplified Chinese after capture.
+
+## Preparation and retained acceptance history
+
+Updated 2026-10-12. **Build 84 physical Kobo acceptance PASS; the user explicitly authorized submission.** The 14:35:43–14:39:43 locked interval contains four confirmed automatic page transitions (169 → 173) and 49 background audio-ready events. The user independently confirmed “kobo测试没问题 可以继续提交”. WeRead and Google physical checks passed on Build 83; Kindle continuity passed on Build 81. Those results and the task-specific Duo simulator acceptance remain scoped as recorded below. The final candidate is 1.2.49 (84), application/config SHA-256 `5ccb668e3352175c05c46e4ac71e28697b89746b852283a0d779f30837868bc3`. These preparation steps were subsequently completed in the final delivery above. Historical holds and earlier Build 78–83 results below are retained as history, not the current delivery state.
 
 Physical Kobo evidence: `reports/ios-duo-20261011/build84-physical-kobo-lock-evidence.json` and its SHA-256-linked phone log. No further application changes are planned after this accepted candidate.
+
+## Final Build 84 preparation
+
+Application changes merged into `main` as `6e200ad7f109a750579a2be3e242478e01546ab9` via PR #9. All 356 frozen application/config files match the physically accepted Build 84 source (zero differences). The official archive is built from this merge with isolated DerivedData. The four components share version 1.2.49 and Build 84. Release preflight and the existing Safari packaging contract pass; 29 pending ASO localizations and all 378 local/remote copy fields pass. Review contacts and sign-in instructions are preserved; only the candidate Build in the review introduction changes from 82 to 84.
+
+The updated iPad capture suites both completed successfully, covering 28 languages with scenes 1, 4 and 5 (84 replacement images). The corresponding reading and explanation images, scenes 2 and 3, remain unchanged. All new panels pass size, opacity, overflow and checksum checks; visual samples include English, Arabic, Korean, Hebrew and Vietnamese. The existing 28-language Duo assets include six scenes with a genuine closed + expanded composite. Screenshot upload/readback and Build processing subsequently passed. Evidence: `build84-merged-source-verification.json`, `preflight-84.log`, `build84-aso-before.log`, `build84-copy-audit.json`, `build84-ipad-navigation-qa.json`.
+
+The official Xcode Build 84 archive and upload completed successfully at 14:57:44 China time. The exact pipeline IPA is retained as `export-84/CastReader.ipa` with SHA-256 `fc45772bbb8190d6259e8f5b52465550a92c3f7727d715d0f30829a1703050b4`. All four exported signatures verify with `get-task-allow=false`; 28 required resource languages, device families 1/2, disabled internal release controls and fixture exclusion pass. Evidence: `build84-archive-validation.json`, `build84-export-validation.json`, `build84-export-no-fixtures.json` and `build84-upload.log`.
+
+Title preservation uses the approved pending 1.2.49 ASO catalog and the original Duo preparation snapshot. All 29 pending names/subtitles match both exactly. The generic comparison against published 1.2.48 reports 22 intended ASO differences; that retained failed comparison is not an unexpected Duo change. The final generic audit uses its intended-copy policy alongside the strict approved-target/preserved-snapshot verification. Evidence: `build84-approved-title-policy.json`, `build84-aso-before.log`, `build84-prebinding-title-audit.json`. No name/subtitle write was made during this final Build 84 submission.
+
+### Earlier candidate and acceptance history
 
 ### Build 83 physical lock results — historical Kobo failure
 
@@ -26,13 +60,13 @@ The candidate separates verified source commits from visible paint receipts whil
 
 The affected broad run (`build83-pagination-suite.xcresult`) completed 172 cases: 167 PASS, 1 existing opt-in live-shell SKIP, 4 FAIL. The double-column mark case passed unchanged on rerun. Three independent AVPlayer cases consistently resumed after their fixed 200–250 ms sleeps: logs show the decoder starting with only about 35 ms of progress when sampled. Their tests now wait up to one second for the same original progress thresholds, retaining media/player identity and pause checks; all three pass in `build83-decoder-readiness.xcresult`, with no application playback change. `build83-retry-regressions.xcresult` additionally passes the actual four-second WeRead presentation timeout → verified current source → explicit Retry → playback, and the no-animation-frame three-page continuation. Initial failures are retained, not reported as one all-green run. Xcode's simulator-result teardown remained alive after completed XCTest summaries and was terminated after preserving the results; test summaries, not a successful runner exit, support these counts.
 
-## Scope and identity
+## Historical Build 78 scope and identity
 
 Combined approved ASO update and iPhone Duo adaptation. Version 1.2.49, Build 78 across App, Share, Widget and already-released Safari extension. Source branch `codex/ios-duo-adaptation`, PR https://github.com/vinxu/CastReader/pull/7. Application/config digest: `fe97839334f7002b03ef755093715cf037b3db071ac1cd0bc3621f298c9b6f1a` (356 tracked files, private manifest `reports/ios-duo-20261011/kobo-final-candidate-identity.json`). PR #7 merged into main as `c348089cddda8a4b450ed6a97e431a7d2082ebab`; the archive was built from that commit.
 
 The user authorized merging with the existing 1.2.49 version and coordinating its automatic submission. The original task confirmed its automation is PAUSED and it will not submit old Build 77. App Store version ID: `680b0b6d-968f-4a0c-a5a2-b8c25496e078`. Existing unrelated review submissions are preserved.
 
-## Acceptance
+## Earlier Duo acceptance
 
 Full history and bounded failures: [Duo adaptation record](iPhone-Duo-Adaptation-2026-10-11.md). Real regional endpoints and real simulator playback covered web, PDF, EPUB, TXT, DOCX, Kindle, Google Play Books, Kobo and WeRead; fold, resume, highlights and original-source Explain annotations are recorded per source. TXT/DOCX are short format smokes, not three-minute coverage. Actual system file-picker selection and security-scoped import also pass.
 
@@ -40,7 +74,7 @@ Final Kobo code passes 44/44 affected unit tests. Final-source live Read and Exp
 
 Physical core playback for this Duo release remains NOT_RUN after device/IDE connection failures. The user explicitly approved simulator Duo acceptance as sufficient to release; this is a task-specific override, not fabricated physical evidence. Prior 1.2.48 CN/Global normal/community/private voice acceptance is preserved as historical evidence; unchanged TTS, authentication and quota logic is reused. See [1.2.48 report](iOS-1.2.48-Release-Report.md).
 
-## Store assets and metadata
+## Initial store assets and metadata
 
 All 29 merged descriptions and What's New entries were applied and exactly read back. Original ASO paragraphs, names/subtitles/keywords, legal links, untouched fields and release behavior are preserved. Pending App Info: `988607e7-fe9f-45ad-9432-86fca303d591`.
 
@@ -54,7 +88,7 @@ The real simulator navigation test passed, including Library, Settings, import a
 
 The first sixth-image revision had reached 174 COMPLETE Duo assets. It will be replaced only after new closed-screen captures are reviewed. The staged review item for Build 78 was removed from this task's own draft; the version is back in PREPARE_FOR_SUBMISSION. No final submission has occurred.
 
-## Delivery state
+## Historical Build 78 delivery state
 
 Official Xcode archive/upload succeeded. Build `514de937-a890-4ece-98e8-9bc7e12f697d` is VALID / APP_STORE_ELIGIBLE, non-exempt encryption false. Archive `reports/ios-duo-20261011/CastReader-1.2.49-78.xcarchive`; uploaded IPA SHA-256 `7b2fd9087a63a943c712842e751ec872c8b2c46e9db67c6d7d19ab1eb50bf0f2`. Exported App/Share/Widget/Safari signatures verify with get-task-allow=false, version1.2.49(78) and device families1/2. All28 language resources are present, plus the existing pt fallback; no test fixtures are bundled.
 
@@ -68,7 +102,7 @@ The revised iPad layout also invalidates store scenes that display the old top n
 
 The final iPad four-orientation navigation check also passed (`nav79-ipad-bottom-orientations.xcresult`), including the bottom Home/Voice bar, Settings sheet and import entry. This bounded follow-up does not claim a new full playback-service matrix.
 
-## Physical regression investigation (2026-10-12, in progress)
+## Physical regression investigation history (2026-10-12)
 
 The user reported wrong narration after automatic page turns in *A Journey to the Centre of the Earth*, plus a collapsed Read/Explain menu and a bottom bar touching the mini player. Mirroring was initially unavailable while the phone was in use. Once connected, observation around 12:05–12:08 showed the ending page followed by an earlier Hamburg passage without an agent-issued page turn. This records a visible page-order change, not an audio transcription or a conclusive automatic-page regression; contemporaneous user interaction cannot be excluded. The reader was paused.
 

@@ -175,8 +175,16 @@ selected.each do |locale|
       old.each { |i| client.request('DELETE', "/v1/appScreenshots/#{i.fetch('id')}") }
     end
     client.request('PATCH',"/v1/appScreenshotSets/#{set.fetch('id')}/relationships/appScreenshots",{data:ids.map { |id| {type:'appScreenshots',id:id} }})
-    order = client.get_all("/v1/appScreenshotSets/#{set.fetch('id')}/appScreenshots?limit=50")
-    abort 'Final order/readback mismatch' unless order.map { |i| i['id'] } == ids && order.all? { |i| i.dig('attributes','assetDeliveryState','state') == 'COMPLETE' }
+    # The relationship write can precede the list endpoint's cache refresh.
+    # Observe the same exact IDs/order; never repeat uploads or relax the check.
+    order_verified = false
+    6.times do |attempt|
+      order = client.get_all("/v1/appScreenshotSets/#{set.fetch('id')}/appScreenshots?limit=50")
+      order_verified = order.map { |i| i['id'] } == ids && order.all? { |i| i.dig('attributes','assetDeliveryState','state') == 'COMPLETE' }
+      break if order_verified
+      sleep 2 if attempt < 5
+    end
+    abort 'Final order/readback mismatch' unless order_verified
     journal['complete'] = true; save.call
     puts "Verified #{locale}/#{profile}: #{images.size} COMPLETE assets"; $stdout.flush
   end
