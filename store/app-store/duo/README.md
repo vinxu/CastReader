@@ -5,8 +5,8 @@ from `../1.2.48`: connected Kindle shelf, Read Aloud, Explain, Kindle library,
 and Quick Import. As of 2026-10-12, all 28 × 5 local images are complete,
 with native-size, opacity, scene-order, hash and layout checks plus representative
 visual review. Evidence lives in the private `reports/ios-duo-20261011`
-`duo-artwork-manifest.json` and `campaign-status.json`. No images have been
-uploaded and no store version has yet been allocated to this candidate.
+`duo-artwork-manifest.json` and `campaign-status.json`. The first 29-locale Duo revision is uploaded to iOS 1.2.49; see the release
+report for the pending Build 79 navigation revision and sixth-image replacement.
 
 Capture with `LocalizedStoreCaptureUITests`, `CASTREADER_STORE_DEVICE=duo`, and
 `CASTREADER_STORE_OUTPUT` pointing to the private `reports/ios-duo-20261011/raw/duo`

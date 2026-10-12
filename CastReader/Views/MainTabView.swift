@@ -145,7 +145,6 @@ private struct ReaderNativeIPhoneTabBar: UIViewRepresentable {
 struct MainTabView: View {
     @ObservedObject private var appLanguage = AppLanguageManager.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.readerHasVerticalNavigation) private var hasVerticalNavigation
     /// Where the floating player sits. Purely visual — the space tab content
     /// gives up for it is measured, not derived from this number, so the two can
@@ -323,19 +322,22 @@ struct MainTabView: View {
 
     private var hasBottomImportControl: Bool {
         if usesLegacyNavigationChrome { return !legacyUsesPadNavigation }
-        return usesCompactBottomNavigation
+        return usesBottomNavigation
     }
 
-    private var usesCompactBottomNavigation: Bool {
-        horizontalSizeClass != .regular && !hasVerticalNavigation
+    private var usesBottomNavigation: Bool {
+        // Only Duo's actual vertical system region owns side navigation.
+        // Ordinary iPad windows keep the same bottom controls as iPhone,
+        // including when their horizontal size class is regular.
+        !hasVerticalNavigation
     }
 
     private var nativeTabBarVisibility: Visibility {
         if importRouter.hideMainChrome { return .hidden }
         // iOS 17 phones use their native three-item bar, including import.
-        // Only the modern compact shell supplies a separate custom bar.
+        // Ordinary modern windows supply one bottom bar; Duo uses its rail.
         if usesLegacyNavigationChrome { return .visible }
-        return usesCompactBottomNavigation ? .hidden : .automatic
+        return usesBottomNavigation ? .hidden : .automatic
     }
 
     @ViewBuilder
@@ -420,8 +422,9 @@ struct MainTabView: View {
                     miniPlayer
                         .background(miniPlayerTopReporter)
                 }
-                if usesCompactBottomNavigation {
+                if usesBottomNavigation {
                     iPhoneTabBar
+                        .frame(maxWidth: 480)
                         .background {
                             GeometryReader { proxy in
                                 Color.clear.preference(
