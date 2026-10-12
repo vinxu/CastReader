@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # Add reviewed Duo assets only; preserve every other display family.
-# Resume by file name/checksum and journal; never delete existing assets.
+# Resume by file name/checksum and journal. A reviewed folded-scene replacement
+# stages its new asset completely before removing only the owned sixth image.
 require 'json'
 require 'digest'
 require 'fileutils'
@@ -11,6 +12,7 @@ require File.expand_path('~/.codex/skills/submit-castreader-ios-to-app-store/scr
 options = { execute: false, profiles: %w[duo], count: 5 }
 OptionParser.new do |p|
   p.on('--include-folded') { options[:count] = 6 }
+  p.on('--replace-folded') { options[:count] = 6; options[:replace_folded] = true }
   p.on('--execute') { options[:execute] = true }
   p.on('--profile NAME') { |v| options[:profiles] = [v] }
   p.on('--locales LIST') { |v| options[:locales] = v.split(',') }
@@ -45,7 +47,8 @@ selected.each do |locale|
       header = File.binread(path, 26)
       abort "Invalid PNG #{path}" unless header.start_with?("\x89PNG\r\n\x1a\n".b) && header[16,8].unpack('NN') == dimensions && [0,2,3].include?(header.getbyte(25))
       sha = Digest::SHA256.file(path).hexdigest
-      { 'path' => path, 'name' => File.basename(path), 'sha256' => sha, 'md5' => Digest::MD5.file(path).hexdigest, 'size' => File.size(path) }
+      name = options[:replace_folded] && File.basename(path) == '06.png' ? "06-#{sha[0,12]}.png" : File.basename(path)
+      { 'path' => path, 'name' => name, 'sha256' => sha, 'md5' => Digest::MD5.file(path).hexdigest, 'size' => File.size(path) }
     end
     sets = client.get_all("/v1/appStoreVersionLocalizations/#{target.fetch('id')}/appScreenshotSets?limit=50").select { |s| s.dig('attributes','screenshotDisplayType') == display }
     abort "Ambiguous set #{locale}/#{profile}" if sets.size > 1
@@ -146,7 +149,14 @@ selected.each do |locale|
     old = items.reject { |i| ids.include?(i['id']) }
     original_ids = journal.fetch('originals').map { |i| i['id'] }
     abort 'Unexpected concurrent asset; preserve and inspect' unless (old.map { |i| i['id'] } - original_ids).empty?
-    abort 'Unexpected Duo assets; preserve and inspect' unless old.empty?
+    unless old.empty?
+      abort 'Replacement may remove only the previous owned folded scene' unless
+        options[:replace_folded] && old.size == 1 &&
+        old.first.dig('attributes', 'fileName').match?(/\A06(?:-[0-9a-f]{12})?\.png\z/) &&
+        journal['previousRevision'] &&
+        items.select { |i| %w[01.png 02.png 03.png 04.png 05.png].include?(i.dig('attributes', 'fileName')) }.size == 5
+      client.request('DELETE', "/v1/appScreenshots/#{old.first.fetch('id')}")
+    end
     client.request('PATCH',"/v1/appScreenshotSets/#{set.fetch('id')}/relationships/appScreenshots",{data:ids.map { |id| {type:'appScreenshots',id:id} }})
     order = client.get_all("/v1/appScreenshotSets/#{set.fetch('id')}/appScreenshots?limit=50")
     abort 'Final order/readback mismatch' unless order.map { |i| i['id'] } == ids && order.all? { |i| i.dig('attributes','assetDeliveryState','state') == 'COMPLETE' }
