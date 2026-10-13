@@ -57,12 +57,12 @@ Dir.mktmpdir('CastReaderProjectBaseline') do |temp|
     (old.build_phases.to_a + old.build_configurations.to_a + old.dependencies.to_a).each do |object|
       actual = project.objects_by_uuid[object.uuid]&.to_hash
       if old.name == 'CastReader' && object.isa == 'PBXSourcesBuildPhase'
-        # This shared adapter compiles to the original .fileImporter on iOS.
+        # Explicit additive platform adapters and the iOS StoreKit promotion coordinator.
         # Permit its explicit addition, while still rejecting every removal,
         # unrelated source addition, or build-setting/extension change.
         actual = Marshal.load(Marshal.dump(actual))
         actual['files'].reject! do |id|
-          ['PlatformFileImporter.swift', 'MacDocumentCameraViewController.swift'].include?(project.objects_by_uuid[id]&.file_ref&.path)
+          ['PlatformFileImporter.swift', 'MacDocumentCameraViewController.swift', 'PromotedPurchaseCoordinator.swift'].include?(project.objects_by_uuid[id]&.file_ref&.path)
         end unless object.files.any? { |file| file.file_ref&.path == 'PlatformFileImporter.swift' }
       end
       if old.name == 'CastReaderTests' && object.isa == 'PBXResourcesBuildPhase'
@@ -73,6 +73,20 @@ Dir.mktmpdir('CastReaderProjectBaseline') do |temp|
           project.objects_by_uuid[id]&.file_ref&.path == 'kindle-offline-dual-page.png'
         end unless object.files.any? { |file| file.file_ref&.path == 'kindle-offline-dual-page.png' }
       end
+      release_targets = ['CastReader', 'CastReader Share Extension', 'CastReader Widget', 'CastReader Safari Extension']
+      if release_targets.include?(old.name) && object.isa == 'XCBuildConfiguration'
+        # Releases advance all four iOS components together; every other setting
+        # remains frozen against the integrated baseline.
+        actual = Marshal.load(Marshal.dump(actual))
+        settings = actual.fetch('buildSettings')
+        app_settings = ios.build_configurations.find { |c| c.name == object.name }.build_settings
+        %w[MARKETING_VERSION CURRENT_PROJECT_VERSION].each do |key|
+          require_equal(settings[key], app_settings[key], "Aligned #{old.name} #{key}")
+        end
+        abort 'FAIL: iOS build went backwards' if settings['CURRENT_PROJECT_VERSION'].to_i < object.build_settings['CURRENT_PROJECT_VERSION'].to_i
+        abort 'FAIL: Invalid iOS version' unless settings['MARKETING_VERSION'].match?(/\A\d+\.\d+\.\d+\z/)
+        %w[MARKETING_VERSION CURRENT_PROJECT_VERSION].each { |key| settings[key] = object.build_settings[key] }
+      end
       require_equal(actual, object.to_hash,
                     "Preserved #{old.name} #{object.isa}")
     end
@@ -81,4 +95,6 @@ end
 puts JSON.pretty_generate(status: 'PASS', shared_sources: mac.source_build_phase.files.count,
   shared_resources: mac.resources_build_phase.files.count,
   ios_baseline: ios_baseline,
-  original_ios_settings_and_extensions: 'unchanged', shared_platform_adapters: ['PlatformFileImporter.swift', 'MacDocumentCameraViewController.swift'])
+  original_ios_settings_and_extensions: 'unchanged except aligned release version/build',
+  ios_release: ios.build_configurations.first.build_settings.values_at('MARKETING_VERSION', 'CURRENT_PROJECT_VERSION'),
+  additional_ios_sources: ['PromotedPurchaseCoordinator.swift'], shared_platform_adapters: ['PlatformFileImporter.swift', 'MacDocumentCameraViewController.swift'])

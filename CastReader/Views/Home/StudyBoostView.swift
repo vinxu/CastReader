@@ -2,13 +2,14 @@
 //  StudyBoostView.swift
 //  CastReader
 //
-//  Back-to-School 2026: a real, time-limited seven-study-day challenge.
+//  Read and Follow 2026: seven days of verified Read Aloud playback.
 //  The App Store event deep link, Home discovery card and persisted progress
 //  all share the same source of truth in this file.
 //
 
 import Foundation
 import SwiftUI
+import Combine
 
 enum StudyBoostDeepLink {
     static func matches(_ url: URL) -> Bool {
@@ -16,7 +17,10 @@ enum StudyBoostDeepLink {
               url.host?.lowercased() == "study" else {
             return false
         }
-        return url.path.isEmpty || url.path == "/"
+        guard url.path.isEmpty || url.path == "/" else { return false }
+        let campaigns = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.filter { $0.name == "campaign" } ?? []
+        return campaigns.isEmpty || (campaigns.count == 1 && campaigns[0].value == StudyBoostCampaign.identifier)
     }
 }
 
@@ -49,17 +53,18 @@ enum StudyBoostPhase: Equatable {
 }
 
 struct StudyBoostCampaign {
-    static let identifier = "back-to-school-2026"
+    static let identifier = "read-follow-2026-11"
+    static let dailyGoalSeconds = 30.0
     static let goalDays = 7
 
-    /// The challenge is available for the whole local day on September 15.
-    /// An exclusive September 16 boundary avoids ambiguous 23:59:59 logic.
+    // Exactly matches the App Store schedule in UTC. Day credit uses the
+    // reader's local calendar; a timezone change cannot stretch the event.
     static func startDate(in calendar: Calendar) -> Date {
-        campaignDate(year: 2026, month: 8, day: 18, in: calendar)
+        Date(timeIntervalSince1970: 1794182400) // 2026-11-09T00:00:00Z
     }
 
     static func endDateExclusive(in calendar: Calendar) -> Date {
-        campaignDate(year: 2026, month: 9, day: 16, in: calendar)
+        Date(timeIntervalSince1970: 1795392000) // 2026-11-23T00:00:00Z
     }
 
     static func phase(
@@ -74,22 +79,32 @@ struct StudyBoostCampaign {
     }
 
     static func isDiscoverable(at date: Date, calendar: Calendar) -> Bool {
-        date < endDateExclusive(in: calendar)
+        date >= startDate(in: calendar).addingTimeInterval(-8 * 86_400)
+            && date < endDateExclusive(in: calendar)
     }
 
-    private static func campaignDate(
-        year: Int,
-        month: Int,
-        day: Int,
-        in calendar: Calendar
-    ) -> Date {
-        var components = DateComponents()
-        components.calendar = calendar
-        components.timeZone = calendar.timeZone
-        components.year = year
-        components.month = month
-        components.day = day
-        return calendar.date(from: components)!
+
+}
+
+/// Credits elapsed listening, not seeks, generated duration or stale clocks.
+struct StudyBoostPlaybackAccumulator {
+    private var previous: (media: String, position: Double, uptime: Double)?
+
+    mutating func advance(media: String?, position: Double, uptime: Double,
+                          isPlaying: Bool, isReadAloud: Bool, rate: Double) -> Double {
+        guard let media, isPlaying, isReadAloud, position.isFinite,
+              uptime.isFinite, rate.isFinite, rate > 0 else {
+            previous = nil
+            return 0
+        }
+        let last = previous
+        previous = (media, position, uptime)
+        guard let last, last.media == media else { return 0 }
+        let elapsed = uptime - last.uptime
+        let audioDelta = position - last.position
+        guard elapsed > 0, elapsed <= 2, audioDelta > 0,
+              audioDelta <= elapsed * min(rate, 4) + 0.35 else { return 0 }
+        return min(elapsed, audioDelta / rate)
     }
 }
 
@@ -98,6 +113,10 @@ final class StudyBoostStore: ObservableObject {
     static let shared = StudyBoostStore()
 
     @Published private(set) var completedDayKeys: Set<String>
+    @Published private(set) var listeningByDay: [String: Double]
+    private var observation: AnyCancellable?
+    private var accumulator = StudyBoostPlaybackAccumulator()
+    private var unflushedSeconds = 0.0
 
     private let defaults: UserDefaults
     private let calendar: Calendar
@@ -112,7 +131,10 @@ final class StudyBoostStore: ObservableObject {
         self.defaults = defaults
         self.calendar = calendar
         self.now = now
-        completedDayKeys = Set(defaults.stringArray(forKey: storageKey) ?? [])
+        let restoredListening = (defaults.dictionary(forKey: storageKey + ".seconds") as? [String: Double] ?? [:])
+            .filter { $0.value.isFinite && $0.value >= 0 }
+        listeningByDay = restoredListening
+        completedDayKeys = Set(restoredListening.filter { $0.value >= StudyBoostCampaign.dailyGoalSeconds }.keys)
     }
 
     var completedDays: Int {
@@ -139,21 +161,49 @@ final class StudyBoostStore: ObservableObject {
         completedDayKeys.contains(dayKey(for: now()))
     }
 
-    /// Opening successfully imported material in the Study scenario completes
-    /// one study day. Repeated imports on the same local day stay idempotent.
-    @discardableResult
-    func recordStudySession(at date: Date? = nil) -> Bool {
-        let sessionDate = date ?? now()
-        guard sessionDate >= StudyBoostCampaign.startDate(in: calendar),
-              sessionDate < StudyBoostCampaign.endDateExclusive(in: calendar) else {
-            return false
-        }
+    var todayListeningSeconds: Int {
+        min(Int(listeningByDay[dayKey(for: now())] ?? 0), Int(StudyBoostCampaign.dailyGoalSeconds))
+    }
 
+    func startTrackingPlayback() {
+        guard observation == nil else { return }
+        let player = AudioPlayerService.shared
+        observation = player.$currentTime.sink { [weak self, weak player] position in
+            guard let self, let player else { return }
+            let credited = self.accumulator.advance(
+                media: player.currentMediaIdentity.map { String(describing: $0) },
+                position: position, uptime: ProcessInfo.processInfo.systemUptime,
+                isPlaying: player.isPlaying && !player.isBuffering,
+                isReadAloud: player.activityPlaybackOwner == .readAloud,
+                rate: Double(player.playbackRate)
+            )
+            if credited > 0 { self.recordListening(seconds: credited) }
+        }
+    }
+
+    /// The caller supplies only bounded, measured playback deltas. One local
+    /// date is credited once, and the previous campaign's keys are untouched.
+    @discardableResult
+    func recordListening(seconds: Double, at date: Date? = nil) -> Bool {
+        let sessionDate = date ?? now()
+        guard seconds.isFinite, seconds > 0, seconds <= 2,
+              sessionDate >= StudyBoostCampaign.startDate(in: calendar),
+              sessionDate < StudyBoostCampaign.endDateExclusive(in: calendar) else { return false }
         let key = dayKey(for: sessionDate)
-        let inserted = completedDayKeys.insert(key).inserted
-        guard inserted else { return false }
-        defaults.set(completedDayKeys.sorted(), forKey: storageKey)
-        return true
+        guard !completedDayKeys.contains(key), completedDays < StudyBoostCampaign.goalDays else { return false }
+        let total = min(StudyBoostCampaign.dailyGoalSeconds, (listeningByDay[key] ?? 0) + seconds)
+        listeningByDay[key] = total
+        let completed = total >= StudyBoostCampaign.dailyGoalSeconds - 0.0001
+        if completed {
+            listeningByDay[key] = StudyBoostCampaign.dailyGoalSeconds
+            completedDayKeys.insert(key)
+        }
+        unflushedSeconds += seconds
+        if completed || unflushedSeconds >= 1 {
+            defaults.set(listeningByDay, forKey: storageKey + ".seconds")
+            unflushedSeconds = 0
+        }
+        return completed
     }
 
     private func dayKey(for date: Date) -> String {
@@ -205,15 +255,15 @@ struct StudyBoostCopy: Equatable {
             bundle.localizedString(forKey: "studyBoost." + key, value: fallback, table: "Localizable")
         }
         return .init(
-            title: copy("title", "Back-to-School Study Boost"),
+            title: copy("title", "Read and Follow: Seven Days"),
             badge: copy("badge", "LIMITED-TIME CHALLENGE"),
-            subtitle: copy("subtitle", "Study on 7 different days by September 15"),
-            dateRange: copy("dateRange", "Aug 18 – Sep 15"),
-            progressTitle: copy("progressTitle", "Your study days"),
-            progressRule: copy("progressRule", "Each day you open study material counts once."),
+            subtitle: copy("subtitle", "Listen for 30 seconds on 7 different days"),
+            dateRange: copy("dateRange", "Nov 9–22, 2026 (UTC)"),
+            progressTitle: copy("progressTitle", "Your listening days"),
+            progressRule: copy("progressRule", "30 seconds of actual Read Aloud completes one day. Standard usage limits apply."),
             todayComplete: copy("todayComplete", "Today’s study day is complete"),
-            upcomingStatus: copy("upcomingStatus", "Starts August 18. You can preview Study mode now."),
-            activeStatus: copy("activeStatus", "Import today’s material and move closer to your 7-day goal."),
+            upcomingStatus: copy("upcomingStatus", "Starts November 9. Preview reading now; progress begins when the event starts."),
+            activeStatus: copy("activeStatus", "Listen to your own text and follow the words. Pauses and seeking do not count."),
             completedStatus: copy("completedStatus", "Challenge complete! You reached 7 study days."),
             endedStatus: copy("endedStatus", "This challenge has ended, but Study mode is still available."),
             stepImportTitle: copy("stepImportTitle", "Import study material"),
@@ -221,7 +271,7 @@ struct StudyBoostCopy: Equatable {
             stepListenTitle: copy("stepListenTitle", "Listen and follow"),
             stepListenDetail: copy("stepListenDetail", "Stay focused with word-by-word highlights"),
             stepExplainTitle: copy("stepExplainTitle", "Understand hard parts"),
-            stepExplainDetail: copy("stepExplainDetail", "Use AI explanations for concepts and key points"),
+            stepExplainDetail: copy("stepExplainDetail", "Optional AI explanations; only Read Aloud counts toward the challenge."),
             startCTA: copy("startCTA", "Start today’s study"),
             previewCTA: copy("previewCTA", "Preview Study mode"),
             continueCTA: copy("continueCTA", "Keep studying"),
@@ -391,6 +441,12 @@ struct StudyBoostView: View {
                     .foregroundStyle(AppTheme.primaryText)
             }
 
+            if store.phase == .active {
+                Text("\(store.todayListeningSeconds) / 30 s")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(AppTheme.mutedForeground)
+                    .accessibilityIdentifier("studyBoostTodaySeconds")
+            }
             ProgressView(value: store.progress)
                 .tint(AppTheme.primary)
                 .scaleEffect(x: 1, y: 1.8, anchor: .center)

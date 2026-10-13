@@ -47,7 +47,13 @@ for name in sorted(set(paths)):
   text=text.replace('ai.castreader.auth','ai.castreader.releasechecks.auth')
   text=text.replace('com.microsoft.adalcache','com.microsoft.releasechecks.adalcache')
   text=text.replace('releasechecks',namespace)
+  if name == 'scripts/bundle-test-repository.py':
+   # Source-contract assertions inspect the production startup, not the
+   # intentionally inert host adapter used only by isolated unit tests.
+   text = text.replace('data = source.read_bytes()',
+    "data = ((root / 'ProductionContractSource.swift').read_bytes() if str(relative) == 'CastReader/CastReaderApp.swift' else source.read_bytes())")
   if name == 'CastReader/CastReaderApp.swift':
+   (dest/'ProductionContractSource.swift').write_bytes(data)
    # RootAuthGate initializes AuthService before evaluating its body.
    ready = 'if startup.isReady {'
    assert text.count(ready) == 1
