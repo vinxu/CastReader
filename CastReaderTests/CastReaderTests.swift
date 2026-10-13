@@ -4583,86 +4583,108 @@ final class StudyBoostTests: XCTestCase {
         XCTAssertFalse(StudyBoostDeepLink.matches(URL(string: "castreader://study/other")!))
     }
 
-    func testStudyCampaignUsesInclusiveSeptember15Boundary() {
-        let calendar = campaignCalendar()
-        XCTAssertEqual(
-            StudyBoostCampaign.phase(
-                at: date(8, 17, hour: 23, calendar: calendar),
-                completedDays: 0,
-                calendar: calendar
-            ),
-            .upcoming
-        )
-        XCTAssertEqual(
-            StudyBoostCampaign.phase(
-                at: date(8, 18, hour: 0, calendar: calendar),
-                completedDays: 0,
-                calendar: calendar
-            ),
-            .active
-        )
-        XCTAssertEqual(
-            StudyBoostCampaign.phase(
-                at: date(9, 15, hour: 23, calendar: calendar),
-                completedDays: 0,
-                calendar: calendar
-            ),
-            .active
-        )
-        XCTAssertEqual(
-            StudyBoostCampaign.phase(
-                at: date(9, 16, hour: 0, calendar: calendar),
-                completedDays: 0,
-                calendar: calendar
-            ),
-            .ended
-        )
+    func testCampaignMatchesUTCStoreScheduleInEveryTimezone() {
+        let start = Date(timeIntervalSince1970: 1794182400)
+        let end = Date(timeIntervalSince1970: 1795392000)
+        for offset in [-12, 0, 8, 14] {
+            var calendar = campaignCalendar()
+            calendar.timeZone = TimeZone(secondsFromGMT: offset * 3600)!
+            XCTAssertEqual(StudyBoostCampaign.startDate(in: calendar), start)
+            XCTAssertEqual(StudyBoostCampaign.endDateExclusive(in: calendar), end)
+            XCTAssertEqual(StudyBoostCampaign.phase(at: start.addingTimeInterval(-1), completedDays: 0, calendar: calendar), .upcoming)
+            XCTAssertEqual(StudyBoostCampaign.phase(at: start, completedDays: 0, calendar: calendar), .active)
+            XCTAssertEqual(StudyBoostCampaign.phase(at: end.addingTimeInterval(-1), completedDays: 0, calendar: calendar), .active)
+            XCTAssertEqual(StudyBoostCampaign.phase(at: end, completedDays: 0, calendar: calendar), .ended)
+            XCTAssertFalse(StudyBoostCampaign.isDiscoverable(at: start.addingTimeInterval(-8 * 86400 - 1), calendar: calendar))
+            XCTAssertTrue(StudyBoostCampaign.isDiscoverable(at: start.addingTimeInterval(-8 * 86400), calendar: calendar))
+            XCTAssertFalse(StudyBoostCampaign.isDiscoverable(at: end, calendar: calendar))
+        }
     }
 
-    func testStudyDaysAreUniqueWindowedAndPersistent() throws {
+    func testCampaignDeepLinkRejectsOldUnknownAndAmbiguousCampaigns() {
+        XCTAssertTrue(StudyBoostDeepLink.matches(URL(string: "castreader://study?campaign=read-follow-2026-11")!))
+        for query in ["campaign=old", "campaign=", "campaign=read-follow-2026-11&campaign=read-follow-2026-11"] {
+            XCTAssertFalse(StudyBoostDeepLink.matches(URL(string: "castreader://study?" + query)!))
+        }
+    }
+
+    func testListeningRequiresThirtySecondsAndPersistsAcrossLaunches() throws {
         let suite = "StudyBoostTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(["2026-08-18"], forKey: "studyBoost.back-to-study-2026.completedDays.v1")
         let calendar = campaignCalendar()
-        let store = StudyBoostStore(
-            defaults: defaults,
-            calendar: calendar,
-            now: { self.date(8, 18, calendar: calendar) }
-        )
-
-        XCTAssertFalse(store.recordStudySession(at: date(8, 17, calendar: calendar)))
-        XCTAssertTrue(store.recordStudySession(at: date(8, 18, calendar: calendar)))
-        XCTAssertFalse(store.recordStudySession(at: date(8, 18, hour: 22, calendar: calendar)))
-        XCTAssertTrue(store.recordStudySession(at: date(8, 19, calendar: calendar)))
-        XCTAssertFalse(store.recordStudySession(at: date(9, 16, hour: 0, calendar: calendar)))
-        XCTAssertEqual(store.completedDays, 2)
-
-        let restored = StudyBoostStore(
-            defaults: defaults,
-            calendar: calendar,
-            now: { self.date(8, 19, calendar: calendar) }
-        )
-        XCTAssertEqual(restored.completedDays, 2)
+        let today = date(11, 9, calendar: calendar)
+        let store = StudyBoostStore(defaults: defaults, calendar: calendar, now: { today })
+        XCTAssertEqual(store.completedDays, 0)
+        for _ in 0..<29 { XCTAssertFalse(store.recordListening(seconds: 1)) }
+        XCTAssertEqual(store.todayListeningSeconds, 29)
+        XCTAssertFalse(store.isTodayComplete)
+        let restored = StudyBoostStore(defaults: defaults, calendar: calendar, now: { today })
+        XCTAssertTrue(restored.recordListening(seconds: 1))
         XCTAssertTrue(restored.isTodayComplete)
+        XCTAssertEqual(restored.completedDays, 1)
+        XCTAssertFalse(restored.recordListening(seconds: 1))
+        XCTAssertEqual(restored.todayListeningSeconds, 30)
+        XCTAssertEqual(defaults.stringArray(forKey: "studyBoost.back-to-study-2026.completedDays.v1"), ["2026-08-18"])
     }
 
-    func testSevenUniqueStudyDaysCompleteChallenge() throws {
+    func testInvalidAndOutOfWindowPlaybackCannotCompleteDay() throws {
+        let suite = "StudyBoostInvalidTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let calendar = campaignCalendar()
+        let today = date(11, 9, calendar: calendar)
+        let store = StudyBoostStore(defaults: defaults, calendar: calendar, now: { today })
+        for delta in [0, -1, 30, Double.nan, Double.infinity] {
+            XCTAssertFalse(store.recordListening(seconds: delta))
+        }
+        XCTAssertFalse(store.recordListening(seconds: 1, at: date(11, 8, calendar: calendar)))
+        XCTAssertFalse(store.recordListening(seconds: 1, at: date(11, 23, hour: 0, calendar: calendar)))
+        XCTAssertEqual(store.todayListeningSeconds, 0)
+    }
+
+    func testSevenDistinctLocalDatesCompleteChallengeOnce() throws {
         let suite = "StudyBoostGoalTests.\(UUID().uuidString)"
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let calendar = campaignCalendar()
-        let store = StudyBoostStore(
-            defaults: defaults,
-            calendar: calendar,
-            now: { self.date(8, 24, calendar: calendar) }
-        )
-
-        for day in 18...24 {
-            XCTAssertTrue(store.recordStudySession(at: date(8, day, calendar: calendar)))
+        let store = StudyBoostStore(defaults: defaults, calendar: calendar, now: { self.date(11, 15, calendar: calendar) })
+        for day in 9...15 {
+            for _ in 0..<29 { XCTAssertFalse(store.recordListening(seconds: 1, at: date(11, day, calendar: calendar))) }
+            XCTAssertTrue(store.recordListening(seconds: 1, at: date(11, day, calendar: calendar)))
         }
         XCTAssertEqual(store.completedDays, StudyBoostCampaign.goalDays)
         XCTAssertEqual(store.progress, 1, accuracy: 0.001)
         XCTAssertEqual(store.phase, .completed)
+        XCTAssertFalse(store.recordListening(seconds: 1, at: date(11, 16, calendar: calendar)))
+    }
+
+    func testPlaybackAccumulatorRejectsSeekPauseBufferingModeAndMediaChanges() {
+        var meter = StudyBoostPlaybackAccumulator()
+        func tick(_ position: Double, _ uptime: Double, media: String? = "a", playing: Bool = true, reading: Bool = true, rate: Double = 1) -> Double {
+            meter.advance(media: media, position: position, uptime: uptime, isPlaying: playing, isReadAloud: reading, rate: rate)
+        }
+        XCTAssertEqual(tick(0, 0), 0)
+        XCTAssertEqual(tick(1, 1), 1, accuracy: 0.001)
+        XCTAssertEqual(tick(50, 2), 0, "Seeking must not count jumped audio")
+        XCTAssertEqual(tick(50, 3), 0, "Buffering must not count elapsed wall time")
+        XCTAssertEqual(tick(51, 4, playing: false), 0)
+        XCTAssertEqual(tick(52, 5), 0, "Resume needs a new playback baseline")
+        XCTAssertEqual(tick(53, 6, reading: false), 0, "Explain is not challenge Read Aloud")
+        XCTAssertEqual(tick(54, 7), 0)
+        XCTAssertEqual(tick(0, 8, media: "b"), 0)
+        XCTAssertEqual(tick(1, 9, media: "b"), 1, accuracy: 0.001)
+        XCTAssertEqual(tick(2, 14, media: "b"), 0, "Background clock gaps must not count")
+        XCTAssertEqual(tick(3, 13, media: "b"), 0)
+        XCTAssertEqual(tick(.nan, 14, media: "b"), 0)
+    }
+
+    func testPlaybackAccumulatorCountsRealListeningAtDoubleSpeed() {
+        var meter = StudyBoostPlaybackAccumulator()
+        _ = meter.advance(media: "a", position: 0, uptime: 1, isPlaying: true, isReadAloud: true, rate: 2)
+        XCTAssertEqual(meter.advance(media: "a", position: 2, uptime: 2, isPlaying: true, isReadAloud: true, rate: 2), 1, accuracy: 0.001)
+        XCTAssertEqual(meter.advance(media: "a", position: 2.5, uptime: 3, isPlaying: true, isReadAloud: true, rate: 2), 0.25, accuracy: 0.001)
     }
 
     func testStudyBoostCopyCoversAll28ProductLanguages() {
@@ -5136,5 +5158,51 @@ final class AudioPlaybackFailureRecoveryTests: XCTestCase {
         XCTAssertFalse(audio.loadSegment(segment(silence()), session: token))
         XCTAssertEqual(failures, 1)
         XCTAssertEqual(audio.recoveryBudget.attempts, 1)
+    }
+}
+
+
+@MainActor
+final class PromotedPurchaseRequestTests: XCTestCase {
+    func testRestoredIntentExpiresAndDoesNotCrossKnownAccounts() {
+        let now = Date(timeIntervalSince1970: 1_790_000_000)
+        let request = PromotedPurchaseRequest(id: UUID(), productID: "ai.castreader.pro.yearly.v2", receivedAt: now, accountID: "account-a")
+        XCTAssertTrue(request.isUsable(at: now, accountID: "account-a"))
+        XCTAssertTrue(request.isUsable(at: now, accountID: nil))
+        XCTAssertFalse(request.isUsable(at: now, accountID: "account-b"))
+        XCTAssertFalse(request.isUsable(at: now.addingTimeInterval(-1), accountID: "account-a"))
+        XCTAssertFalse(request.isUsable(at: now.addingTimeInterval(86400), accountID: "account-a"))
+    }
+
+    func testIntentDeduplicatesRestoresAndCanBeCancelledWithoutPayment() throws {
+        let suite = "PromotedPurchaseTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let coordinator = PromotedPurchaseCoordinator(defaults: defaults)
+        let id = "ai.castreader.pro.yearly.v2"
+        XCTAssertFalse(coordinator.enqueue(productID: "unrecognized", accountID: nil))
+        XCTAssertNil(coordinator.pending)
+        XCTAssertTrue(coordinator.enqueue(productID: id, accountID: nil))
+        XCTAssertFalse(coordinator.enqueue(productID: id, accountID: nil))
+        let restored = PromotedPurchaseCoordinator(defaults: defaults)
+        XCTAssertEqual(restored.pending, coordinator.pending)
+        XCTAssertEqual(restored.pending?.productID, id)
+        restored.discardPending()
+        XCTAssertNil(PromotedPurchaseCoordinator(defaults: defaults).pending)
+    }
+
+    func testNewIntentAfterExpiryOrAccountSwitchReplacesOldRequest() throws {
+        let suite = "PromotedPurchaseReplacementTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let coordinator = PromotedPurchaseCoordinator(defaults: defaults)
+        let now = Date()
+        let id = "ai.castreader.pro.yearly.v2"
+        XCTAssertTrue(coordinator.enqueue(productID: id, accountID: "a", at: now))
+        let oldID = coordinator.pending?.id
+        XCTAssertTrue(coordinator.enqueue(productID: id, accountID: "b", at: now))
+        XCTAssertNotEqual(oldID, coordinator.pending?.id)
+        XCTAssertEqual(coordinator.pending?.accountID, "b")
+        XCTAssertTrue(coordinator.enqueue(productID: id, accountID: "b", at: now.addingTimeInterval(86401)))
     }
 }

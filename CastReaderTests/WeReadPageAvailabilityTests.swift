@@ -472,7 +472,12 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         source.style.cssText='position:absolute;left:-10000px;width:350px;height:300px';
         source.innerHTML='<p>\(spoken) \(second)</p>';document.body.append(source);
         const canvas=host.querySelector('canvas');window.testPaint=['\(spoken)'];window.testTurns=0;
-        window.__castReaderWeReadCanvas={snapshot(){return{calls:window.testPaint.flatMap((text,row)=>Array.from(text).map((ch,i)=>({canvas,text:ch,x:10+i*5,y:35+row*60,width:5,a:1,d:1,tx:0,ty:0,fontSize:18,fontAscent:14,fontDescent:4}))),draws:[],epoch:1,columnFingerprint:''}}};
+        // Wrap synthetic glyphs within the actual CSS viewport, as the provider
+        // does. A native WKWebView frame does not imply the same visible width.
+        window.__castReaderWeReadCanvas={snapshot(){
+          const columns=Math.max(1,Math.floor((Math.min(canvas.width,innerWidth-canvas.getBoundingClientRect().left)-20)/5));
+          return{calls:window.testPaint.flatMap((text,row)=>Array.from(text).map((ch,i)=>({canvas,text:ch,x:10+(i%columns)*5,y:35+row*120+Math.floor(i/columns)*26,width:5,a:1,d:1,tx:0,ty:0,fontSize:18,fontAscent:14,fontDescent:4}))),draws:[],epoch:1,columnFingerprint:''}
+        }};
         document.querySelector('button').onclick=()=>{window.testTurns++;source.innerHTML='<p>The next physical page is confirmed.</p>';window.testPaint=['The next physical page is confirmed.'];window.dispatchEvent(new CustomEvent('castreader-weread-canvas'))};
         window.dispatchEvent(new CustomEvent('castreader-weread-canvas'));
         """)

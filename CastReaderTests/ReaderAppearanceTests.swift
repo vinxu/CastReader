@@ -89,11 +89,35 @@ final class ReaderAppearanceTests: XCTestCase {
           <div style="width:720px;height:700px">Provider recommendation contents</div>
         </div>
         """, baseURL: URL(string: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"))
+        // Match the production reader's inset policy and attach the fixture so
+        // WebKit recomputes vw/dvh when the visible surface is resized.
+        view.scrollView.contentInsetAdjustmentBehavior = .never
+        let previousWindow = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows).first(where: \.isKeyWindow)
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+            window.frame = view.frame
+        } else {
+            window = UIWindow(frame: view.frame)
+        }
+        window.rootViewController = UIViewController()
+        window.rootViewController!.view.addSubview(view)
+        window.makeKeyAndVisible()
+        defer {
+            view.stopLoading()
+            view.removeFromSuperview()
+            window.isHidden = true
+            previousWindow?.makeKey()
+        }
         let installed = try await view.evaluateJavaScript(ReaderWebAppearanceCenter.constrainKoboPanelsScript)
         XCTAssertEqual(installed as? Bool, true)
         for size in [CGSize(width: 390, height: 410), CGSize(width: 800, height: 410), CGSize(width: 1024, height: 579)] {
-            view.frame.size = size
-            try await Task.sleep(for: .milliseconds(100))
+            window.frame.size = size
+            window.rootViewController!.view.frame = window.bounds
+            view.frame = window.bounds
+            // Viewport updates cross into the WebContent process asynchronously.
+            try await Task.sleep(for: .seconds(1))
             let bounds = try await json("""
             (()=>{const panel=document.querySelector('[role=dialog]'),r=panel.getBoundingClientRect(),
               close=panel.querySelector('button').getBoundingClientRect();

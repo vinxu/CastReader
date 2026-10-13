@@ -576,7 +576,8 @@ enum GoogleBooksWebScripts {
     /// Synthetic metadata-only library using the observed Google custom
     /// elements and nested cover/metadata card shape. No account DOM or book
     /// content is copied. Its asynchronous four-card viewport deliberately
-    /// needs more than 24 scan passes to reach all 100 books.
+    /// needs more than 24 scan passes to reach all 100 books. The virtualizer
+    /// owns scrolling; browser anchoring must not add spacer/row movements.
     static let debugHundredBookShelfFixture = #"""
     <!doctype html><html lang="zh-CN"><head>
       <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -587,7 +588,7 @@ enum GoogleBooksWebScripts {
         header h1 { margin: 0 0 7px; font-size: 19px; }
         header p { margin: 4px 0; color: #536887; line-height: 1.45; }
         header button { border: 0; background: none; padding: 3px 0; color: #536887; }
-        #shelf { box-sizing: content-box; height: 180px; margin: 12px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #d6deea; border-radius: 8px; background: white; }
+        #shelf { overflow-anchor: none; box-sizing: content-box; height: 180px; margin: 12px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #d6deea; border-radius: 8px; background: white; }
         gpb-library-home,gpb-shelf-page,gpb-volume-card { display: block; }
         gpb-volume-card { height: 60px; border-bottom: 1px solid #edf0f4; padding: 9px 12px; }
         .card { display: flex; gap: 10px; height: 42px; }

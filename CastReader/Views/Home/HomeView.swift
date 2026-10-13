@@ -482,7 +482,7 @@ struct HomeView: View {
             activeSheet = .importPanel(.general)
         }
         .onChange(of: importRouter.studyBoostToken) { _ in
-            activeSheet = .importPanel(.scenario(.study))
+            activeSheet = .importPanel(.studyChallenge)
         }
         .onReceive(importRouter.$cloudReconnectRequest.compactMap { $0 }) { request in
             importRouter.consumeCloudReconnectRequest(request.id)
@@ -1390,9 +1390,6 @@ struct HomeView: View {
             scenario: scenario,
             analyticsContext: analyticsContext
         )
-        if scenario == ExplainContentType.study.rawValue {
-            StudyBoostStore.shared.recordStudySession()
-        }
         resetImportState()
     }
 
@@ -1741,11 +1738,13 @@ private enum CaptureStage: Identifiable {
 }
 
 private enum ImportPanel: Identifiable, Equatable {
+    case studyChallenge
     case general
     case scenario(ExplainContentType)
 
     var id: String {
         switch self {
+        case .studyChallenge: return "study-challenge"
         case .general: return "general"
         case .scenario(let ct): return ct.rawValue
         }
@@ -1753,6 +1752,7 @@ private enum ImportPanel: Identifiable, Equatable {
 
     var fixedScenario: ExplainContentType? {
         switch self {
+        case .studyChallenge: return .study
         case .general: return nil
         case .scenario(let ct): return ct
         }
@@ -1790,7 +1790,7 @@ private struct ImportOptionsSheet: View {
         self.onPick = onPick
         self.onPickCloud = onPickCloud
         _selectedScenario = State(initialValue: panel.fixedScenario)
-        _selectedMode = State(initialValue: panel.fixedScenario == nil ? .read : .explain)
+        _selectedMode = State(initialValue: panel.fixedScenario == nil || panel == .studyChallenge ? .read : .explain)
     }
 
     private var activeScenario: ExplainContentType? {

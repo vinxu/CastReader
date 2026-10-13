@@ -329,6 +329,8 @@ final class AppStartupCoordinator: ObservableObject {
         AdAttributionService.shared.start()
         AnalyticsLibrarySyncReceiptOutbox.shared.start()
         ProManager.shared.start()
+        PromotedPurchaseCoordinator.shared.start()
+        StudyBoostStore.shared.startTrackingPlayback()
         CloneCreditStore.shared.start()
         QuotaManager.shared.rollIfNewDay()
         VoiceCatalogService.shared.start()

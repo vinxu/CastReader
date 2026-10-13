@@ -229,6 +229,7 @@ struct PaywallView: View {
     let reason: String?
     let analyticsTrigger: String
     let analyticsSurface: String
+    let promotedProduct: Product?
     let onPurchased: () -> Void
     @State private var didTrackImpression = false
     @State private var didFinishPurchaseCallback = false
@@ -239,11 +240,13 @@ struct PaywallView: View {
         reason: String? = nil,
         analyticsTrigger: String = "unknown",
         analyticsSurface: String = "paywall",
+        promotedProduct: Product? = nil,
         onPurchased: @escaping () -> Void = {}
     ) {
         self.reason = reason
         self.analyticsTrigger = analyticsTrigger
         self.analyticsSurface = analyticsSurface
+        self.promotedProduct = promotedProduct
         self.onPurchased = onPurchased
     }
 
@@ -253,6 +256,7 @@ struct PaywallView: View {
                 reason: reason,
                 analyticsTrigger: analyticsTrigger,
                 analyticsSurface: analyticsSurface,
+                promotedProduct: promotedProduct,
                 onPurchased: finishPurchase,
                 onSelectionChanged: { selectedProductID = $0 }
             )
@@ -270,7 +274,7 @@ struct PaywallView: View {
                 }
         }
         .task {
-            if pro.isCrossPlatformPro { finishPurchase() }
+            if promotedProduct == nil && pro.isCrossPlatformPro { finishPurchase() }
         }
         .onAppear {
             guard !didTrackImpression else { return }
@@ -284,13 +288,13 @@ struct PaywallView: View {
                     hadMeaningfulReading: ProductAnalytics.shared.hadMeaningfulReading,
                     configId: GrowthLoopConversionCoordinator.shared.activeConfigID,
                     valueMilestone: Self.valueMilestone(for: analyticsTrigger),
-                    offerEligible: Self.defaultOfferEligible(pro),
-                    selectedProductId: Self.defaultProduct(pro)?.id
+                    offerEligible: promotedProduct.map { pro.showsFreeTrial(for: $0) } ?? Self.defaultOfferEligible(pro),
+                    selectedProductId: (promotedProduct ?? Self.defaultProduct(pro))?.id
                 )
             )
         }
         .onChange(of: pro.isCrossPlatformPro) { isPro in
-            if isPro { finishPurchase() }
+            if promotedProduct == nil && isPro { finishPurchase() }
         }
         .onDisappear { trackDismissalIfNeeded() }
     }
@@ -314,7 +318,7 @@ struct PaywallView: View {
         didTrackDismissal = true
         let product = pro.displayProducts.first {
             $0.id == selectedProductID
-        } ?? Self.defaultProduct(pro)
+        } ?? promotedProduct ?? Self.defaultProduct(pro)
         let offerEligible = product.map { pro.showsFreeTrial(for: $0) }
         ProductAnalytics.shared.trackPaywallAction(
             productId: product?.id ?? "unknown",
@@ -363,6 +367,7 @@ struct ProUpsellContent: View {
     var reason: String? = nil
     var analyticsTrigger: String = "unknown"
     var analyticsSurface: String = "paywall"
+    var promotedProduct: Product? = nil
     var onPurchased: () -> Void = {}
     var onSelectionChanged: (String?) -> Void = { _ in }
 
@@ -385,12 +390,14 @@ struct ProUpsellContent: View {
         reason: String? = nil,
         analyticsTrigger: String = "unknown",
         analyticsSurface: String = "paywall",
+        promotedProduct: Product? = nil,
         onPurchased: @escaping () -> Void = {},
         onSelectionChanged: @escaping (String?) -> Void = { _ in }
     ) {
         self.reason = reason
         self.analyticsTrigger = analyticsTrigger
         self.analyticsSurface = analyticsSurface
+        self.promotedProduct = promotedProduct
         self.onPurchased = onPurchased
         self.onSelectionChanged = onSelectionChanged
         let key = ServiceRouting.current.isolatedStorageKey(
@@ -399,6 +406,10 @@ struct ProUpsellContent: View {
         let store = UserDefaultsPaywallPurchaseIntentStore(key: key)
         self.purchaseIntentStore = store
         _purchaseIntent = State(initialValue: store.load())
+    }
+
+    private var offeredProducts: [Product] {
+        promotedProduct.map { [$0] } ?? pro.displayProducts
     }
 
     private let benefits: [(String, String)] = [
@@ -414,7 +425,7 @@ struct ProUpsellContent: View {
     /// 月均价（本币格式化），避免在静态文案里写死任何币种数字。
     @ViewBuilder
     private var priceAnchorLine: some View {
-        if let yearly = pro.displayProducts.first(where: {
+        if let yearly = offeredProducts.first(where: {
             $0.subscription?.subscriptionPeriod.unit == .year
         }) {
             let monthlyEquivalent = yearly.priceFormatStyle.format(yearly.price / 12)
@@ -466,25 +477,25 @@ struct ProUpsellContent: View {
             Text(purchaseMessage)
         }
         .onAppear { Task { await reloadProducts(); syncDefaultSelection(); await pro.refresh() } }
-        .onChange(of: pro.displayProducts.map(\.id)) { _ in syncDefaultSelection() }
+        .onChange(of: offeredProducts.map(\.id)) { _ in syncDefaultSelection() }
         .onChange(of: auth.isSignedIn) { _, isSignedIn in
             if isSignedIn { completeLoginGateIfNeeded() }
         }
         .task {
-            if pro.isCrossPlatformPro { onPurchased() }
+            if promotedProduct == nil && pro.isCrossPlatformPro { onPurchased() }
         }
-        .onChange(of: pro.isCrossPlatformPro) { isPro in if isPro { onPurchased() } }
+        .onChange(of: pro.isCrossPlatformPro) { isPro in if promotedProduct == nil && isPro { onPurchased() } }
         .onDisappear { completeLoginGateIfNeeded() }
     }
 
     /// 默认选中年付。必须在 onAppear 也调一次：产品已缓存时 `onChange` 不会触发，
     /// 选择留在 nil 会让购买按钮一直是禁用的灰色状态，试用文案也不显示。
     private func syncDefaultSelection() {
-        let ids = pro.displayProducts.map(\.id)
+        let ids = offeredProducts.map(\.id)
         if selectedProductID == nil || !ids.contains(selectedProductID ?? "") {
-            selectedProductID = pro.displayProducts.first {
+            selectedProductID = offeredProducts.first {
                 $0.subscription?.subscriptionPeriod.unit == .year
-            }?.id ?? pro.displayProducts.first?.id
+            }?.id ?? offeredProducts.first?.id
             purchaseIntent.selectedProductChanged(to: selectedProductID)
             persistPurchaseIntent()
         }
@@ -507,7 +518,7 @@ struct ProUpsellContent: View {
     private func reloadProducts() async {
         loadFailed = false
         await pro.loadProducts()
-        loadFailed = pro.products.isEmpty
+        loadFailed = offeredProducts.isEmpty
     }
 
     @ViewBuilder
@@ -628,7 +639,7 @@ struct ProUpsellContent: View {
                         .font(.subheadline.weight(.semibold))
                 }
             }
-        } else if pro.products.isEmpty {
+        } else if offeredProducts.isEmpty {
             VStack(spacing: 10) {
                 if loadFailed {
                     Text("订阅信息加载失败").font(.subheadline).foregroundColor(AppTheme.mutedForeground)
@@ -641,7 +652,7 @@ struct ProUpsellContent: View {
             // 套餐与试用文案对未登录用户同样可见——把价格和「7 天免费试用」藏在登录之后，
             // 等于这个试用没上线。登录门槛只保留在「购买」这个动作上。
             VStack(spacing: 12) {
-                ForEach(pro.displayProducts, id: \.id) { product in
+                ForEach(offeredProducts, id: \.id) { product in
                     Button {
                         selectProduct(product)
                     } label: {
@@ -724,7 +735,7 @@ struct ProUpsellContent: View {
     }
 
     private var selectedProduct: Product? {
-        pro.displayProducts.first { $0.id == selectedProductID }
+        offeredProducts.first { $0.id == selectedProductID }
     }
 
     private var isReadyToContinueSelectedProduct: Bool {
@@ -862,7 +873,7 @@ struct ProUpsellContent: View {
 
     private func annualSavingsPercent(for product: Product) -> Int? {
         guard product.subscription?.subscriptionPeriod.unit == .year,
-              let monthly = pro.displayProducts.first(where: {
+              let monthly = offeredProducts.first(where: {
                   $0.subscription?.subscriptionPeriod.unit == .month
               }) else { return nil }
         return SubscriptionPlanSavings.percentage(

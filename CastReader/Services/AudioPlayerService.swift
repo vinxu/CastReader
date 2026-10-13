@@ -614,6 +614,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     // MARK: - Published Properties
+    var activityPlaybackOwner: AudioPlaybackOwner? { playbackOwnership.activeSession?.owner }
     @Published var isPlaying = false
     /// Query the player at lifecycle boundaries instead of the last 100 ms UI tick.
     var playbackPosition: Double {
