@@ -11,6 +11,60 @@ import XCTest
 
 final class CapturePipelineTests: XCTestCase {
 
+    @MainActor
+    func testMissingModelKeepsEntireScanForRetryInsteadOfDroppingPage() async {
+        var calls = 0
+        var shouldFail = true
+        let model = CaptureFlowViewModel { _, _ in
+            calls += 1
+            if shouldFail && calls == 2 { throw OCRError.modelUnavailable("fra") }
+            return ReadingDocument(title: "Page", sourceKind: .photo, language: "en",
+                                   paragraphs: [ReadingParagraph(id: 0, text: "page \(calls)")])
+        }
+        let images = [Self.solidImage(size: CGSize(width: 600, height: 600)),
+                      Self.solidImage(size: CGSize(width: 600, height: 600))]
+        await model.process(images: images, alreadyRectified: true, languageHint: "en")
+        XCTAssertNil(model.document)
+        XCTAssertTrue(model.canRetryModelDownload)
+        XCTAssertNotNil(model.error)
+        shouldFail = false
+        await model.retry()
+        XCTAssertEqual(model.document?.paragraphs.count, 2)
+        XCTAssertFalse(model.canRetryModelDownload)
+        XCTAssertNil(model.error)
+        model.reset()
+        await model.retry()
+        XCTAssertEqual(calls, 4, "Reset discards captured input and cannot start another retry")
+    }
+
+    @MainActor
+    func testLateModelFailureCannotReplaceNewCaptureWithStaleRetryInput() async {
+        let entered = expectation(description: "First recognition started")
+        var pending: CheckedContinuation<ReadingDocument, Error>?
+        var calls = 0
+        let model = CaptureFlowViewModel { _, _ in
+            calls += 1
+            if calls == 1 {
+                return try await withCheckedThrowingContinuation { continuation in
+                    pending = continuation
+                    entered.fulfill()
+                }
+            }
+            return ReadingDocument(title: "New capture", sourceKind: .photo, language: "en",
+                                   paragraphs: [ReadingParagraph(id: 0, text: "new content")])
+        }
+        let image = Self.solidImage(size: CGSize(width: 600, height: 600))
+        let old = Task { await model.process(images: [image], alreadyRectified: true, languageHint: "en") }
+        await fulfillment(of: [entered], timeout: 5)
+        await model.process(images: [image], alreadyRectified: true, languageHint: "en")
+        pending?.resume(throwing: OCRError.modelUnavailable("fra"))
+        await old.value
+        XCTAssertEqual(model.document?.title, "New capture")
+        XCTAssertNil(model.error)
+        XCTAssertFalse(model.canRetryModelDownload)
+        XCTAssertFalse(model.isProcessing)
+    }
+
     // MARK: - 文档四边形判据
 
     private let frame = CGRect(x: 0, y: 0, width: 1000, height: 1400)

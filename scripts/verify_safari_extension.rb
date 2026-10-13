@@ -4,6 +4,9 @@ require 'xcodeproj'
 require 'json'
 require 'digest'
 
+ocr_gate = File.expand_path('ocr/verify-package.py', __dir__)
+abort 'OCR resource/shared-loader gate failed' unless system('/usr/bin/python3', ocr_gate, out: File::NULL)
+
 root = File.expand_path('..', __dir__)
 project = Xcodeproj::Project.open(File.join(root, 'CastReader.xcodeproj'))
 names = ['CastReader', 'CastReader Share Extension', 'CastReader Widget', 'CastReader Safari Extension']

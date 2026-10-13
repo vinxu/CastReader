@@ -6,10 +6,11 @@ require "json"
 require "net/http"
 require "openssl"
 require "uri"
+require_relative "aso_metadata"
 
 APP_ID = "6757636395"
 VALIDATE_ONLY = ENV["ASC_VALIDATE_ONLY"] == "1"
-DEFAULT_METADATA_PATH = File.expand_path("../docs/CastReader-AppStore-Metadata-11-Languages-1.2.20.md", __dir__)
+DEFAULT_METADATA_PATH = nil # A historical template must never silently replace current copy.
 VERSION_ID = VALIDATE_ONLY ? ARGV.fetch(0, "-") : ARGV.fetch(0)
 BUILD_ID = VALIDATE_ONLY ? ARGV.fetch(1, "-") : ARGV.fetch(1)
 METADATA_PATH = ENV.fetch("ASC_METADATA_PATH", ARGV.fetch(2, DEFAULT_METADATA_PATH))
@@ -17,7 +18,8 @@ APP_INFO_ID = VALIDATE_ONLY ? ARGV.fetch(3, "-") : ARGV.fetch(3)
 KEY_ID = ENV.fetch("ASC_KEY_ID", "6QN4G1IJDEP1")
 KEY_PATH = ENV.fetch("ASC_KEY_PATH", File.expand_path("~/.appstoreconnect/private_keys/AuthKey_#{KEY_ID}.p8"))
 BASE_URL = "https://api.appstoreconnect.apple.com"
-LOCALES = %w[en-US zh-Hans ja es-ES fr-FR pt-BR it hi de-DE zh-Hant es-MX].freeze
+ASO_CATALOG = ASOMetadata.catalog
+LOCALES = ASO_CATALOG.fetch('localizations').keys.freeze
 WHATS_NEW_ONLY = ENV["ASC_WHATS_NEW_ONLY"] == "1"
 WHATS_NEW_PATH = ENV["ASC_WHATS_NEW_PATH"]
 SKIP_APP_INFO = ENV["ASC_SKIP_APP_INFO"] == "1"
@@ -119,12 +121,20 @@ end
 
 def validate_metadata(metadata)
   errors = []
+  descriptions = ASOMetadata.descriptions
+  errors.concat(ASOMetadata.validate_descriptions(descriptions))
   single_line_limits = { name: 30, subtitle: 30, promotionalText: 170, keywords: nil }
   multiline_limits = { description: 4_000, whatsNew: 4_000 }
 
   metadata.each do |locale, fields|
+    expected_description = descriptions.fetch('localizations').fetch(locale).fetch('description')
+    errors << "#{locale} description differs from current iOS ASO catalog" unless fields[:description] == expected_description
+    ASOMetadata::FIELDS.each do |field|
+      expected = ASO_CATALOG.fetch('localizations').fetch(locale).fetch(field)
+      errors << "#{locale} #{field} differs from current ASO catalog" unless fields[field.to_sym] == expected
+    end
     fields.each do |field, value|
-      errors << "#{locale} #{field} is empty" if value.empty?
+      errors << "#{locale} #{field} is empty" if value.empty? && field != :promotionalText
     end
 
     single_line_limits.each do |field, limit|
@@ -187,6 +197,7 @@ if WHATS_NEW_ONLY
   metadata = parse_whats_new(WHATS_NEW_PATH)
   validate_whats_new(metadata, WHATS_NEW_PATH)
 else
+  abort "Explicit current ASC_METADATA_PATH or metadata argument is required" unless METADATA_PATH && !METADATA_PATH.empty?
   metadata = parse_metadata(METADATA_PATH)
   if WHATS_NEW_PATH && !WHATS_NEW_PATH.empty?
     overrides = parse_whats_new(WHATS_NEW_PATH)

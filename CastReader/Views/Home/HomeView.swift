@@ -254,6 +254,8 @@ struct HomeView: View {
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var voiceCloneStore = VoiceCloneStore.shared
     @StateObject private var captureVM = CaptureFlowViewModel()
+    @State private var captureRetryBoundary: AccountContentBoundaryToken?
+    @State private var captureOperationID = UUID()
     @ObservedObject private var cloudStorage = CloudStorageCenter.shared
     @ObservedObject private var kindleStore = KindleLibraryStore.shared
     @ObservedObject private var weReadStore = WeReadLibraryStore.shared
@@ -593,7 +595,18 @@ struct HomeView: View {
             Text(failure.message)
         }
         .alert("识别失败", isPresented: Binding(get: { captureVM.error != nil }, set: { if !$0 { captureVM.error = nil } })) {
-            Button("好", role: .cancel) {}
+            if captureVM.canRetryModelDownload {
+                Button("重试") {
+                    guard let boundary = captureRetryBoundary, AccountContentIsolation.isCurrent(boundary) else {
+                        captureVM.reset()
+                        return
+                    }
+                    accountScopedImportTask = Task {
+                        await runCapture(expectedBoundary: boundary) { await captureVM.retry() }
+                    }
+                }
+            }
+            Button("好", role: .cancel) { captureVM.reset() }
         } message: { Text(captureVM.error ?? "") }
     }
 
@@ -1304,9 +1317,17 @@ struct HomeView: View {
     ) async {
         guard !Task.isCancelled,
               AccountContentIsolation.isCurrent(expectedBoundary) else { return }
+        let operationID = UUID()
+        captureOperationID = operationID
+        captureRetryBoundary = expectedBoundary
         await recognize()
+        guard captureOperationID == operationID else { return }
         guard !Task.isCancelled,
-              AccountContentIsolation.isCurrent(expectedBoundary) else { return }
+              AccountContentIsolation.isCurrent(expectedBoundary) else {
+            captureVM.reset()
+            captureRetryBoundary = nil
+            return
+        }
         guard let doc = captureVM.document else {
             failImport(stage: "ocr", code: captureVM.error == nil ? "empty_content" : "recognition_failed")
             return

@@ -17,12 +17,6 @@ async function getEngine(requestedModel) {
 
   engineLoading = engineLoading.catch(() => undefined).then(async () => {
     if (engine && loadedModel === model) return;
-    if (engine) {
-      engine.destroy();
-      engine = null;
-      loadedModel = '';
-    }
-
     const wasmFile = supportsFastBuild()
       ? './tesseract-wasm/tesseract-core.wasm'
       : './tesseract-wasm/tesseract-core-fallback.wasm';
@@ -30,14 +24,22 @@ async function getEngine(requestedModel) {
     if (!wasmResponse.ok && wasmResponse.status !== 0) {
       throw new Error(`OCR runtime unavailable (${wasmResponse.status})`);
     }
-    const nextEngine = await createOCREngine({ wasmBinary: await wasmResponse.arrayBuffer() });
+    const wasmBinary = await wasmResponse.arrayBuffer();
 
     const modelResponse = await fetch(`./tesseract-wasm/${model}.traineddata`);
     if (!modelResponse.ok && modelResponse.status !== 0) {
       throw new Error(`OCR model ${model} unavailable (${modelResponse.status})`);
     }
-    nextEngine.loadModel(await modelResponse.arrayBuffer());
-    nextEngine.setVariable('tessedit_pageseg_mode', model === 'jpn_vert' ? '5' : '6');
+    const modelData = await modelResponse.arrayBuffer();
+    const nextEngine = await createOCREngine({ wasmBinary });
+    try {
+      nextEngine.loadModel(modelData);
+      nextEngine.setVariable('tessedit_pageseg_mode', model === 'jpn_vert' ? '5' : '6');
+    } catch (error) {
+      nextEngine.destroy();
+      throw error;
+    }
+    if (engine) engine.destroy();
     engine = nextEngine;
     loadedModel = model;
   });

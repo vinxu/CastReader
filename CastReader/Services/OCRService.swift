@@ -35,6 +35,7 @@ enum OCRError: Error, LocalizedError {
     case noText
     case unsupportedLanguages([String])
     case kindleEngine(String)
+    case modelUnavailable(String)
 
     var errorDescription: String? {
         switch self {
@@ -42,6 +43,8 @@ enum OCRError: Error, LocalizedError {
         case .noText: return AppLocalized("未识别到文字")
         case .unsupportedLanguages(let languages):
             return String(format: AppLocalized("系统 OCR 不支持语言：%@"), languages.joined(separator: ", "))
+        case .modelUnavailable:
+            return AppLocalized("语言文件下载失败，请联网重试。也可在设置中提前下载。")
         case .kindleEngine(let reason):
             return String(format: AppLocalized("Kindle 多语言 OCR 初始化失败：%@"), reason)
         }
@@ -117,6 +120,15 @@ private final class KindleTesseractOCRService: NSObject, WKNavigationDelegate {
         model: String,
         verticalColumnHints: [KindleVerticalColumnHint]
     ) async throws -> KindleTesseractResult {
+        do {
+            let modelURL = try await OCRModelStore.shared.prepare(model)
+            try Task.checkCancellation()
+            schemeHandler.modelURLs[model] = modelURL
+        } catch is CancellationError { throw CancellationError() }
+        catch {
+            try Task.checkCancellation()
+            throw OCRError.modelUnavailable(model)
+        }
         let webView = try await readyWebView()
         let dataURL = "data:image/png;base64,\(imageData.base64EncodedString())"
         let raw = try await webView.callAsyncJavaScript(
@@ -250,6 +262,8 @@ private final class KindleTesseractOCRService: NSObject, WKNavigationDelegate {
 }
 
 private final class KindleOCRSchemeHandler: NSObject, WKURLSchemeHandler {
+    // Populated only after native SHA-256/size verification, before JS starts.
+    var modelURLs: [String: URL] = [:]
     func webView(_ webView: WKWebView, start urlSchemeTask: WKURLSchemeTask) {
         guard let url = urlSchemeTask.request.url,
               url.scheme == "castreader-ocr",
@@ -264,9 +278,22 @@ private final class KindleOCRSchemeHandler: NSObject, WKURLSchemeHandler {
             urlSchemeTask.didFailWithError(OCRError.kindleEngine("invalid-resource-path"))
             return
         }
-        let fileURL = root.appendingPathComponent(relative).standardizedFileURL
-        guard fileURL.path.hasPrefix(root.standardizedFileURL.path),
-              let data = try? Data(contentsOf: fileURL) else {
+        let fileURL: URL
+        if relative.hasPrefix("tesseract-wasm/"), relative.hasSuffix(".traineddata") {
+            let model = URL(fileURLWithPath: relative).deletingPathExtension().lastPathComponent
+            guard relative == "tesseract-wasm/\(model).traineddata", let verified = modelURLs[model] else {
+                urlSchemeTask.didFailWithError(OCRError.modelUnavailable(model))
+                return
+            }
+            fileURL = verified
+        } else {
+            fileURL = root.appendingPathComponent(relative).standardizedFileURL
+            guard fileURL.path.hasPrefix(root.standardizedFileURL.path + "/") else {
+                urlSchemeTask.didFailWithError(OCRError.kindleEngine("invalid-resource-path"))
+                return
+            }
+        }
+        guard let data = try? Data(contentsOf: fileURL) else {
             urlSchemeTask.didFailWithError(OCRError.kindleEngine("resource-not-found-\(relative)"))
             return
         }

@@ -112,6 +112,11 @@ struct SettingsView: View {
                             Text(language.nativeName).tag(language.rawValue)
                         }
                     }
+                    NavigationLink {
+                        OCRModelSettingsView()
+                    } label: {
+                        Label("识别语言文件", systemImage: "arrow.down.circle")
+                    }.accessibilityIdentifier("ocrModelSettingsEntry")
                     Text("识别语言不准确时，可在导入或拍摄前指定图片中的语言。")
                         .font(.footnote)
                         .foregroundStyle(AppTheme.mutedForeground)

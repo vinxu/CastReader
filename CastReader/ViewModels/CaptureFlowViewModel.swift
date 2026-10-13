@@ -14,6 +14,23 @@ import UIKit
 
 @MainActor
 final class CaptureFlowViewModel: ObservableObject {
+    private let recognizeImage: (UIImage, String) async throws -> ReadingDocument
+    private var generation = UUID()
+    private var retryInput: (images: [UIImage], rectified: Bool, language: String, model: String)?
+    @Published private(set) var canRetryModelDownload = false
+
+    init(recognizeImage: @escaping (UIImage, String) async throws -> ReadingDocument = { image, language in
+        try await OCRService.shared.recognizeImportedImage(image: image, languageHint: language)
+    }) { self.recognizeImage = recognizeImage }
+
+    func retry() async {
+        guard let input = retryInput else { return }
+        let current = generation
+        await OCRModelStore.shared.allowUserRetry(input.model)
+        guard current == generation, !Task.isCancelled else { return }
+        await process(images: input.images, alreadyRectified: input.rectified, languageHint: input.language)
+    }
+
     @Published var isProcessing = false
     @Published var document: ReadingDocument?
     @Published var error: String?
@@ -34,27 +51,45 @@ final class CaptureFlowViewModel: ObservableObject {
 
     func process(images: [UIImage], alreadyRectified: Bool, languageHint: String? = nil) async {
         guard !images.isEmpty else { return }
+        let generation = UUID()
+        self.generation = generation
         isProcessing = true
+        document = nil
+        retryInput = nil
+        canRetryModelDownload = false
         error = nil
         qualityAdvice = nil
         pageProgress = images.count > 1 ? (1, images.count) : nil
         defer {
-            isProcessing = false
-            pageProgress = nil
+            if self.generation == generation {
+                isProcessing = false
+                pageProgress = nil
+            }
         }
 
         var documents: [ReadingDocument] = []
         let requestedLanguage = languageHint ?? AppSettings.shared.imageTextLanguage
         var firstAdvice: String?
         for (index, image) in images.enumerated() {
+            guard self.generation == generation, !Task.isCancelled else { return }
             if images.count > 1 { pageProgress = (index + 1, images.count) }
             let prepared = await Self.prepare(image, alreadyRectified: alreadyRectified)
+            guard self.generation == generation, !Task.isCancelled else { return }
             if firstAdvice == nil { firstAdvice = prepared.advice }
             do {
-                documents.append(try await OCRService.shared.recognizeImportedImage(image: prepared.image, languageHint: requestedLanguage))
+                documents.append(try await recognizeImage(prepared.image, requestedLanguage))
             } catch is CancellationError {
                 return
+            } catch OCRError.modelUnavailable(let model) {
+                guard self.generation == generation, !Task.isCancelled else { return }
+                // A missing dependency is not an empty page. Preserve the whole
+                // scan for an explicit retry; never publish a silently shortened scan.
+                retryInput = (images, alreadyRectified, requestedLanguage, model)
+                canRetryModelDownload = true
+                self.error = Self.message(for: OCRError.modelUnavailable(model).localizedDescription, advice: prepared.advice)
+                return
             } catch {
+                guard self.generation == generation, !Task.isCancelled else { return }
                 // 多页时单页失败不该毁掉整次扫描；全部失败才报错。
                 if images.count == 1 {
                     self.error = Self.message(for: error.localizedDescription, advice: prepared.advice)
@@ -63,6 +98,7 @@ final class CaptureFlowViewModel: ObservableObject {
             }
         }
 
+        guard self.generation == generation, !Task.isCancelled else { return }
         guard !documents.isEmpty else {
             error = Self.message(for: OCRError.noText.localizedDescription, advice: firstAdvice)
             return
@@ -72,6 +108,10 @@ final class CaptureFlowViewModel: ObservableObject {
     }
 
     func reset() {
+        generation = UUID()
+        isProcessing = false
+        retryInput = nil
+        canRetryModelDownload = false
         document = nil
         error = nil
         qualityAdvice = nil

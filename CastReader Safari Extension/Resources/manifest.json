@@ -61,6 +61,7 @@
   ],
   "background": {
     "scripts": [
+      "chunks/native-ocr-models-background.js",
       "background.js"
     ],
     "persistent": false

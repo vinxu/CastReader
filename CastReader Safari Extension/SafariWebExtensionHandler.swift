@@ -6,6 +6,31 @@ final class SafariWebExtensionHandler: NSObject, NSExtensionRequestHandling {
         let item = context.inputItems.first as? NSExtensionItem
         let message = item?.userInfo?[SFExtensionMessageKey] as? [String: Any] ?? [:]
         let type = message["type"] as? String ?? ""
+        // Public, pinned OCR assets are independent of authentication and region.
+        // No arbitrary URL, path, bearer or document text is accepted here.
+        if type == "OCR_MODEL_PREPARE" || type == "OCR_MODEL_READ" {
+            guard let model = message["model"] as? String,
+                  let asset = OCRModelCatalog.assets[model] else {
+                complete(context, ["ok": false, "error": "ocr_model_unsupported"])
+                return
+            }
+            Task {
+                do {
+                    if type == "OCR_MODEL_PREPARE" {
+                        _ = try await OCRModelStore.shared.prepare(model)
+                        complete(context, ["ok": true, "bytes": asset.bytes, "sha256": asset.sha256])
+                    } else {
+                        guard let offset = message["offset"] as? Int, let count = message["count"] as? Int else {
+                            throw OCRModelStore.Failure.invalidRange
+                        }
+                        complete(context, try await OCRModelStore.shared.read(model, offset: offset, count: count))
+                    }
+                } catch {
+                    complete(context, ["ok": false, "error": "ocr_model_unavailable"])
+                }
+            }
+            return
+        }
         guard let defaults = UserDefaults(suiteName: SafariExtensionContract.appGroup) else {
             complete(context, ["ok": false, "error": "app_group_unavailable"])
             return
