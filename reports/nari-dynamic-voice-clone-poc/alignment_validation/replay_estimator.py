@@ -40,7 +40,7 @@ def load_estimator(worker: Path):
 
 def decode(path: Path, sample_rate=24000):
     raw = subprocess.check_output([
-        "/usr/local/bin/ffmpeg", "-v", "error", "-i", str(path), "-ac", "1",
+        "ffmpeg", "-v", "error", "-i", str(path), "-ac", "1",
         "-ar", str(sample_rate), "-f", "f32le", "pipe:1",
     ])
     return np.frombuffer(raw, dtype=np.float32).copy(), sample_rate
