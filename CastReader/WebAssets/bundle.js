@@ -40444,7 +40444,7 @@ var __CRWeb = (() => {
     walkForBR(root2);
     if (currentParts.length > 0) flushSegment();
     applyPendingBrRun();
-    return candidates.filter((segment) => segment.text.length >= 5);
+    return candidates;
   }
   function dedupeBrSplitSegments(segments, seen, originalText) {
     const originalKey = originalText.substring(0, 100);
@@ -40457,6 +40457,12 @@ var __CRWeb = (() => {
       splitSeen.add(key);
       seen.add(key);
       retained.push(segment);
+    }
+    if (retained.length === 0 && segments.length > 0) {
+      const representative = segments[0];
+      const key = representative.text.substring(0, 100);
+      seen.add(key);
+      retained.push(representative);
     }
     return retained;
   }
@@ -40596,7 +40602,7 @@ var __CRWeb = (() => {
     return totalChars > 0 ? linkChars / totalChars : 0;
   }
   function extractZones() {
-    var _a, _d, _e;
+    var _a, _b, _e, _f;
     console.log("[extractZones v2026-04-24b] entry", { url: location.href });
     if (!document.body) {
       window.__castreaderLastExtraction = { timestamp: Date.now(), url: location.href, earlyReturn: "no_body" };
@@ -40761,6 +40767,7 @@ var __CRWeb = (() => {
     }
     const MEGA_THRESHOLD = 2e3;
     const expandedBlocks = [];
+    const brSourceBlocksByGroup = /* @__PURE__ */ new Map();
     let brSplitGroupCounter = 0;
     for (const block of allBlocks) {
       if (block.text.length <= MEGA_THRESHOLD) {
@@ -40769,10 +40776,43 @@ var __CRWeb = (() => {
       }
       const splitGroupId = `br-${brSplitGroupCounter++}`;
       const pendingSegments = collectBrSplitSegments(block.element, splitGroupId);
+      const branchScopedPendingSegments = pendingSegments.map((pending) => {
+        const parents2 = pending.parents.filter((parent2) => block.element.contains(parent2));
+        let splitScope = block.element;
+        if (parents2.length > 0) {
+          let common = parents2[0];
+          for (let i = 1; i < parents2.length && common; i++) {
+            while (common && !common.contains(parents2[i])) common = common.parentElement;
+          }
+          if (common && block.element.contains(common)) {
+            while (common !== block.element && common.parentElement && common.parentElement !== block.element && block.element.contains(common.parentElement)) {
+              common = common.parentElement;
+            }
+            splitScope = common;
+          }
+        }
+        return __spreadProps(__spreadValues({}, pending), { splitScope });
+      });
+      const scopeSegmentCounts = /* @__PURE__ */ new Map();
+      for (const pending of branchScopedPendingSegments) {
+        scopeSegmentCounts.set(
+          pending.splitScope,
+          (scopeSegmentCounts.get(pending.splitScope) || 0) + 1
+        );
+      }
+      const scopedPendingSegments = branchScopedPendingSegments.map((pending) => __spreadProps(__spreadValues({}, pending), {
+        // Old BR pages often wrap every visual line in its own SPAN/FONT. A
+        // one-segment wrapper is formatting, not enough evidence of a separate
+        // content branch; fold it back to the mega root so a legitimate short
+        // row can follow neighboring score projections. Multi-segment branches
+        // such as article-body/related-posts retain their independent scope.
+        splitScope: pending.splitScope !== block.element && (scopeSegmentCounts.get(pending.splitScope) || 0) < 2 ? block.element : pending.splitScope
+      }));
       const segments = [];
-      for (const pending of pendingSegments) {
-        const { text: seg, parents: parents2, textNodes } = pending;
+      for (const pending of scopedPendingSegments) {
+        const { text: seg, textNodes } = pending;
         let anchor = block.element;
+        const parents2 = textNodes.map((textNode) => textNode.parentElement).filter((parent2) => !!parent2);
         let lca = null;
         if (parents2.length > 0) {
           lca = parents2[0];
@@ -40784,32 +40824,38 @@ var __CRWeb = (() => {
           }
           if (lca && !block.element.contains(lca)) lca = null;
         }
-        const lcaText = lca ? (lca.innerText || "").length : 0;
-        const lcaTooCoarse = !!lca && lcaText > seg.length * 3 && lcaText > 500;
-        if (lcaTooCoarse && lca && textNodes.length >= 1) {
+        const normalizedSegment = seg.replace(/\s+/g, " ").trim();
+        let exactAnchor = ((_b = textNodes[0]) == null ? void 0 : _b.parentElement) || null;
+        while (exactAnchor && block.element.contains(exactAnchor)) {
+          const containsEveryTextNode = textNodes.every((textNode) => exactAnchor.contains(textNode));
+          const normalizedAnchor = (exactAnchor.textContent || "").replace(/\s+/g, " ").trim();
+          if (containsEveryTextNode && normalizedAnchor === normalizedSegment) break;
+          if (exactAnchor === block.element) {
+            exactAnchor = null;
+            break;
+          }
+          exactAnchor = exactAnchor.parentElement;
+        }
+        if (exactAnchor) {
+          anchor = exactAnchor;
+        } else if (lca && textNodes.length >= 1) {
           try {
-            const outerSiblings = [];
-            const seenSib = /* @__PURE__ */ new Set();
-            for (const tn of textNodes) {
-              let cur = tn;
-              while (cur && cur.parentNode !== lca) cur = cur.parentNode;
-              if (cur && !seenSib.has(cur)) {
-                seenSib.add(cur);
-                outerSiblings.push(cur);
-              }
+            const firstTextNode = textNodes[0];
+            const lastTextNode = textNodes[textNodes.length - 1];
+            const range2 = document.createRange();
+            range2.setStartBefore(firstTextNode);
+            range2.setEndAfter(lastTextNode);
+            const contents = range2.extractContents();
+            for (const clonedWithId of Array.from(contents.querySelectorAll("[id]"))) {
+              const liveOwner = document.getElementById(clonedWithId.id);
+              if (liveOwner && liveOwner !== clonedWithId) clonedWithId.removeAttribute("id");
             }
-            if (outerSiblings.length > 0) {
-              const span = document.createElement("span");
-              span.setAttribute("data-castreader-br-seg", "1");
-              span.style.cssText = "all: unset; display: inline;";
-              lca.insertBefore(span, outerSiblings[0]);
-              for (const sib of outerSiblings) {
-                span.appendChild(sib);
-              }
-              anchor = span;
-            } else {
-              anchor = lca;
-            }
+            const span = document.createElement("span");
+            span.setAttribute("data-castreader-br-seg", "1");
+            span.style.cssText = "all: unset; display: inline;";
+            span.appendChild(contents);
+            range2.insertNode(span);
+            anchor = span;
           } catch (e) {
             anchor = lca;
           }
@@ -40818,21 +40864,36 @@ var __CRWeb = (() => {
         }
         segments.push(__spreadProps(__spreadValues({}, pending), { el: anchor }));
       }
-      if (segments.length >= 3) {
-        const retainedSegments = dedupeBrSplitSegments(segments, seen, block.text);
+      const sourceBlocks = segments.map((segment) => {
+        const rect = segment.el.getBoundingClientRect();
+        return {
+          text: segment.text,
+          element: segment.el,
+          rect: rect.width > 0 || rect.height > 0 ? rect : block.rect,
+          source: segment.source,
+          splitGroupId: segment.splitGroupId,
+          splitIndex: segment.splitIndex,
+          splitScope: segment.splitScope,
+          brRunBefore: segment.brRunBefore,
+          brRunAfter: segment.brRunAfter
+        };
+      });
+      const scoringSegments = sourceBlocks.filter((segment) => segment.text.length >= 5);
+      if (sourceBlocks.length >= 3 && scoringSegments.length > 0) {
+        brSourceBlocksByGroup.set(splitGroupId, sourceBlocks);
+        const scoringByScope = /* @__PURE__ */ new Map();
+        for (const scoringSegment of scoringSegments) {
+          const scope = scoringSegment.splitScope || block.element;
+          const scoped = scoringByScope.get(scope) || [];
+          scoped.push(scoringSegment);
+          scoringByScope.set(scope, scoped);
+        }
+        const retainedSegments = Array.from(scoringByScope.values()).flatMap((scoped) => dedupeBrSplitSegments(scoped, seen, block.text)).sort((left, right) => {
+          var _a2, _b2;
+          return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
+        });
         for (const segment of retainedSegments) {
-          const rect = segment.el.getBoundingClientRect();
-          const useRect = rect.width > 0 || rect.height > 0 ? rect : block.rect;
-          expandedBlocks.push({
-            text: segment.text,
-            element: segment.el,
-            rect: useRect,
-            source: segment.source,
-            splitGroupId: segment.splitGroupId,
-            splitIndex: segment.splitIndex,
-            brRunBefore: segment.brRunBefore,
-            brRunAfter: segment.brRunAfter
-          });
+          expandedBlocks.push(segment);
         }
       } else {
         expandedBlocks.push(block);
@@ -40895,10 +40956,27 @@ var __CRWeb = (() => {
         else droppedByDedup.add(j);
       }
     }
-    const finalBlocks = annotated.filter((_3, i) => !droppedByDedup.has(i)).map((_b) => {
-      var _c = _b, { norm: _norm } = _c, rest2 = __objRest(_c, ["norm"]);
+    const finalBlocks = annotated.filter((_3, i) => !droppedByDedup.has(i)).map((_c) => {
+      var _d = _c, { norm: _norm } = _d, rest2 = __objRest(_d, ["norm"]);
       return rest2;
     });
+    for (const splitGroupId of brSourceBlocksByGroup.keys()) {
+      const projections = expandedBlocks.filter(
+        (block) => block.splitGroupId === splitGroupId
+      );
+      const scopes = new Set(projections.map((projection) => projection.splitScope));
+      for (const splitScope of scopes) {
+        if (finalBlocks.some(
+          (block) => block.splitGroupId === splitGroupId && block.splitScope === splitScope
+        )) {
+          continue;
+        }
+        const witness = projections.find(
+          (projection) => projection.splitScope === splitScope
+        );
+        if (witness) finalBlocks.push(witness);
+      }
+    }
     if (window.__castreaderDebugZones) {
       console.log(
         `[Zones] Phase 1.9 dedup: ${expandedBlocks.length} \u2192 ${finalBlocks.length} blocks (dropped ${droppedByDedup.size})`
@@ -40976,7 +41054,14 @@ var __CRWeb = (() => {
         }
       }
       if (colBlocks.length > 0) {
-        columns.push({ bandLeft, bandRight, blocks: colBlocks, textLength: textLen, peakVal: peak.val });
+        columns.push({
+          bandLeft,
+          bandRight,
+          assignmentRight: bandLeftMax,
+          blocks: colBlocks,
+          textLength: textLen,
+          peakVal: peak.val
+        });
       }
     }
     columns.sort((a, b) => a.bandLeft - b.bandLeft);
@@ -41281,21 +41366,94 @@ var __CRWeb = (() => {
       }
     }
     const selectedSet = new Set(selectedZoneIds);
-    const selectedBlocks = [];
+    const selectedScoreBlocks = [];
     for (const zone of zones) {
       if (selectedSet.has(zone.id)) {
-        selectedBlocks.push(...zone.blocks);
+        selectedScoreBlocks.push(...zone.blocks);
       }
     }
-    selectedBlocks.sort((a, b) => {
-      const ay = a.rect.top + scrollY;
-      const by = b.rect.top + scrollY;
+    const selectedBrScoreKeys = new Set(
+      selectedScoreBlocks.filter(
+        (block) => block.source === "br-split" && block.splitGroupId !== void 0 && block.splitIndex !== void 0
+      ).map((block) => `${block.splitGroupId}:${block.splitIndex}`)
+    );
+    const brProjectionByGroup = /* @__PURE__ */ new Map();
+    for (let column = 0; column < columns.length; column++) {
+      for (const block of columns[column].blocks) {
+        if (block.source !== "br-split" || block.splitGroupId === void 0 || block.splitIndex === void 0) {
+          continue;
+        }
+        const entries = brProjectionByGroup.get(block.splitGroupId) || [];
+        entries.push({
+          splitIndex: block.splitIndex,
+          splitScope: block.splitScope,
+          column,
+          selected: selectedBrScoreKeys.has(`${block.splitGroupId}:${block.splitIndex}`)
+        });
+        brProjectionByGroup.set(block.splitGroupId, entries);
+      }
+    }
+    const sourceColumn = (block) => {
+      const strictColumn = columns.findIndex(
+        (column) => block.rect.left >= column.bandLeft && block.rect.left < column.assignmentRight
+      );
+      if (strictColumn >= 0) return strictColumn;
+      return columns.findIndex(
+        (column) => block.rect.left >= column.bandLeft - 1 && block.rect.left < column.bandRight + 1
+      );
+    };
+    const selectedUnits = [];
+    const restoredBrGroups = /* @__PURE__ */ new Set();
+    for (const block of selectedScoreBlocks) {
+      if (block.source === "br-split" && block.splitGroupId) {
+        if (restoredBrGroups.has(block.splitGroupId)) continue;
+        const sourceBlocks = brSourceBlocksByGroup.get(block.splitGroupId);
+        if (sourceBlocks) {
+          restoredBrGroups.add(block.splitGroupId);
+          const projections = brProjectionByGroup.get(block.splitGroupId) || [];
+          const restored = sourceBlocks.filter((sourceBlock) => {
+            var _a2;
+            const column = sourceColumn(sourceBlock);
+            if (column < 0) return false;
+            let sameColumn = projections.filter(
+              (projection) => projection.column === column
+            );
+            if (sameColumn.length === 0) return false;
+            const sameScope = sameColumn.filter(
+              (projection) => projection.splitScope === sourceBlock.splitScope
+            );
+            if (sourceBlock.splitScope && sameScope.length === 0) return false;
+            if (sameScope.length > 0) sameColumn = sameScope;
+            const sourceIndex = (_a2 = sourceBlock.splitIndex) != null ? _a2 : 0;
+            sameColumn.sort(
+              (left, right) => Math.abs(left.splitIndex - sourceIndex) - Math.abs(right.splitIndex - sourceIndex) || left.splitIndex - right.splitIndex
+            );
+            return sameColumn[0].selected;
+          }).sort((left, right) => {
+            var _a2, _b2;
+            return ((_a2 = left.splitIndex) != null ? _a2 : 0) - ((_b2 = right.splitIndex) != null ? _b2 : 0);
+          });
+          if (restored.length > 0) {
+            selectedUnits.push({ anchor: restored[0], blocks: restored });
+          } else {
+            selectedUnits.push({ anchor: block, blocks: [block] });
+          }
+          continue;
+        }
+      }
+      selectedUnits.push({ anchor: block, blocks: [block] });
+    }
+    selectedUnits.sort((a, b) => {
+      const ay = a.anchor.rect.top + scrollY;
+      const by = b.anchor.rect.top + scrollY;
       if (Math.abs(ay - by) > 5) return ay - by;
-      return a.rect.left - b.rect.left;
+      return a.anchor.rect.left - b.anchor.rect.left;
     });
+    const selectedBlocks = selectedUnits.flatMap((unit) => unit.blocks);
     const containerBlockIndices = /* @__PURE__ */ new Set();
     for (let i = 0; i < selectedBlocks.length; i++) {
       const b = selectedBlocks[i];
+      if (b.source === "br-split") continue;
       if (b.text.length < 100) continue;
       let containCount = 0;
       for (let j = 0; j < selectedBlocks.length; j++) {
@@ -41313,7 +41471,11 @@ var __CRWeb = (() => {
     for (let i = 0; i < selectedBlocks.length; i++) {
       if (containerBlockIndices.has(i)) continue;
       const b = selectedBlocks[i];
-      const isHeading = /^H[1-6]$/.test(((_d = b.element) == null ? void 0 : _d.tagName) || "");
+      if (b.source === "br-split") {
+        dedupedBlocks.push(b);
+        continue;
+      }
+      const isHeading = /^H[1-6]$/.test(((_e = b.element) == null ? void 0 : _e.tagName) || "");
       if (b.text.length < 80 && !isHeading) {
         let isDuplicate = false;
         for (let j = Math.max(0, i - 3); j < Math.min(selectedBlocks.length, i + 4); j++) {
@@ -41353,7 +41515,7 @@ var __CRWeb = (() => {
     paragraphs = anchorParagraphsToTitle(paragraphs);
     console.log(`[Castreader] Zone: ${allBlocks.length} raw \u2192 ${finalBlocks.length} blocks \u2192 ${columns.length} cols \u2192 ${zones.length} zones \u2192 ${paragraphs.length} paragraphs`);
     for (let i = 0; i < Math.min(5, paragraphs.length); i++) {
-      console.log(`  P${i}: "${paragraphs[i].text.substring(0, 80)}..." tag=${(_e = paragraphs[i].element) == null ? void 0 : _e.tagName}`);
+      console.log(`  P${i}: "${paragraphs[i].text.substring(0, 80)}..." tag=${(_f = paragraphs[i].element) == null ? void 0 : _f.tagName}`);
     }
     for (const z of zones) {
       const sel = selectedSet.has(z.id) ? "\u2605" : " ";
@@ -41373,7 +41535,7 @@ var __CRWeb = (() => {
         url: location.href,
         columns: columns.map((c, i) => ({ index: i, bandLeft: c.bandLeft, bandRight: c.bandRight })),
         zones: zones.map((z) => {
-          var _a2, _b;
+          var _a2, _b2;
           const c = z.container;
           const cls = c && typeof c.className === "string" ? c.className : "";
           return {
@@ -41391,7 +41553,7 @@ var __CRWeb = (() => {
             bounds: z.bounds,
             scoreTrace: z.scoreTrace,
             firstBlockText: ((_a2 = z.blocks[0]) == null ? void 0 : _a2.text.slice(0, 100)) || "",
-            lastBlockText: ((_b = z.blocks[z.blocks.length - 1]) == null ? void 0 : _b.text.slice(0, 100)) || "",
+            lastBlockText: ((_b2 = z.blocks[z.blocks.length - 1]) == null ? void 0 : _b2.text.slice(0, 100)) || "",
             // Full block list — enables position-in-zone diagnosis (e.g., why
             // was H1 skipped? because it sits at block #14 after 13 breadcrumb
             // links? or because it's missing entirely?). Truncate each text to
@@ -52553,6 +52715,29 @@ var __CRWeb = (() => {
     const markRenderer = createMarkRenderer((i) => paraElements.get(i), color);
     const overlayNodes = /* @__PURE__ */ new Set();
     const overlayDocuments = /* @__PURE__ */ new Set();
+    let autoScroll = true;
+    let lastPaintedRange = null;
+    function revealRange(range2) {
+      if (CR.disableScroll || !autoScroll) return;
+      const doc = range2.startContainer.ownerDocument;
+      const win = doc == null ? void 0 : doc.defaultView;
+      if (!win) return;
+      let ancestor = range2.startContainer.parentElement;
+      while (ancestor && ancestor !== (doc == null ? void 0 : doc.body)) {
+        const style = win.getComputedStyle(ancestor);
+        if (/(auto|scroll)/.test(style.overflowY) && ancestor.scrollHeight > ancestor.clientHeight) {
+          const word = range2.getBoundingClientRect(), box = ancestor.getBoundingClientRect();
+          if (word.top < box.top + 24 || word.bottom > box.bottom - 24) {
+            ancestor.scrollTop += word.top - box.top - ancestor.clientHeight * 0.3;
+          }
+        }
+        ancestor = ancestor.parentElement;
+      }
+      const rect = range2.getBoundingClientRect();
+      if (rect.top < win.innerHeight * 0.18 || rect.bottom > win.innerHeight * 0.78) {
+        win.scrollBy({ top: rect.top - win.innerHeight * 0.3, behavior: "instant" });
+      }
+    }
     const post = (type2, payload = {}) => {
       var _a2, _b, _c;
       try {
@@ -52563,6 +52748,7 @@ var __CRWeb = (() => {
     };
     const log = (message) => post("log", { message });
     function clearOverlay() {
+      lastPaintedRange = null;
       overlayNodes.forEach((node) => {
         try {
           node.remove();
@@ -52580,6 +52766,8 @@ var __CRWeb = (() => {
     }
     function paintOverlay(range2, el) {
       clearOverlay();
+      lastPaintedRange = { range: range2, el };
+      revealRange(range2);
       const ownerDocument = range2.startContainer.ownerDocument || (el == null ? void 0 : el.ownerDocument) || document;
       const ownerWindow = ownerDocument.defaultView;
       const host = ownerDocument.body || ownerDocument.documentElement;
@@ -52849,6 +53037,10 @@ var __CRWeb = (() => {
           wcSeg = -1;
         }
         if (arg.segSeq !== wcSeg) {
+          if (arg.segSeq !== wcSeg + 1 && arg.segmentTexts) {
+            const priorWords = arg.segmentTexts.flatMap((text) => text.match(/\S+/g) || []);
+            paraCursor = buildWordRanges(el, priorWords, paraOffsets.get(arg.paragraphIndex) || 0).cursor;
+          }
           wcSeg = arg.segSeq;
           const built = buildWordRanges(el, arg.words || [], paraCursor);
           wcRanges = built.ranges;
@@ -52864,6 +53056,7 @@ var __CRWeb = (() => {
       },
       clearHighlight() {
         clearOverlay();
+        lastPaintedRange = null;
         wcPara = -1;
         wcSeg = -1;
         paraCursor = 0;
@@ -52879,11 +53072,19 @@ var __CRWeb = (() => {
         else clearOverlay();
       },
       scrollTo(arg) {
-        var _a2;
         if (CR.disableScroll) return;
-        (_a2 = paraElements.get(arg.paragraphIndex)) == null ? void 0 : _a2.scrollIntoView({ block: "center", behavior: "auto" });
+        const el = paraElements.get(arg.paragraphIndex);
+        if (!el) return;
+        const base = paraOffsets.get(arg.paragraphIndex) || 0;
+        const range2 = typeof arg.charStart === "number" && typeof arg.charEnd === "number" ? charRangeInElement(el, arg.charStart + base, arg.charEnd + base) : (lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el ? lastPaintedRange.range : null;
+        if (range2) {
+          if ((lastPaintedRange == null ? void 0 : lastPaintedRange.el) === el && lastPaintedRange.range === range2) {
+            paintOverlay(range2, el);
+          } else revealRange(range2);
+        } else el.scrollIntoView({ block: "center", behavior: "auto" });
       },
-      setAutoScroll(_arg) {
+      setAutoScroll(arg) {
+        autoScroll = arg.enabled;
       },
       showMark(arg) {
         const base = paraOffsets.get(arg.paragraphIndex) || 0;

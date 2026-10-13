@@ -40,6 +40,7 @@ struct HistoryRecord: Identifiable, Codable, Equatable {
     /// libraries (Kindle/WeRead/…) keep their own anchors and YouTube resumes
     /// by time above, so both stay nil here.
     var lastParagraphIndex: Int? = nil
+    var contentFingerprint: String? = nil
 
     var sourceKind: ReadingSourceKind { ReadingSourceKind(rawValue: sourceKindRaw) ?? .text }
 
@@ -78,6 +79,7 @@ struct CloudHistoryReference: Equatable, Sendable {
 // initializer while allowing every pre-cloud index.json to load unchanged.
 extension HistoryRecord {
     private enum CodingKeys: String, CodingKey {
+        case contentFingerprint
         case id
         case title
         case sourceKindRaw
@@ -108,6 +110,7 @@ extension HistoryRecord {
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         lastOpenedAt = try container.decode(Date.self, forKey: .lastOpenedAt)
         coverPath = try container.decodeIfPresent(String.self, forKey: .coverPath)
+        contentFingerprint = try? container.decodeIfPresent(String.self, forKey: .contentFingerprint)
         // Provider enums evolve independently from an installed app. Keep a
         // future-provider record in the library as an inert remote reference
         // instead of allowing one unknown enum value to reject the whole
@@ -180,6 +183,7 @@ extension HistoryRecord {
         try container.encodeIfPresent(youtubeProgressFraction, forKey: .youtubeProgressFraction)
         try container.encodeIfPresent(youtubeResumeStartMs, forKey: .youtubeResumeStartMs)
         try container.encodeIfPresent(lastParagraphIndex, forKey: .lastParagraphIndex)
+        try container.encodeIfPresent(contentFingerprint, forKey: .contentFingerprint)
     }
 }
 
@@ -364,6 +368,9 @@ final class HistoryStore: ObservableObject {
 #endif
 
     private func activate(directory: URL) {
+        // Refreshing credentials for the same account is not a new privacy
+        // boundary. Keep live progress writers valid until an actual switch.
+        guard activeScope?.directory.standardizedFileURL != directory.standardizedFileURL else { return }
         invalidateCoverWork()
         records = []
         let scope = ActiveStorageScope(token: UUID(), directory: directory)
@@ -440,6 +447,114 @@ final class HistoryStore: ObservableObject {
 
     private func isCurrent(_ scope: ActiveStorageScope) -> Bool {
         activeScope?.token == scope.token
+    }
+
+    var progressBoundaryToken: UUID? { activeScope?.token }
+
+    private func checkpointURL(_ id: String, mode: String, variant: String? = nil, in scope: ActiveStorageScope) -> URL {
+        let suffix = variant.map { "." + ReadingResumeContract.fingerprint($0) } ?? ""
+        return scope.directory.appendingPathComponent("\(ReadingResumeContract.fingerprint(id))\(suffix).\(mode).resume.json")
+    }
+
+    private func removeReadingCheckpoints(_ id: String, in scope: ActiveStorageScope) {
+        let prefix = ReadingResumeContract.fingerprint(id) + "."
+        let urls = (try? FileManager.default.contentsOfDirectory(at: scope.directory, includingPropertiesForKeys: nil)) ?? []
+        for url in urls where url.lastPathComponent.hasPrefix(prefix) && url.lastPathComponent.hasSuffix(".read.resume.json") {
+            try? FileManager.default.removeItem(at: url)
+        }
+    }
+
+    func hasReadingCheckpoint(for id: String, variant: String? = nil) -> Bool {
+        guard let scope = activeScope, records.contains(where: { $0.id == id }) else { return false }
+        return FileManager.default.fileExists(atPath: checkpointURL(id, mode: "read", variant: variant, in: scope).path)
+    }
+
+    func readingCheckpoint(for id: String, variant: String? = nil) -> ReadingResumeCheckpoint? {
+        guard let scope = activeScope,
+              records.contains(where: { $0.id == id }),
+              let data = try? Data(contentsOf: checkpointURL(id, mode: "read", variant: variant, in: scope)),
+              data.count <= 16_384,
+              let value = try? JSONDecoder().decode(ReadingResumeCheckpoint.self, from: data),
+              value.isValid else { return nil }
+        return value
+    }
+
+    /// Small per-content atomic write: playback never rewrites the full library
+    /// or reloads widget timelines. The boundary rejects stale A → B → A VMs.
+    @discardableResult
+    func saveReadingCheckpoint(_ value: ReadingResumeCheckpoint, for id: String, boundary: UUID?, variant: String? = nil) -> Bool {
+        guard value.isValid, let scope = activeScope, scope.token == boundary,
+              records.contains(where: { $0.id == id && $0.sourceKind == value.sourceKind }) else { return false }
+        do {
+            let data = try JSONEncoder().encode(value)
+            try data.write(to: checkpointURL(id, mode: "read", variant: variant, in: scope), options: .atomic)
+            return true
+        } catch {
+            ReaderRunLog.write("READ checkpoint write failed")
+            return false
+        }
+    }
+
+    /// All normal open paths pass through PlayerCoordinator. Reimporting the
+    /// same local payload must reuse its History identity and saved position.
+    func canonicalDocument(_ document: ReadingDocument) -> ReadingDocument {
+        guard !document.sourceKind.isLiveWebLibrary, document.sourceKind != .kindle,
+              document.sourceKind != .youtube, document.origin == nil,
+              !records.contains(where: { $0.id == document.id }),
+              let fingerprint = Self.contentFingerprint(for: document) else { return document }
+        backfillContentFingerprints(matching: document)
+        guard let prior = records.first(where: {
+                  !$0.isRemoteReference && $0.sourceKind == document.sourceKind
+                      && $0.contentFingerprint == fingerprint
+              }) else { return document }
+        var canonical = document
+        canonical.id = prior.id
+        canonical.contentSessionKey = prior.resolvedContentSessionKey
+        return canonical
+    }
+
+    /// Upgrade old entries only when importing that kind again. File-size
+    /// filtering avoids hashing every large book on launch or every resume.
+    private func backfillContentFingerprints(matching document: ReadingDocument) {
+        guard let scope = activeScope else { return }
+        let incomingSize: Int?
+        switch document.sourceKind {
+        case .epub, .pdf, .docx: incomingSize = document.fileData?.count
+        case .photo: incomingSize = document.imageData?.count
+        case .text: incomingSize = document.fullText.utf8.count
+        default: incomingSize = nil
+        }
+        var changed = false
+        for index in records.indices where records[index].contentFingerprint == nil
+            && !records[index].isRemoteReference && records[index].sourceKind == document.sourceKind {
+            if document.sourceKind == .web, let url = records[index].sourceURL {
+                records[index].contentFingerprint = ReadingResumeContract.fingerprint(url)
+                changed = true
+            } else if let incomingSize {
+                let url = payloadURL(records[index].id, in: scope)
+                guard let attributes = try? FileManager.default.attributesOfItem(atPath: url.path),
+                      (attributes[.size] as? NSNumber)?.intValue == incomingSize,
+                      let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
+                if document.sourceKind == .text, let text = String(data: data, encoding: .utf8) {
+                    records[index].contentFingerprint = ReadingResumeContract.fingerprint(text)
+                } else {
+                    records[index].contentFingerprint = ReadingResumeContract.fingerprint(data)
+                }
+                changed = true
+            }
+        }
+        if changed { save(in: scope) }
+    }
+
+    private static func contentFingerprint(for document: ReadingDocument) -> String? {
+        guard document.origin == nil, document.persistencePolicy == .localPayload else { return nil }
+        switch document.sourceKind {
+        case .epub, .pdf, .docx: return document.fileData.map(ReadingResumeContract.fingerprint)
+        case .photo: return document.imageData.map(ReadingResumeContract.fingerprint)
+        case .text: return ReadingResumeContract.fingerprint(document.fullText)
+        case .web: return document.sourceURL.map(ReadingResumeContract.fingerprint)
+        default: return nil
+        }
     }
 
     /// 写入照片 OCR 快照。识别结果没有词级 bbox（例如失败兜底）时不落盘，
@@ -652,6 +767,7 @@ final class HistoryStore: ObservableObject {
         rec.coverPath = rec.isRemoteReference || doc.sourceKind == .youtube
             ? nil
             : existing?.coverPath
+        rec.contentFingerprint = Self.contentFingerprint(for: doc) ?? existing?.contentFingerprint
         if let t = existing?.title, !t.isEmpty, rec.coverPath != nil { rec.title = t }  // 已抓到真实标题则保留
         records.removeAll { $0.id == doc.id }
         records.insert(rec, at: 0)
@@ -799,6 +915,7 @@ final class HistoryStore: ObservableObject {
         try? FileManager.default.removeItem(at: payloadURL(id, in: scope))
         try? FileManager.default.removeItem(at: coverFileURL(id, in: scope))
         try? FileManager.default.removeItem(at: ocrSnapshotURL(id, in: scope))
+        removeReadingCheckpoints(id, in: scope)
         save(in: scope)
     }
 
@@ -812,6 +929,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(record.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(record.id, in: scope))
+            removeReadingCheckpoints(record.id, in: scope)
         }
         records.removeAll { $0.sourceKind == sourceKind }
         save(in: scope)
@@ -823,6 +941,7 @@ final class HistoryStore: ObservableObject {
             try? FileManager.default.removeItem(at: payloadURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: coverFileURL(r.id, in: scope))
             try? FileManager.default.removeItem(at: ocrSnapshotURL(r.id, in: scope))
+            removeReadingCheckpoints(r.id, in: scope)
         }
         records.removeAll()
         save(in: scope)

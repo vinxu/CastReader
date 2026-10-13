@@ -24,6 +24,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
     func makeUIView(context: Context) -> UIScrollView {
         let scroll = UIScrollView()
         scroll.delegate = context.coordinator
+        scroll.accessibilityIdentifier = "photoReaderCanvas"
         scroll.minimumZoomScale = 1
         scroll.maximumZoomScale = 5
         scroll.alwaysBounceVertical = true
@@ -131,6 +132,7 @@ struct PhotoReaderCanvas: UIViewRepresentable {
             let H = W * imageAspect
             host.view.frame = CGRect(x: 0, y: 0, width: W, height: H)
             scroll.contentSize = CGSize(width: W, height: H)
+            if mode == .read { scrollToCurrentReadAnchor() }
         }
 
         // MARK: UIScrollViewDelegate

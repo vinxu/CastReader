@@ -191,9 +191,41 @@ struct AudioPlaybackOwnershipState: Equatable {
 
 class AudioPlayerService: NSObject, ObservableObject {
     static let shared = AudioPlayerService()
+    let sleepTimer = PlaybackSleepTimer()
+    private var readerAppearanceHold: (id: UUID, session: AudioPlaybackSessionToken?, resume: AudioPlaybackResumeHandle?)?
+
+    /// Layout changes must not race a late TTS item or an automatic page turn.
+    /// Bind the hold to its owner so changing books cannot suspend another reader.
+    func beginReaderAppearance() -> UUID {
+        if let hold = readerAppearanceHold, hold.session == playbackOwnership.activeSession { return hold.id }
+        let resume = suspendActivePlaybackForVoicePreview()
+        let id = UUID()
+        readerAppearanceHold = (id, playbackOwnership.activeSession, resume)
+        return id
+    }
+
+    func endReaderAppearance(_ id: UUID, resumePlayback: Bool = true) {
+        guard let hold = readerAppearanceHold, hold.id == id else { return }
+        readerAppearanceHold = nil
+        if resumePlayback, let resume = hold.resume {
+            _ = resumePlaybackAfterVoicePreview(resume)
+        }
+    }
+
+    private func permitsAutomaticPlayback() -> Bool {
+        guard sleepTimer.permitsAutomaticPlayback() else { return false }
+        guard let hold = readerAppearanceHold else { return true }
+        return hold.session != playbackOwnership.activeSession
+    }
 
     // MARK: - Published Properties
     @Published var isPlaying = false
+    /// Query the player at lifecycle boundaries instead of the last 100 ms UI tick.
+    var playbackPosition: Double {
+        let value = player?.currentTime().seconds ?? currentTime
+        return value.isFinite && value >= 0 ? value : currentTime
+    }
+
     @Published var currentTime: Double = 0
     @Published var duration: Double = 0
     @Published var playbackRate: Float = 1.0
@@ -484,6 +516,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         )
         DispatchQueue.main.async { [weak self] in
             guard let self,
+                  self.permitsAutomaticPlayback(),
                   self.playbackOwnership.permitsCallback(from: token),
                   self.currentSegment?.id == terminalSegmentID,
                   StreamingQueueDrainContract.shouldCompletePlayback(
@@ -508,6 +541,12 @@ class AudioPlayerService: NSObject, ObservableObject {
     private override init() {
         playbackTemporaryDirectory = AudioPlaybackTemporaryFiles.prepare()
         super.init()
+        sleepTimer.onExpiration = { [weak self] in
+            guard let self else { return }
+            self.pauseRegardlessOfOwnership()
+            self.isBuffering = false
+            ReaderRunLog.write("AUDIO sleep timer expired; explicit play required")
+        }
         setupAudioSession()
         setupRemoteCommandCenter()
     }
@@ -611,6 +650,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     @objc private func handleAppDidBecomeActive() {
+        sleepTimer.checkDeadline()
         syncPlaybackStateFromPlayer(reason: "app-active")
     }
 
@@ -621,6 +661,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         commandCenter.playCommand.isEnabled = true
         commandCenter.playCommand.addTarget { [weak self] _ in
             guard let self else { return .commandFailed }
+            self.sleepTimer.resumeByUser()
             return self.play(session: self.playbackOwnership.activeSession)
                 ? .success
                 : .commandFailed
@@ -1003,6 +1044,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         )
         segmentsQueue.append(segment)
 
+        guard permitsAutomaticPlayback() else { return true }
+
         guard !playbackSuspendedByInterruption else {
             isWaitingForNextSegment = false
             print("🔊 loadSegment: Queued while interrupted; waiting for user resume")
@@ -1083,6 +1126,8 @@ class AudioPlayerService: NSObject, ObservableObject {
         let firstAppendedIndex = segmentsQueue.count
         segmentsQueue.append(contentsOf: segments)
         print("🔊 appendPreparedSegments: Added \(segments.count) segments after \(predecessor ?? "none")")
+
+        guard permitsAutomaticPlayback() else { return predecessor }
 
         guard !playbackSuspendedByInterruption else {
             isWaitingForNextSegment = false
@@ -1224,6 +1269,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     func startQueuedSegment(
         id: String,
         progress: Double,
+        initialTime: Double? = nil,
         autoPlay: Bool,
         session token: AudioPlaybackSessionToken? = nil
     ) -> Bool {
@@ -1235,12 +1281,14 @@ class AudioPlayerService: NSObject, ObservableObject {
         return playSegment(
             at: index,
             initialProgress: min(0.98, max(0, progress)),
+            initialTime: initialTime,
             autoPlayWhenReady: autoPlay
         )
     }
 
     @discardableResult
     func play(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard permitsAutomaticPlayback() else { return false }
         guard playbackOwnership.permitsPlayback(requestedBy: token) else {
             return false
         }
@@ -1257,6 +1305,9 @@ class AudioPlayerService: NSObject, ObservableObject {
         guard currentItemCanPublishPlaybackState() else {
             return false
         }
+        if duration > 0, playbackPosition >= duration - 0.01 {
+            return nextSegment(session: token)
+        }
         playbackSuspendedByInterruption = false
         do {
             try AVAudioSession.sharedInstance().setActive(true)
@@ -1271,6 +1322,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     private func pauseRegardlessOfOwnership() {
         player?.pause()
+        currentTime = playbackPosition
         isPlaying = false
         updateNowPlayingInfo()
     }
@@ -1301,6 +1353,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         if isPlaying {
             return pause(session: token)
         } else {
+            sleepTimer.resumeByUser()
             return play(session: token)
         }
     }
@@ -1314,6 +1367,8 @@ class AudioPlayerService: NSObject, ObservableObject {
     /// normal pause/reader dismissal, so it is insufficient here: every title,
     /// cover, caption, callback and lock-screen field must disappear together.
     func clearForAccountBoundary() {
+        readerAppearanceHold = nil
+        sleepTimer.endPlaybackSession()
         cancelArtworkLoad()
         stop(preservingPrestagedIDs: [])
         segmentsQueue.removeAll()
@@ -1393,7 +1448,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     func setPlaybackRate(_ rate: Float) {
         playbackRate = rate
-        if isPlaying {
+        if isPlaying, permitsAutomaticPlayback() {
             player?.playImmediately(atRate: rate)
         }
         updateNowPlayingInfo()
@@ -1419,6 +1474,7 @@ class AudioPlayerService: NSObject, ObservableObject {
 
     @discardableResult
     func nextSegment(session token: AudioPlaybackSessionToken? = nil) -> Bool {
+        guard permitsAutomaticPlayback() else { return false }
         let effectiveSession: AudioPlaybackSessionToken?
         if let token {
             effectiveSession = token
@@ -1476,8 +1532,10 @@ class AudioPlayerService: NSObject, ObservableObject {
     private func playSegment(
         at index: Int,
         initialProgress: Double? = nil,
+        initialTime: Double? = nil,
         autoPlayWhenReady: Bool = true
     ) -> Bool {
+        guard permitsAutomaticPlayback() else { return false }
         let expectedSession = playbackOwnership.queueSession
         guard playbackOwnership.permitsPlayback(requestedBy: expectedSession) else {
             return false
@@ -1527,6 +1585,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             playAudio(
                 from: staged,
                 initialProgress: initialProgress,
+                initialTime: initialTime,
                 autoPlayWhenReady: autoPlayWhenReady,
                 expectedSession: expectedSession
             )
@@ -1550,6 +1609,7 @@ class AudioPlayerService: NSObject, ObservableObject {
             playAudio(
                 from: tempURL,
                 initialProgress: initialProgress,
+                initialTime: initialTime,
                 autoPlayWhenReady: autoPlayWhenReady,
                 expectedSession: expectedSession
             )
@@ -1571,6 +1631,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     private func playAudio(
         from url: URL,
         initialProgress: Double? = nil,
+        initialTime: Double? = nil,
         autoPlayWhenReady: Bool = true,
         expectedSession: AudioPlaybackSessionToken?
     ) {
@@ -1623,23 +1684,23 @@ class AudioPlayerService: NSObject, ObservableObject {
                     if seconds.isFinite && seconds > 0 {
                         self.duration = seconds
                     }
-                    guard !self.playbackSuspendedByInterruption else {
-                        self.player?.pause()
-                        self.isPlaying = false
-                        self.updateNowPlayingInfo()
-                        print("Audio ready but suspended by interruption; waiting for user resume")
-                        return
-                    }
-                    if let initialProgress, seconds.isFinite, seconds > 0 {
-                        let targetSeconds = seconds * min(0.98, max(0, initialProgress))
+                    if (initialTime != nil || initialProgress != nil), seconds.isFinite, seconds > 0 {
+                        self.isBuffering = true
+                        let requestedTime = initialTime ?? seconds * min(0.98, max(0, initialProgress ?? 0))
+                        let targetSeconds = min(max(0, seconds - 0.01), max(0, requestedTime.isFinite ? requestedTime : 0))
                         let target = CMTime(seconds: targetSeconds, preferredTimescale: 600)
                         let expectedItem = self.playerItem
-                        self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] _ in
-                            guard let self,
+                        self.player?.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self, weak expectedItem] completed in
+                            guard let self, let expectedItem,
                                   expectedItem === self.playerItem,
                                   self.currentItemCanPublishPlaybackState() else { return }
+                            guard completed else {
+                                self.reportPlaybackFailure(for: expectedItem, message: AppLocalized("音频播放失败，请重试"))
+                                return
+                            }
                             self.currentTime = targetSeconds
-                            if autoPlayWhenReady {
+                            self.isBuffering = false
+                            if autoPlayWhenReady && !self.playbackSuspendedByInterruption && self.permitsAutomaticPlayback() {
                                 self.player?.playImmediately(atRate: self.playbackRate)
                                 self.isPlaying = true
                             } else {
@@ -1649,7 +1710,7 @@ class AudioPlayerService: NSObject, ObservableObject {
                             self.updateNowPlayingInfo()
                             print("Audio restored at \(targetSeconds)s / \(seconds)s")
                         }
-                    } else if autoPlayWhenReady {
+                    } else if autoPlayWhenReady && !self.playbackSuspendedByInterruption && self.permitsAutomaticPlayback() {
                         self.player?.playImmediately(atRate: self.playbackRate)
                         self.isPlaying = true
                         self.updateNowPlayingInfo()
@@ -1724,6 +1785,7 @@ class AudioPlayerService: NSObject, ObservableObject {
         timeObserver = player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self = self,
                   self.currentItemCanPublishPlaybackState() else { return }
+            self.sleepTimer.checkDeadline()
             self.currentTime = time.seconds
 
             // Update Now Playing info every second for lock screen progress
@@ -1824,6 +1886,7 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func handlePlayerDidFinishPlaying(itemID: ObjectIdentifier) {
+        guard permitsAutomaticPlayback() else { return }
         guard let currentItem = playerItem,
               ObjectIdentifier(currentItem) == itemID,
               currentItemCanPublishPlaybackState() else {

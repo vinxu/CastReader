@@ -1,0 +1,42 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {extract} from '/Users/xuxuheng/Documents/MyProject/readout-web/voice-library-clean/normalize.mjs';
+import {labels,describe,languageNames} from './locales-it.mjs';
+const root=path.dirname(fileURLToPath(import.meta.url));
+const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'));
+const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
+const rows=read('download-audit.json'), audit=read('language-audit.json');
+const old=JSON.parse(fs.readFileSync('/Users/xuxuheng/Documents/MyProject/.worktrees/readout-web-community-ru-top100-20261012/src/shared/voice-clone/public-reference-catalog.json','utf8'));
+const existing=new Set(old.voices.map(v=>v.catalogId));
+const excluded={50:'language_uncertain_short_reference',2:'mixed_language_novelty_reference',23:'mixed_language_novelty_reference',31:'mixed_language_novelty_reference',38:'uncertain_language_or_singing',42:'mixed_language_novelty_reference',55:'mixed_language_novelty_reference',59:'non_italian_reference',63:'multilingual_reference',71:'non_italian_reference',76:'mixed_language_novelty_reference',92:'non_italian_reference',97:'mixed_french_italian_reference',99:'non_italian_reference'};
+const reviewed=new Set([3,4,7,32,35,36,44,52,58,68,72,77,81,85,89,91,93,95,100]);
+const voices=[],decisions=[];
+for(const row of rows){
+ const a=audit[row.sourceId];
+ const reason=row.error?(row.audioUnavailable?'source_preview_not_available':'source_audio_invalid'):existing.has(row.catalogId)?'already_in_catalog':row.audioCheck.decodedSeconds<3?'reference_under_3_seconds':excluded[row.index];
+ if(reason){decisions.push({index:row.index,sourceId:row.sourceId,id:row.catalogId,name:row.name,action:'excluded',reason});continue;}
+ if(row.error||!row.audioCheck.valid||a.noSpeechProbability>.6||a.mixedWindows||(!reviewed.has(row.index)&&(a.language!=='it'||a.probability<.9)))throw Error('Unreviewed row '+row.index);
+ const mapping={'男性':'Male','女性':'Female','中性':'Neutral','年轻':'Young','中年':'Middle Aged','年长':'Old','对话式':'Conversational','旁白':'Narration','角色声音':'Character Voice','娱乐':'Entertainment','欢快':'Cheerful'};const tags=row.tags.map(t=>mapping[t]||t);
+ const source={...row,tags,gender:tags.find(t=>['Male','Female','Neutral'].includes(t)),age:tags.find(t=>['Young','Middle Aged','Old'].includes(t))};
+ const m=extract({key:row.sourceId,source});
+ let name=m.name.replace(/@[\w.-]+|[<>\x00-\x1f]/g,'').trim();
+ if(m.creator&&name.toLowerCase()===m.creator.toLowerCase())name='';
+ name=(name||`IT · ${row.catalogId.slice(-6)}`).slice(0,120);
+ const img=fs.readFileSync(row.avatarPath);
+ const [ext,mime]=img[0]===255&&img[1]===216?['jpg','image/jpeg']:img.subarray(1,4).toString()==='PNG'?['png','image/png']:img.subarray(0,4).toString()==='RIFF'&&img.subarray(8,12).toString()==='WEBP'?['webp','image/webp']:[];
+ if(!ext)throw Error('Unsupported image '+row.index);
+ const audioPath=`audio/${row.catalogId}.mp3`, avatarPath=`avatars/${row.catalogId}.${ext}`;
+ for(const p of [audioPath,avatarPath])fs.mkdirSync(path.dirname(path.join(root,'delivery',p)),{recursive:true});
+ fs.copyFileSync(row.audioPath,path.join(root,'delivery',audioPath));
+ fs.copyFileSync(row.avatarPath,path.join(root,'delivery',avatarPath));
+ const v={schemaVersion:1,id:row.catalogId,index:voices.length+1,name,nameType:'alias',creator:m.creator,language:'it',languageName:languageNames.it,descriptionLanguage:'it',gender:m.gender,age:m.age,features:m.features,tags:[],description:'',descriptionBasis:m.descriptionBasis,durationSeconds:Number(row.audioCheck.decodedSeconds.toFixed(3)),audio:{path:audioPath,mimeType:'audio/mpeg',bytes:row.audioBytes,sha256:row.audioSha256,pcmSha256:row.audioCheck.pcmSha256},avatar:{path:avatarPath,mimeType:mime,bytes:img.length,sha256:hash(img),kind:'original'},quality:{audioDecoded:true,languageMethod:reviewed.has(row.index)?'reviewed_transcript':'local_model',languageScore:Number(a.probability.toFixed(6)),genderBasis:m.gender==='unknown'?'unspecified':'source_label',ageBasis:m.age==='unknown'?'unspecified':'source_label'}};
+ for(const c of ['gender','age'])v.tags.push({category:c,code:v[c],label:labels.it[v[c]]});
+ for(const [c,values]of Object.entries(v.features))for(const code of values)v.tags.push({category:c,code,label:labels.it[code]});
+ v.description=describe(v);v.styleGroup='style_'+hash(JSON.stringify([v.gender,v.age,...Object.values(v.features).map(x=>[...x].sort())])).slice(0,12);
+ voices.push(v);decisions.push({index:row.index,sourceId:row.sourceId,id:v.id,name:v.name,action:'admitted',sourceSha256:v.audio.sha256,avatarSha256:v.avatar.sha256,languageMethod:v.quality.languageMethod});
+}
+fs.writeFileSync(path.join(root,'delivery/voices.json'),JSON.stringify(voices,null,2)+'\n');
+fs.writeFileSync(path.join(root,'decisions.json'),JSON.stringify(decisions,null,2)+'\n');
+console.log(JSON.stringify({downloaded:rows.length,admitted:voices.length,excluded:decisions.filter(d=>d.action==='excluded')},null,2));

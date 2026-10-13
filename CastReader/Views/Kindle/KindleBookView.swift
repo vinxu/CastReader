@@ -70,7 +70,7 @@ struct KindleBookView: View {
     }
 
     private var shouldHidePlaybackControls: Bool {
-        shouldHidePlaybackForNativeTOC || model.isAmazonCookieConsentVisible
+        shouldHidePlaybackForNativeTOC || model.isAmazonCookieConsentVisible || model.isKindleAppearancePresented
     }
 
     private var headerHeight: CGFloat {
@@ -114,8 +114,20 @@ struct KindleBookView: View {
                 nativeTOCJumpLockOverlay
                     .zIndex(20)
             }
+            if model.isKindleAppearancePresented {
+                Button(AppLocalized("完成")) {
+                    Task { await model.closeKindleAppearance() }
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.bottom, 12)
+                .accessibilityIdentifier("kindleAppearanceDone")
+                .zIndex(30)
+            }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .environment(\.readerAppearanceSource, .web {
+            await model.openKindleAppearance()
+        })
         .navigationBarBackButtonHidden(true)
         .navigationBarHidden(true)
         .toolbar(.hidden, for: .navigationBar)
@@ -249,7 +261,7 @@ struct KindleBookView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            if let image = model.continuousReadVisualHoldImage {
+            if let image = model.continuousReadVisualHoldImage, !model.isKindleAppearancePresented {
                 KindleContinuousReadVisualHold(
                     image: image,
                     highlightRectsNorm: model.continuousReadVisualHoldHighlightRectsNorm
@@ -605,6 +617,7 @@ struct KindleBookView: View {
     }
 
     private func startCurrentMode() {
+        AudioPlayerService.shared.sleepTimer.resumeByUser()
         Task {
             do {
                 model.playbackErrorText = nil
@@ -713,6 +726,7 @@ private struct KindleEmptyPlaybackBar: View {
 }
 
 private struct KindleReadPlaybackBar: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
@@ -723,7 +737,8 @@ private struct KindleReadPlaybackBar: View {
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        voiceSwitch.progress != nil ||
+        if sleepTimer.requiresExplicitResume { return false }
+        return voiceSwitch.progress != nil ||
             isPreparing ||
             (vm.status.isLoadingOrStreaming && !vm.isPlaying && !vm.canResumePlayback)
     }
@@ -749,6 +764,16 @@ private struct KindleReadPlaybackBar: View {
             .disabled(isLoading)
             .accessibilityIdentifier("kindleReadPlayPauseButton")
             .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
+        }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            if let notice = vm.resumeNotice {
+                Text(notice)
+                    .font(.footnote)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: 420)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
         }
     }
 
@@ -934,6 +959,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
             )
             voiceControl(showsLabel: false)
             SpeedMenu(style: .compact)
+            ReaderMoreButton()
         }
     }
 
@@ -969,6 +995,7 @@ private struct KindlePlaybackConsole<PlayControl: View>: View {
 }
 
 private struct KindleExplainPlaybackBar: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ExplainViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let compact: Bool
@@ -1023,6 +1050,11 @@ private struct KindleExplainPlaybackBar: View {
 
     @ViewBuilder
     private var centerControl: some View {
+        if sleepTimer.requiresExplicitResume {
+            playButton(isLoading: false, isPlaying: false) {
+                vm.ensurePlaying()
+            }
+        } else {
         switch vm.status {
         case .idle:
             if isContinuingPage {
@@ -1065,10 +1097,14 @@ private struct KindleExplainPlaybackBar: View {
                 .buttonStyle(.plain)
             }
         }
+        }
     }
 
     private func playButton(isLoading: Bool, isPlaying: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            sleepTimer.resumeByUser()
+            action()
+        } label: {
             KindlePlayButtonContent(
                 isLoading: isLoading,
                 isPlaying: isPlaying,
@@ -1135,6 +1171,7 @@ private struct KindleLandscapeEmptyOverlay: View {
 }
 
 private struct KindleLandscapeReadOverlay: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     @ObservedObject var vm: ReadAloudViewModel
     @ObservedObject private var voiceSwitch = VoiceSwitchStatusCenter.shared
     let isPreparing: Bool
@@ -1144,7 +1181,8 @@ private struct KindleLandscapeReadOverlay: View {
     let showTOC: () -> Void
 
     private var isLoading: Bool {
-        voiceSwitch.progress != nil ||
+        if sleepTimer.requiresExplicitResume { return false }
+        return voiceSwitch.progress != nil ||
             isPreparing ||
             (vm.status.isLoadingOrStreaming && !vm.isPlaying && !vm.canResumePlayback)
     }
@@ -1616,6 +1654,7 @@ struct KindleMiniPlayerView: View {
                 }
 
                 Button {
+                    audio.sleepTimer.resumeByUser()
                     Task { try? await model.startCurrentMode() }
                 } label: {
                     Group {
@@ -1732,7 +1771,8 @@ final class KindlePlaybackCenter: ObservableObject {
         isPresented = false
     }
 
-    func close() {
+    func close(preservingSleepTimer: Bool = false) {
+        if !preservingSleepTimer { AudioPlayerService.shared.sleepTimer.endPlaybackSession() }
         let active = model
         model = nil
         isPresented = false
@@ -1920,6 +1960,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     @Published var isPageTurnResuming = false
     @Published var viewportCrop: KindleViewportCrop = .identity
     @Published var isKindleTOCVisible = false
+    @Published private(set) var isKindleAppearancePresented = false
     @Published var isNativeTOCPresented = false
     @Published var isNativeTOCLoading = false
     @Published var nativeTOCError: String?
@@ -2149,6 +2190,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private var isReaderSurfaceAttached = false
     private var isReaderPresented = false
     private var isPlayerControlOverlayPresented = false
+    private var kindleAppearanceTask: Task<Void, Never>?
+    private var kindleAppearanceAudioHold: UUID?
+    private var isFinishingKindleAppearance = false
+    private var isAppearanceOwnerDestroyed = false
+    private var hasOpenedKindleAppearance = false
     private var isApplicationActive = true
     private var needsForegroundVisualResync = false
     private var lastConfirmedTurnFingerprint: String?
@@ -2313,6 +2359,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     func effectiveViewportCrop(forSurfaceSize size: CGSize) -> KindleViewportCrop {
+        // The normal content-only crop hides Amazon's toolbar and Aa sidebar.
+        if isKindleAppearancePresented { return .identity }
         if isAmazonCookieConsentVisible {
             return KindleCookieConsentViewportPolicy.effectiveCrop(
                 normalCrop: viewportCrop,
@@ -2877,6 +2925,13 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     /// Every path that stops owning a reader must call this. Do not move any of
     /// it back into `deinit`.
     func destroy() {
+        isAppearanceOwnerDestroyed = true
+        isKindleAppearancePresented = false
+        kindleAppearanceTask?.cancel()
+        if let hold = kindleAppearanceAudioHold {
+            AudioPlayerService.shared.endReaderAppearance(hold, resumePlayback: false)
+        }
+        kindleAppearanceAudioHold = nil
         stopAll()
         resetAmazonCookieConsentState(reason: .destroy)
         webView.configuration.userContentController.removeScriptMessageHandler(forName: "castReaderKindle")
@@ -3101,6 +3156,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         _ operation: KindleCookieConsentPipelineOperation,
         reason: String
     ) -> Bool {
+        guard !isKindleAppearancePresented else { return false }
         let allowed = KindleCookieConsentPipelinePolicy.allows(
             operation,
             isConsentVisible: isAmazonCookieConsentVisible
@@ -4282,7 +4338,105 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         webView.scrollView.pinchGestureRecognizer?.isEnabled = false
     }
 
+    func openKindleAppearance() async -> Bool {
+        // Finish a page turn already in flight before exposing Amazon's panel;
+        // unlocking its chrome halfway through a turn invalidates that request.
+        for _ in 0..<50 where isAdvancingLivePage || isFinishingKindleAppearance {
+            do { try await Task.sleep(nanoseconds: 200_000_000) } catch { return false }
+        }
+        guard !isAppearanceOwnerDestroyed, !isAdvancingLivePage, !isFinishingKindleAppearance else { return false }
+        guard !isAmazonCookieConsentVisible, !isKindleSyncDialogVisible,
+              !isNativeTOCPresented, !isNativeTOCLoading, !isPageTurnResuming else { return false }
+        if isKindleAppearancePresented { return true }
+        readerSetupTask?.cancel()
+        hasOpenedKindleAppearance = true
+        isKindleAppearancePresented = true
+        clearExternalMismatchState()
+        suppressExternalPageChangeUntil = .distantFuture
+        if AudioPlayerService.shared.currentBookId == book.id {
+            kindleAppearanceAudioHold = AudioPlayerService.shared.beginReaderAppearance()
+        }
+        invalidatePagePreloads(clearPrepared: true, reason: "appearance")
+        _ = try? await evaluateJSON(KindleWebScripts.beginReaderAppearance)
+        // Let SwiftUI expose the complete Amazon viewport before opening Aa.
+        try? await Task.sleep(nanoseconds: 200_000_000)
+        do {
+            let result = try await evaluateJSON(KindleWebScripts.openReaderAppearance)
+            KindleRunLog.write("KINDLE appearance opener=\(result)")
+            guard Self.boolValue(result["ok"]) else {
+                await finishKindleAppearance()
+                return false
+            }
+            var opened = false
+            for _ in 0..<10 {
+                try await Task.sleep(nanoseconds: 150_000_000)
+                let state = try await evaluateJSON(KindleWebScripts.readerAppearanceState)
+                if Self.boolValue(state["open"]) { opened = true; break }
+            }
+            guard opened else {
+                await finishKindleAppearance()
+                return false
+            }
+            KindleRunLog.write("KINDLE appearance native-panel opened")
+            kindleAppearanceTask = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    do { try await Task.sleep(nanoseconds: 400_000_000) } catch { return }
+                    guard let self, self.isKindleAppearancePresented else { return }
+                    guard let state = try? await self.evaluateJSON(KindleWebScripts.readerAppearanceState) else { continue }
+                    if !Self.boolValue(state["open"]) {
+                        await self.finishKindleAppearance()
+                        return
+                    }
+                }
+            }
+            return true
+        } catch {
+            await finishKindleAppearance()
+            return false
+        }
+    }
+
+    func closeKindleAppearance() async {
+        guard isKindleAppearancePresented else { return }
+        _ = try? await evaluateJSON(KindleWebScripts.closeReaderAppearance)
+        // The watcher also handles dismissal from Amazon's own close button.
+        try? await Task.sleep(nanoseconds: 350_000_000)
+        if let state = try? await evaluateJSON(KindleWebScripts.readerAppearanceState),
+           !Self.boolValue(state["open"]) {
+            await finishKindleAppearance()
+        }
+    }
+
+    private func finishKindleAppearance() async {
+        guard isKindleAppearancePresented else { return }
+        isFinishingKindleAppearance = true
+        defer { isFinishingKindleAppearance = false }
+        isKindleAppearancePresented = false
+        let hold = kindleAppearanceAudioHold
+        kindleAppearanceAudioHold = nil
+        suppressExternalPageChangeUntil = Date().addingTimeInterval(10)
+        clearExternalMismatchState()
+        // Reproject against the spoken text after reflow, without restarting
+        // its audio or treating the new page fingerprint as a manual page turn.
+        try? await Task.sleep(nanoseconds: 350_000_000)
+        _ = try? await evaluateJSON(KindleWebScripts.endReaderAppearance)
+        installCaptureScript()
+        await refocusPlaybackPosition(reason: "appearance")
+        if let hold { AudioPlayerService.shared.endReaderAppearance(hold) }
+        KindleRunLog.write("KINDLE appearance closed; playback projection refreshed")
+    }
+
+    private func waitForKindleAppearanceBeforeAutomaticTurn() async -> Bool {
+        while isKindleAppearancePresented || isFinishingKindleAppearance {
+            guard !isAppearanceOwnerDestroyed else { return false }
+            do { try await Task.sleep(nanoseconds: 200_000_000) } catch { return false }
+        }
+        return !isAppearanceOwnerDestroyed && !Task.isCancelled && AudioPlayerService.shared.sleepTimer.permitsAutomaticPlayback()
+    }
+
     private func applyKindleReaderPreferences(reason: String) async {
+        // Once the user uses Aa, Amazon owns their column/margin choices too.
+        guard !hasOpenedKindleAppearance else { return }
         var lastStage = ""
         for attempt in 1...5 {
             guard !Task.isCancelled else {
@@ -4294,7 +4448,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             } catch {
                 return
             }
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, !isKindleAppearancePresented, !hasOpenedKindleAppearance else { return }
             do {
                 let result = try await evaluateJSON(KindleWebScripts.applyReaderPreferences)
                 let ok = Self.boolValue(result["ok"])
@@ -5292,7 +5446,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
                   start,
                   Self.keyLog(livePageKey ?? ""))
             #endif
-            if start > 0 {
+            if vm.resumeNotice != nil {
+                return .deferred
+            } else if vm.hasPendingReadingResume {
+                vm.ensurePlaying()
+            } else if start > 0 {
                 vm.jump(to: start)
             } else {
                 vm.start()
@@ -7174,7 +7332,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // Foreground/expand recovery is anchored to what audio is currently
         // speaking. Treating the stale visible page as a manual page change here
         // would rewind playback after a long background session.
-        if reason != "foreground", reason != "expand", reason != "highlight-recovery",
+        if reason != "foreground", reason != "expand", reason != "highlight-recovery", reason != "appearance",
            await scheduleExternalPageChangeFromCurrentVisiblePage(reason: reason) {
             return
         }
@@ -7228,7 +7386,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     private static func refocusNeedsFreshProjection(_ reason: String) -> Bool {
         switch reason {
-        case "orientation", "reader-size", "surfaceSize", "foreground", "expand", "highlight-recovery":
+        case "orientation", "reader-size", "surfaceSize", "foreground", "expand", "highlight-recovery", "appearance":
             return true
         default:
             return false
@@ -7236,7 +7394,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private static func refocusRequiresExactPageKey(_ reason: String) -> Bool {
-        true
+        reason != "appearance"
     }
 
     private static func refocusShouldWaitForStableLayout(_ reason: String) -> Bool {
@@ -8467,6 +8625,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     ) -> Bool {
         guard readerOperationAllowed(.ttsPreparation, reason: reason) else { return false }
         guard mode == .read, let vm = readVM else { return false }
+        vm.discardReadingResumeForConfirmedNavigation()
         let readableIDs = document.paragraphs
             .filter { $0.type.isReadable && SpeechTextSanitizer.containsSpeakableContent($0.text) }
             .map(\.id)
@@ -9532,6 +9691,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         session: KindleReadPageSession,
         expectedPageKey: String
     ) async {
+        guard await waitForKindleAppearanceBeforeAutomaticTurn() else { return }
         guard readerOperationAllowed(.automaticPageTurn, reason: "read-auto-advance") else {
             cancelAutomaticAppReviewContinuation(for: session)
             return
@@ -9574,6 +9734,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             return
         }
         let oldKey = visibleOldKey.nilIfEmpty ?? expectedPageKey
+        guard await waitForKindleAppearanceBeforeAutomaticTurn(),
+              mode == .read, activeReadPageSession == session else { return }
         let appReviewReadSession = takeAutomaticAppReviewContinuation(for: session)
         isAdvancingLivePage = true
         defer { isAdvancingLivePage = false }
@@ -9594,6 +9756,10 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     }
 
     private func advanceToNextExplainPageIfNeeded() async {
+        guard await waitForKindleAppearanceBeforeAutomaticTurn() else {
+            isContinuingExplainPage = false
+            return
+        }
         guard readerOperationAllowed(.automaticPageTurn, reason: "explain-auto-advance") else {
             isContinuingExplainPage = false
             return

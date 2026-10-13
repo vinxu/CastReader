@@ -265,6 +265,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
 
     private final class Inbox: NSObject, WKScriptMessageHandler {
         var messages: [(type: String, payload: [String: Any])] = []
+        var renderedEvents: [(frame: GoogleBooksScriptMessageFrame, payload: [String: Any])] = []
         var onMessage: ((String, [String: Any]) -> Void)?
         func userContentController(
             _ userContentController: WKUserContentController,
@@ -273,6 +274,17 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
             guard let body = message.body as? [String: Any],
                   let type = body["type"] as? String else { return }
             let payload = body["payload"] as? [String: Any] ?? [:]
+            if type == "rendered" {
+                let info = message.frameInfo
+                let origin = info.securityOrigin
+                renderedEvents.append((GoogleBooksScriptMessageFrame(
+                    isMainFrame: info.isMainFrame,
+                    securityScheme: origin.protocol,
+                    securityHost: origin.host,
+                    securityPort: origin.port,
+                    requestURL: info.request.url?.absoluteString
+                ), payload))
+            }
             messages.append((type, payload))
             onMessage?(type, payload)
         }
@@ -1815,7 +1827,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
     }
 
     /// 真实 play.google.com 冒烟（需要网络，默认跳过）：
-    ///   CASTREADER_NETWORK_SMOKE=1 xcodebuild test -only-testing:CastReaderTests/GoogleBooksWebBridgeTests/testRealPlayBooksShellInstallsRelayOnly
+    ///   TEST_RUNNER_CASTREADER_NETWORK_SMOKE=1 xcodebuild test -only-testing:CastReaderTests/GoogleBooksWebBridgeTests/testRealPlayBooksShellInstallsRelayOnly
     /// 只验证注入分流：主帧必须装上转发壳，且**绝不**把阅读器 UI 当正文上报。
     /// 未登录时 Google 会显示「Can't open this book」，这条断言依然成立。
     func testRealPlayBooksShellInstallsRelayOnly() async throws {
@@ -1837,11 +1849,20 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         ) as? Bool
         XCTAssertEqual(hasRelay, true, "主帧必须安装 window.CR 转发壳")
 
-        let renderedFromShell = inbox.messages.filter { $0.type == "rendered" }
+        // The bundle runs in every frame. Google also creates auxiliary frames
+        // whose generic extractor may emit rendered; production rejects those
+        // at WebReaderBridge's frame boundary. Keep main-frame silence as an
+        // independent assertion, then apply that same boundary to book events.
+        let renderedFromShell = inbox.renderedEvents.filter { $0.frame.isMainFrame }
+        XCTAssertTrue(renderedFromShell.isEmpty, "主帧转发壳不得提取阅读器 UI")
+        let accepted = inbox.renderedEvents.filter {
+            GoogleBooksWebAccessPolicy.allowsScriptMessage(type: "rendered", from: $0.frame)
+        }
         XCTAssertTrue(
-            renderedFromShell.allSatisfy { ($0.payload["source"] as? String) == "google-books" },
-            "阅读器 UI 被当成正文提取了：\(renderedFromShell.map { $0.payload["reason"] ?? "?" })"
+            accepted.allSatisfy { ($0.payload["source"] as? String) == "google-books" },
+            "受信任的阅读帧必须使用 Google Books 正文适配器"
         )
+        print("GOOGLE_SHELL_SMOKE mainRendered=\(renderedFromShell.count) acceptedReaderRendered=\(accepted.count) rejectedAuxiliaryRendered=\(inbox.renderedEvents.count - accepted.count - renderedFromShell.count)")
     }
 
     func testHighlightUsesTheVisibleParagraphOffset() async throws {

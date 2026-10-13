@@ -11,12 +11,26 @@ import WebKit
 
 @MainActor
 final class GoogleBooksLibraryStore: ObservableObject {
-    static let shared = GoogleBooksLibraryStore(
-        defaults: .standard,
-        historyStore: .shared,
-        websiteDataStore: GoogleWebSession.websiteDataStore,
-        usesLegacyStorageWhenUnscoped: false
-    )
+    static let shared: GoogleBooksLibraryStore = {
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksHundredShelfFixture") {
+            let suite = "castreader.googlebooks.hundred-shelf-fixture.v1"
+            let defaults = UserDefaults(suiteName: suite)!
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderResetGoogleBooksHundredFixture") {
+                defaults.removePersistentDomain(forName: suite)
+            }
+            return GoogleBooksLibraryStore(
+                defaults: defaults, historyStore: .shared, websiteDataStore: .nonPersistent(),
+                usesLegacyStorageWhenUnscoped: false
+            )
+        }
+#endif
+        return GoogleBooksLibraryStore(
+            defaults: .standard, historyStore: .shared,
+            websiteDataStore: GoogleWebSession.websiteDataStore,
+            usesLegacyStorageWhenUnscoped: false
+        )
+    }()
 
     @Published private(set) var books: [GoogleBooksBook] = []
     @Published private(set) var hasConnected = false
@@ -46,6 +60,15 @@ final class GoogleBooksLibraryStore: ObservableObject {
     private let usesLegacyStorageWhenUnscoped: Bool
     private var accountScope: AccountContentScope?
     private var isLegacyTestingScopeActive = false
+    private var storageBoundaryID = UUID()
+
+    func captureStorageBoundary() -> UUID? {
+        hasActiveStorage ? storageBoundaryID : nil
+    }
+
+    func isCurrentStorageBoundary(_ token: UUID) -> Bool {
+        hasActiveStorage && storageBoundaryID == token
+    }
 
     convenience init(defaults: UserDefaults = .standard) {
         self.init(
@@ -87,6 +110,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
 
     func activateAccountScope(_ scope: AccountContentScope) {
         guard accountScope != scope || !hasActiveStorage else { return }
+        storageBoundaryID = UUID()
         resetInMemory()
         isLegacyTestingScopeActive = false
         accountScope = scope
@@ -94,6 +118,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
     }
 
     func deactivateAccountScope() {
+        storageBoundaryID = UUID()
         resetInMemory()
         isLegacyTestingScopeActive = false
         accountScope = nil
@@ -101,6 +126,8 @@ final class GoogleBooksLibraryStore: ObservableObject {
 
 #if DEBUG
     func activateLegacyTestingScope() {
+        guard !isLegacyTestingScopeActive else { return }
+        storageBoundaryID = UUID()
         resetInMemory()
         accountScope = nil
         isLegacyTestingScopeActive = true
@@ -128,13 +155,32 @@ final class GoogleBooksLibraryStore: ObservableObject {
         }
     }
 
-    func mergeScrapedBooks(_ incoming: [GoogleBooksBook], account: GoogleBooksAccountInfo? = nil) {
+    @discardableResult
+    func mergeScrapedBooks(
+        _ incoming: [GoogleBooksBook],
+        account: GoogleBooksAccountInfo? = nil,
+        expectedStorageBoundary: UUID? = nil
+    ) -> Bool {
+        guard hasActiveStorage,
+              expectedStorageBoundary.map(isCurrentStorageBoundary) ?? true else {
+            lastError = AppLocalized("请先登录")
+            return false
+        }
         let valid = incoming.filter(GoogleBooksBookValidator.isLikelyLibraryBook)
         let hasTrustedShelfEvidence =
             account?.hasAccountEvidence == true
                 && account?.isShelfContext == true
         let incomingIdentity = account?.identity.flatMap {
             GoogleBooksAccountIdentity.isValidStoredIdentity($0) ? $0 : nil
+        }
+        guard hasTrustedShelfEvidence, let incomingIdentity else {
+            lastError = AppLocalized("请先登录 Google 账号，登录后会自动进入书架。")
+            return false
+        }
+        guard account?.unrecognizedBookCandidateCount == 0,
+              account?.hasExplicitEmptyShelf != true || incoming.isEmpty else {
+            lastError = AppLocalized("书架尚未完整加载，请重试。")
+            return false
         }
         let completeSnapshot =
             hasTrustedShelfEvidence
@@ -143,13 +189,13 @@ final class GoogleBooksLibraryStore: ObservableObject {
 
         // A non-empty scrape that collapsed to zero valid books is not a
         // trustworthy empty shelf; never let it erase the prior snapshot.
-        guard !valid.isEmpty || incoming.isEmpty && completeSnapshot else {
+        guard !valid.isEmpty || incoming.isEmpty && completeSnapshot
+                && account?.hasExplicitEmptyShelf == true else {
             lastError = AppLocalized("当前页面没有找到 Google Play 图书的书籍。")
-            return
+            return false
         }
 
         let accountChanged: Bool = {
-            guard hasTrustedShelfEvidence, let incomingIdentity else { return false }
             if let accountIdentity { return accountIdentity != incomingIdentity }
             // Legacy caches did not persist an identity. Starting from a clean
             // snapshot prevents a newly selected account inheriting those books.
@@ -161,9 +207,12 @@ final class GoogleBooksLibraryStore: ObservableObject {
             anchors = [:]
             accountLabel = nil
         }
-        if hasTrustedShelfEvidence, let incomingIdentity {
-            accountIdentity = incomingIdentity
+        if accountIdentity != incomingIdentity {
+            // Invalidate scans captured before a provider switch, including
+            // first binding and A -> B -> A within one CastReader account.
+            storageBoundaryID = UUID()
         }
+        accountIdentity = incomingIdentity
 
         let now = Date()
         let existing = books.reduce(into: [String: GoogleBooksBook]()) { result, book in
@@ -182,18 +231,9 @@ final class GoogleBooksLibraryStore: ObservableObject {
             book.readerURL = canonical
             book.volumeID = volumeID
             book.lastSyncedAt = now
-            if var old = existing[book.id] {
-                old.title = book.title.isEmpty ? old.title : book.title
-                old.author = book.author.isEmpty ? old.author : book.author
-                old.coverURL = book.coverURL ?? old.coverURL
-                old.readerURL = book.readerURL
-                old.volumeID = volumeID
-                old.progressLabel = book.progressLabel.isEmpty ? old.progressLabel : book.progressLabel
-                old.lastSyncedAt = book.lastSyncedAt
-                merged[book.id] = old
-            } else {
-                merged[book.id] = book
-            }
+            merged[book.id] = GoogleBooksBookMetadata.merged(
+                existing: merged[book.id] ?? existing[book.id], incoming: book
+            )
         }
 
         if completeSnapshot {
@@ -216,6 +256,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
         }
         // 与 Kindle/微信读书书架一致：同步时就把封面拉下来，首页不出现空占位。
         ImageCache.shared.prefetch(books.compactMap(\.coverURL))
+        return true
     }
 
     func markOpened(_ book: GoogleBooksBook) {
@@ -274,6 +315,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
     func clearError() { lastError = nil }
 
     func disconnectAccount() async {
+        storageBoundaryID = UUID()
         historyStore.deleteAll(sourceKind: .googleBooks)
         books = []
         anchors = [:]

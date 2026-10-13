@@ -203,12 +203,41 @@ enum GoogleBooksWebScripts {
       }
       function abs(href) {
         if (!href) return '';
-        try { return new URL(href, location.origin).href; } catch (e) { return ''; }
+        try { return new URL(href, location.href).href; } catch (e) { return ''; }
       }
       function volumeFrom(href) {
         if (!href) return '';
-        var m = /[?&#]id=([A-Za-z0-9_-]{6,64})/.exec(href);
-        return m ? m[1] : '';
+        try {
+          var url = new URL(href, location.href);
+          if (url.protocol !== 'https:' || url.hostname.toLowerCase() !== 'play.google.com' ||
+              url.username || url.password || (url.port && url.port !== '443') ||
+              !/^\/books\/reader\/?$/.test(url.pathname)) return '';
+          var ids = url.searchParams.getAll('id');
+          return ids.length === 1 && /^[A-Za-z0-9_-]{6,64}$/.test(ids[0]) ? ids[0] : '';
+        } catch (e) { return ''; }
+      }
+      function visible(node) {
+        if (!node || !node.isConnected) return false;
+        for (var parent = node; parent && parent.nodeType === 1; parent = parent.parentElement) {
+          var style = getComputedStyle(parent);
+          if (parent.hidden || parent.getAttribute('aria-hidden') === 'true' || parent.hasAttribute('inert') ||
+              style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse' ||
+              Number(style.opacity) === 0) return false;
+        }
+        return node.getClientRects().length > 0;
+      }
+      function firstVisible(selector) {
+        return Array.from(document.querySelectorAll(selector)).find(visible) || null;
+      }
+      function recommendation(node) {
+        return !!node.closest('aside,[aria-label*="recommend" i],[data-testid*="recommend" i]');
+      }
+      function shelfBusy() {
+        return Array.from(document.querySelectorAll([
+          '[aria-busy="true"]', '[data-loading="true"]',
+          '[data-testid*="loading" i]', '[data-testid*="skeleton" i]',
+          '[role="progressbar"]:not([aria-valuenow])'
+        ].join(','))).some(function (node) { return visible(node) && !recommendation(node); });
       }
 
       var authRequired = false;
@@ -217,54 +246,84 @@ enum GoogleBooksWebScripts {
       var isShelfContext = false;
       var account = null;
       var accountIdentitySource = '';
+      var hasCredentialForm = !!firstVisible([
+        'input[type="password"]', 'input[autocomplete~="username"]',
+        'input[autocomplete~="current-password"]', 'input[autocomplete~="one-time-code"]',
+        'form[action*="signin" i] input', 'form[action*="ServiceLogin" i] input'
+      ].join(','));
+      var shelfSurfaceSelector = 'gpb-library-home gpb-shelf-page,main,[role="main"],[role="list"],[role="grid"]';
+      var shelfSurfaces = Array.from(document.querySelectorAll(shelfSurfaceSelector))
+        .filter(function (node) { return visible(node) && node.clientHeight > 0 && !recommendation(node); });
+      var hasShelfSurface = shelfSurfaces.length > 0;
+      var isDocumentReady = document.readyState === 'interactive' || document.readyState === 'complete';
       try {
         var host = String(location.hostname || '').toLowerCase();
         var path = String(location.pathname || '').toLowerCase().replace(/\/+$/, '') || '/';
-        isShelfContext = host === 'play.google.com' &&
+        var pageURL = new URL(location.href);
+        isShelfContext = location.protocol === 'https:' && !pageURL.username && !pageURL.password &&
+          (!location.port || location.port === '443') && host === 'play.google.com' &&
           (path === '/books' || (path.indexOf('/books/') === 0 && path.indexOf('/books/reader') !== 0));
         if (host === 'accounts.google.com') authRequired = true;
 
         // Prefer URL/data attributes over localized visible text. aria-label
         // remains a fallback because Google currently puts the signed-in
         // email there in most locales.
-        var accountNode = document.querySelector(
-          '[data-email], a[href*="SignOutOptions"], a[href*="/ManageAccount"], a[href*="accounts.google.com/SignOutOptions"], header a[aria-label*="@"], img.gb_P'
-        );
-        var signInNode = document.querySelector(
+        var accountNodes = Array.from(document.querySelectorAll(
+          '[data-email], a[href*="SignOutOptions"], a[href*="/ManageAccount"], header a[aria-label*="@"], header button[aria-label*="@"], [role="banner"] [aria-label*="@"], img.gb_P'
+        ));
+        var signInNode = firstVisible(
           'a[href*="ServiceLogin"], a[href*="accounts.google.com/signin"]'
         );
-        hasAccountEvidence = !!accountNode;
-        if (accountNode) {
-          var rawEvidence =
-            accountNode.getAttribute('data-email') ||
-            accountNode.getAttribute('aria-label') ||
-            accountNode.getAttribute('alt') ||
-            accountNode.getAttribute('title') || '';
-          var emailMatch = /([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)/.exec(rawEvidence);
-          if (emailMatch) {
-            accountIdentitySource = String(emailMatch[1]).toLowerCase();
-            // 只保留域名部分作展示，不带邮箱本体。
-            account = 'Google · ' + accountIdentitySource.split('@')[1];
-          } else {
-            accountIdentitySource = String(rawEvidence || '')
-              .replace(/\s+/g, ' ')
-              .trim()
-              .toLowerCase();
+        hasAccountEvidence = accountNodes.length > 0 && !hasCredentialForm && !signInNode;
+        // The first match can be generic avatar artwork. Inspect every known
+        // account node and isolate the email from localized labels such as
+        // "Google Account: Name (reader@example.com)" without punctuation.
+        var emailPattern = /[a-z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+/i;
+        for (var accountIndex = 0; accountIndex < accountNodes.length && !accountIdentitySource; accountIndex++) {
+          var accountNode = accountNodes[accountIndex];
+          var attributes = ['data-email', 'aria-label', 'alt', 'title'];
+          for (var attributeIndex = 0; attributeIndex < attributes.length; attributeIndex++) {
+            var emailMatch = emailPattern.exec(accountNode.getAttribute(attributes[attributeIndex]) || '');
+            if (emailMatch) {
+              accountIdentitySource = String(emailMatch[0]).toLowerCase();
+              // 只保留域名部分作展示，不带邮箱本体。
+              account = 'Google · ' + accountIdentitySource.split('@')[1];
+              break;
+            }
           }
         }
+        if (hasCredentialForm || signInNode) authRequired = true;
         authenticated = hasAccountEvidence && isShelfContext && !authRequired;
         if (!hasAccountEvidence && signInNode) authRequired = true;
       } catch (e) { /* */ }
 
       var found = {};
       var observedBookNodes = [];
+      var bookCandidates = [];
+      var recognizedCandidates = [];
+      function candidateRoot(node) {
+        return node.closest('.card,[role="listitem"],li,[data-item-id],[data-docid],[data-volume-id],gpb-volume-card') || node;
+      }
+      function registerCandidate(node) {
+        if (!node || !visible(node) || recommendation(node)) return null;
+        var root = candidateRoot(node);
+        if (bookCandidates.indexOf(root) === -1) bookCandidates.push(root);
+        return root;
+      }
       function push(href, node) {
+        if (node && (!visible(node) || recommendation(node))) return;
+        var candidate = registerCandidate(node);
         var url = abs(href);
         var volume = volumeFrom(url);
         if (!volume) return;
         if (node) observedBookNodes.push(node);
-        if (found[volume]) return;
-        var card = node ? (node.closest('[role="listitem"], li, .card, [data-item-id], div') || node) : null;
+        if (found[volume]) {
+          if (candidate) recognizedCandidates.push(candidate);
+          return;
+        }
+        // Real Google cards nest the title inside .metadata/.bottompanel.
+        // A generic nearest div stops there and misses the sibling cover.
+        var card = node ? (node.closest('.card,[role="listitem"],li,[data-item-id],[data-docid],[data-volume-id],gpb-volume-card') || node.closest('div') || node) : null;
         var title = '';
         var author = '';
         var cover = '';
@@ -295,6 +354,7 @@ enum GoogleBooksWebScripts {
           if (byMatch) { title = byMatch[1].trim(); author = byMatch[2].trim(); }
         }
         if (!title) return;
+        if (candidate) recognizedCandidates.push(candidate);
         found[volume] = {
           readerURL: 'https://play.google.com/books/reader?id=' + volume,
           title: title,
@@ -314,6 +374,7 @@ enum GoogleBooksWebScripts {
         var carriers = document.querySelectorAll('[data-item-id], [data-docid], [data-volume-id]');
         for (var j = 0; j < carriers.length; j++) {
           var node = carriers[j];
+          registerCandidate(node);
           var raw = node.getAttribute('data-volume-id') || node.getAttribute('data-docid') || node.getAttribute('data-item-id') || '';
           var id = /^book-(.+)$/.exec(raw);
           var volume = id ? id[1] : raw;
@@ -326,78 +387,150 @@ enum GoogleBooksWebScripts {
       var books = [];
       for (var key in found) { if (Object.prototype.hasOwnProperty.call(found, key)) books.push(found[key]); }
 
-      // Find the real vertical scroll owner from book-card ancestors. Google
-      // alternates between document scrolling and a virtualized nested list.
-      // Move it one viewport per scan pass; the native loop unions the cards
-      // observed across passes.
-      var scrollRoot = document.scrollingElement || document.documentElement;
-      var bestRange = scrollRoot
-        ? Math.max(0, Number(scrollRoot.scrollHeight || 0) - Number(scrollRoot.clientHeight || 0))
-        : 0;
-      try {
-        var nestedRoot = null;
-        var nestedRange = 0;
-        for (var n = 0; n < observedBookNodes.length; n++) {
-          var ancestor = observedBookNodes[n];
-          var depth = 0;
-          while (ancestor && ancestor !== document.body && depth < 12) {
-            var range = Math.max(
-              0,
-              Number(ancestor.scrollHeight || 0) - Number(ancestor.clientHeight || 0)
-            );
-            if (range > nestedRange + 8) {
-              var style = window.getComputedStyle(ancestor);
-              var overflowY = style ? String(style.overflowY || '') : '';
-              if (overflowY === 'auto' || overflowY === 'scroll') {
-                nestedRoot = ancestor;
-                nestedRange = range;
-              }
-            }
-            ancestor = ancestor.parentElement;
-            depth++;
-          }
-        }
-        if (nestedRoot) {
-          scrollRoot = nestedRoot;
-          bestRange = nestedRange;
-        }
-      } catch (e) { /* */ }
+      // A visible cover/card that this adapter cannot decode is not an empty
+      // shelf. Keep the diagnostic count separate from successfully parsed
+      // books so native validation can prevent a partial replacement.
+      Array.from(document.querySelectorAll('gpb-volume-card,[role="listitem"],li,.card,[role="button"]')).forEach(function (node) {
+        if (!visible(node) || recommendation(node) ||
+            !shelfSurfaces.some(function (surface) { return surface.contains(node); })) return;
+        if (node.matches('gpb-volume-card')) { registerCandidate(node); return; }
+        if (!node.querySelector('img')) return;
+        if (text(node) || node.getAttribute('aria-label') || node.getAttribute('title') ||
+            node.querySelector('img[alt],a,button,[role="heading"]')) registerCandidate(node);
+      });
+      var unrecognizedCandidates = bookCandidates.filter(function (candidate) {
+        return !recognizedCandidates.some(function (recognized) {
+          return candidate === recognized || candidate.contains(recognized) || recognized.contains(candidate);
+        });
+      });
+      var unrecognizedBookCandidateCount = unrecognizedCandidates.filter(function (candidate) {
+        return !unrecognizedCandidates.some(function (nested) {
+          return nested !== candidate && candidate.contains(nested);
+        });
+      }).length;
 
-      var scrollTop = 0;
-      var viewport = 0;
-      var atScrollEnd = true;
-      try {
-        if (scrollRoot) {
-          scrollTop = Number(scrollRoot.scrollTop || 0);
-          viewport = Number(scrollRoot.clientHeight || window.innerHeight || 0);
-          bestRange = Math.max(
-            0,
-            Number(scrollRoot.scrollHeight || 0) - viewport
-          );
-          atScrollEnd = bestRange <= 8 || scrollTop >= bestRange - 8;
-          // Authentication/session probes must be side-effect free with one
-          // exception: once the real signed-in shelf is reached, rewind it to
-          // the first viewport so the following full scan cannot silently
-          // skip cards that the probe itself observed.
-          if (probeOnly && authenticated) {
-            scrollRoot.scrollTop = 0;
-            scrollTop = 0;
-            atScrollEnd = bestRange <= 8;
-          } else if (!probeOnly && !atScrollEnd) {
-            scrollRoot.scrollTop = Math.min(
-              bestRange,
-              scrollTop + Math.max(viewport * 0.82, 520)
-            );
+      // Choose the nearest scrolling ancestor of the cards, not whichever
+      // outer layout happens to have the largest scroll range.
+      var scrollRoot = document.scrollingElement || document.documentElement;
+      var owners = [];
+      observedBookNodes.forEach(function (node) {
+        for (var ancestor = node.parentElement; ancestor && ancestor !== document.body; ancestor = ancestor.parentElement) {
+          var style = getComputedStyle(ancestor);
+          if (ancestor.clientHeight > 0 && /^(?:auto|scroll)$/.test(style.overflowY)) {
+            var existing = owners.find(function (item) { return item.node === ancestor; });
+            if (existing) existing.votes += 1;
+            else owners.push({ node: ancestor, votes: 1 });
+            break;
           }
         }
-      } catch (e) { atScrollEnd = false; }
-      var hasPendingShelfWork = !!document.querySelector(
-        'main[aria-busy="true"], [role="main"][aria-busy="true"], [data-loading="true"]'
-      );
-      var isCompleteSnapshot = authenticated &&
-        document.readyState === 'complete' &&
-        atScrollEnd &&
-        !hasPendingShelfWork;
+      });
+      if (owners.length) {
+        owners.sort(function (a, b) { return b.votes - a.votes; });
+        scrollRoot = owners[0].node;
+      } else {
+        var emptyOwner = Array.from(document.querySelectorAll(shelfSurfaceSelector)).find(function (node) {
+          return visible(node) && node.clientHeight > 0 && /^(?:auto|scroll)$/.test(getComputedStyle(node).overflowY);
+        });
+        if (emptyOwner) scrollRoot = emptyOwner;
+      }
+
+      var scrollTop = scrollRoot ? Number(scrollRoot.scrollTop || 0) : 0;
+      var viewport = scrollRoot ? Number(scrollRoot.clientHeight || window.innerHeight || 0) : 0;
+      var bestRange = scrollRoot ? Math.max(0, Number(scrollRoot.scrollHeight || 0) - viewport) : 0;
+      var atScrollEnd = bestRange <= 4 || scrollTop >= bestRange - 4;
+      var fingerprint = Object.keys(found).sort().join('|');
+      var hasPendingShelfWork = !isDocumentReady || shelfBusy();
+      var unsupportedPagination = Array.from(document.querySelectorAll([
+        'nav[aria-label*="pagination" i]', '[aria-label*="page navigation" i]',
+        '[class~="pagination"]', '[class~="pager"]', '[data-testid*="pagination" i]'
+      ].join(','))).some(function (node) {
+        return visible(node) && !recommendation(node) &&
+          !node.closest('[class*="page-size" i],[class*="pagesize" i],.pagination-filter-container,.filter-chip') &&
+          !!node.querySelector('a,button,[role="button"]');
+      });
+      var hasActiveShelfFilter = false;
+      if (isShelfContext && !hasCredentialForm) {
+        // Observed Google progress dropdown: the placeholder carries the
+        // mat-mdc-select-empty class. A selected progress value is a subset
+        // of the account library and must not replace its complete catalog.
+        hasActiveShelfFilter = Array.from(document.querySelectorAll('gpb-shelf-page .progress-filter mat-select'))
+          .some(function (node) {
+            return !node.classList.contains('mat-mdc-select-empty') || !!text(node.querySelector('.mat-mdc-select-value-text'));
+          });
+        if (!hasActiveShelfFilter) {
+          hasActiveShelfFilter = Array.from(document.querySelectorAll('input[type="search"],input[role="searchbox"]'))
+            .some(function (node) {
+              // Only explicit shelf-search fields are read, never credentials
+              // or generic text inputs. Only the Boolean leaves the page.
+              return visible(node) && !recommendation(node) &&
+                shelfSurfaces.some(function (surface) { return surface.contains(node); }) &&
+                String(node.value || '').trim().length > 0;
+            });
+        }
+      }
+
+      var cardRects = observedBookNodes.map(function (node) {
+        var card = node.closest('.card,[role="listitem"],li,[data-item-id],gpb-volume-card') || node;
+        return card.getBoundingClientRect();
+      }).filter(function (rect) { return rect.height > 0; });
+      var firstCardTop = cardRects.length ? Math.min.apply(null, cardRects.map(function (rect) { return rect.top; })) : 0;
+      var lastCardBottom = cardRects.length ? Math.max.apply(null, cardRects.map(function (rect) { return rect.bottom; })) : 0;
+      var rootTop = scrollRoot === document.scrollingElement || scrollRoot === document.documentElement
+        ? 0 : scrollRoot.getBoundingClientRect().top + Number(scrollRoot.clientTop || 0);
+      var coversViewport = cardRects.length > 0 && firstCardTop <= rootTop + 8 && lastCardBottom >= rootTop + viewport - 8;
+      var looksVirtual = cardRects.length > 0 && lastCardBottom - firstCardTop + viewport * 2 < bestRange;
+      var movement = window.__castreaderGoogleBooksShelfMovement;
+      if (movement && movement.root !== scrollRoot) {
+        movement = null;
+        window.__castreaderGoogleBooksShelfMovement = null;
+      }
+      if (movement) {
+        // A virtual list can update scrollTop before replacing the old cards.
+        // Hold position until its new metadata or covered viewport proves the
+        // render caught up. Static lists already expose all their cards.
+        var rendered = fingerprint !== movement.fingerprint || coversViewport || !movement.virtual;
+        if (!hasPendingShelfWork && rendered) {
+          window.__castreaderGoogleBooksShelfMovement = null;
+          movement = null;
+        } else {
+          hasPendingShelfWork = true;
+        }
+      }
+      try {
+        if (probeOnly && authenticated && scrollRoot) {
+          scrollRoot.scrollTop = 0;
+          scrollTop = 0;
+          atScrollEnd = bestRange <= 4;
+          window.__castreaderGoogleBooksShelfMovement = null;
+        } else if (!probeOnly && authenticated && scrollRoot && !hasPendingShelfWork &&
+                   unrecognizedBookCandidateCount === 0 && !atScrollEnd && !unsupportedPagination && !hasActiveShelfFilter) {
+          // Overlap viewports. A minimum 520px step skipped books whenever a
+          // nested virtual list was shorter than 520px (common on phones).
+          var targetTop = Math.min(bestRange, scrollTop + Math.max(1, viewport * 0.82));
+          window.__castreaderGoogleBooksShelfMovement = {
+            root: scrollRoot, fingerprint: fingerprint, virtual: looksVirtual, targetTop: targetTop
+          };
+          scrollRoot.scrollTop = targetTop;
+        }
+      } catch (e) { atScrollEnd = false; hasPendingShelfWork = true; }
+      // Generic main/list markup and repeated zero results do not prove an
+      // empty account. Require a visible, explicit empty-state message, and
+      // reject it if any book-like card (including an undecodable one) exists.
+      var emptyStateVisible = Array.from(document.querySelectorAll([
+        '[data-testid="empty-library"]', '[data-testid="empty-shelf"]',
+        '[data-empty-library="true"]', '[data-empty-shelf="true"]',
+        '.empty-library', '.empty-shelf', '.empty-state', '[role="status"]'
+      ].join(','))).some(function (node) {
+        if (!visible(node) || recommendation(node) ||
+            !shelfSurfaces.some(function (surface) { return surface.contains(node); })) return false;
+        var message = text(node).toLowerCase().replace(/[.!。！]+$/, '').trim();
+        return /^(?:no books(?: yet)?|your (?:library|shelf) is empty|you (?:don't|do not) have any books(?: yet)?|没有图书|暂无图书|书架为空|尚无图书|還沒有圖書|沒有圖書|書架為空)$/.test(message);
+      });
+      var hasExplicitEmptyShelf = authenticated && isDocumentReady && hasShelfSurface &&
+        !hasPendingShelfWork && !hasActiveShelfFilter && books.length === 0 && bookCandidates.length === 0 && emptyStateVisible;
+      var isCompleteSnapshot = authenticated && isDocumentReady && hasShelfSurface &&
+        atScrollEnd && !hasPendingShelfWork && !unsupportedPagination && !hasActiveShelfFilter &&
+        unrecognizedBookCandidateCount === 0 && (books.length > 0 || hasExplicitEmptyShelf);
 
       return {
         authRequired: authRequired,
@@ -405,6 +538,19 @@ enum GoogleBooksWebScripts {
         hasAccountEvidence: hasAccountEvidence,
         isShelfContext: isShelfContext,
         isCompleteSnapshot: isCompleteSnapshot,
+        hasCredentialForm: hasCredentialForm,
+        isDocumentReady: isDocumentReady,
+        hasShelfSurface: hasShelfSurface,
+        hasExplicitEmptyShelf: hasExplicitEmptyShelf,
+        unrecognizedBookCandidateCount: unrecognizedBookCandidateCount,
+        atScrollEnd: atScrollEnd,
+        hasPendingWork: hasPendingShelfWork,
+        pageFingerprint: fingerprint,
+        scrollPosition: scrollTop,
+        scrollExtent: bestRange,
+        viewportHeight: viewport,
+        hasUnsupportedPagination: unsupportedPagination,
+        hasActiveShelfFilter: hasActiveShelfFilter,
         account: account,
         accountIdentitySource: accountIdentitySource,
         books: books
@@ -419,6 +565,112 @@ enum GoogleBooksWebScripts {
     static var sessionProbe: String {
         "window.__castreaderGoogleBooksProbeOnly = true;\n" + libraryScan
     }
+
+#if DEBUG
+    /// Synthetic metadata-only library using the observed Google custom
+    /// elements and nested cover/metadata card shape. No account DOM or book
+    /// content is copied. Its asynchronous four-card viewport deliberately
+    /// needs more than 24 scan passes to reach all 100 books.
+    static let debugHundredBookShelfFixture = #"""
+    <!doctype html><html lang="zh-CN"><head>
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font: 14px -apple-system,sans-serif; color: #25272c; background: #f5f6f8; }
+        header { margin: 12px; padding: 13px; background: #eaf2ff; border-radius: 12px; }
+        header h1 { margin: 0 0 7px; font-size: 19px; }
+        header p { margin: 4px 0; color: #536887; line-height: 1.45; }
+        header button { border: 0; background: none; padding: 3px 0; color: #536887; }
+        #shelf { box-sizing: content-box; height: 180px; margin: 12px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid #d6deea; border-radius: 8px; background: white; }
+        gpb-library-home,gpb-shelf-page,gpb-volume-card { display: block; }
+        gpb-volume-card { height: 60px; border-bottom: 1px solid #edf0f4; padding: 9px 12px; }
+        .card { display: flex; gap: 10px; height: 42px; }
+        .cover { width: 28px; flex: 0 0 28px; }
+        .cover-image-container { height: 40px; position: relative; }
+        .refresh-cover-image { width: 28px; height: 40px; }
+        .cover-link { position: absolute; inset: 0; }
+        .title { display: block; color: #244c82; font-weight: 600; text-decoration: none; line-height: 21px; }
+        .card-link { display: none; }
+        .author { color: #858d98; font-size: 12px; }
+        #fixture-state { margin: 12px; color: #526477; line-height: 1.5; }
+      </style>
+    </head><body>
+      <header><h1>Google Play 图书 · 100 本同步测试</h1>
+        <p>100 本合成书目，窄列表异步加载。不含真实书籍正文。</p>
+        <button data-email="synthetic-googlebooks@example.invalid">Synthetic Google account</button>
+      </header>
+      <gpb-library-home><div class="main-content"><div class="content">
+        <gpb-shelf-page id="shelf">
+          <div id="before"></div><div id="rows" class="-gb-book-card-grid"></div><div id="after"></div>
+        </gpb-shelf-page>
+      </div></div></gpb-library-home>
+      <p id="fixture-state"></p>
+      <script>
+        var shelf = document.getElementById('shelf');
+        var fixture = window.__castreaderGoogleBooksHundredFixture = {
+          totalBooks: 100, rowHeight: 60, windowSize: 4, renderDelayMS: 40,
+          pending: false, stallRendering: false, renderCount: 0,
+          renderedStart: 0, requestedStart: 0, seenVolumeIDs: []
+        };
+        var renderTimer = null;
+        var seen = {};
+        function volumeID(number) { return 'GBFIX' + String(number).padStart(4, '0'); }
+        function render() {
+          var start = Math.min(99, Math.max(0, Math.floor(shelf.scrollTop / fixture.rowHeight)));
+          var count = Math.min(fixture.windowSize, fixture.totalBooks - start);
+          document.getElementById('before').style.height = (start * fixture.rowHeight) + 'px';
+          var cards = [];
+          for (var index = start; index < start + count; index++) {
+            var number = index + 1;
+            var id = volumeID(number);
+            seen[id] = true;
+            var title = 'Google 合成测试书 ' + String(number).padStart(3, '0');
+            var href = '/books/reader?id=' + id;
+            var cover = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="28" height="40"%3E%3Crect width="28" height="40" fill="%234d6794"/%3E%3C/svg%3E';
+            cards.push('<gpb-volume-card draggable="true"><div class="card ebook">' +
+              '<div style="display:none" id="title-' + id + '">对应“' + title + '”</div>' +
+              '<a aria-hidden="true" tabindex="-1" class="card-link" title="' + title + '" href="' + href + '"></a>' +
+              '<div class="cover"><div class="cover-image-container">' +
+              '<img alt="" aria-hidden="true" class="refresh-cover-image" src=\'' + cover + '\'>' +
+              '<a class="cover-link" title="' + title + '" aria-label="' + title + '" href="' + href + '"></a></div></div>' +
+              '<div class="below-cover"><div class="bottompanel"><div class="metadata">' +
+              '<a class="title" title="' + title + '" href="' + href + '">' + title + '</a>' +
+              '<a class="author" title="Synthetic Google Author">Synthetic Google Author</a>' +
+              '</div></div></div></div></gpb-volume-card>');
+          }
+          document.getElementById('rows').innerHTML = cards.join('');
+          document.getElementById('after').style.height = ((fixture.totalBooks - start - count) * fixture.rowHeight) + 'px';
+          fixture.pending = false;
+          fixture.renderedStart = start;
+          fixture.renderCount += 1;
+          fixture.seenVolumeIDs = Object.keys(seen).sort();
+          shelf.removeAttribute('aria-busy');
+          document.getElementById('fixture-state').textContent = '当前显示 ' + (start + 1) + '–' + (start + count) +
+            ' / 100 · 已呈现 ' + fixture.seenVolumeIDs.length + ' 本';
+        }
+        function scheduleRender() {
+          fixture.pending = true;
+          fixture.requestedStart = Math.floor(shelf.scrollTop / fixture.rowHeight);
+          shelf.setAttribute('aria-busy', 'true');
+          if (renderTimer !== null) clearTimeout(renderTimer);
+          if (!fixture.stallRendering) {
+            renderTimer = setTimeout(function () { renderTimer = null; render(); }, fixture.renderDelayMS);
+          }
+        }
+        fixture.finishPendingRender = function () {
+          if (renderTimer !== null) clearTimeout(renderTimer);
+          renderTimer = null;
+          render();
+        };
+        shelf.addEventListener('scroll', scheduleRender);
+        document.addEventListener('click', function (event) {
+          if (event.target.closest('a')) event.preventDefault();
+        });
+        render();
+      </script>
+    </body></html>
+    """#
+#endif
 
     /// 阅读器壳里的最小辅助脚本（documentStart，主帧）：
     /// 关掉 Play 图书自己的「打开 App」引导，避免把 WebView 顶走。

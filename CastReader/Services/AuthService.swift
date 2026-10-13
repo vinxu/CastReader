@@ -172,11 +172,19 @@ enum AccountContentIsolation {
         YouTubeRouteCenter.shared.resetForAccountBoundary()
 
         #if DEBUG
-        if ProcessInfo.processInfo.arguments.contains("-CastReaderSkipSignInGate") {
+        let preservesAuthorizedWebProfile = ProcessInfo.processInfo.arguments
+            .contains("-CastReaderKoboHomeValidation")
+            || ProcessInfo.processInfo.arguments.contains("-CastReaderGoogleBooksHomeValidation")
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderSkipSignInGate")
+            || preservesAuthorizedWebProfile {
             activeStorageID = "debug-legacy"
             AccountContentScopeBridge.activateLegacyTestingScope()
             BoundLibraryOnboardingStore.shared.activateLegacyTestingScope()
-            CommercialWebSession.activateLegacyTestingScope()
+            // Exercise the actual home/player hierarchy with the user's
+            // authorized simulator browser profile instead of changing its jar.
+            if !preservesAuthorizedWebProfile {
+                CommercialWebSession.activateLegacyTestingScope()
+            }
             _ = HistoryStore.shared.activateLegacyTestingScope()
             YouTubeCacheProvider.activateLegacyTestingScope()
             ResumeReminderManager.shared.activateLegacyTestingScope()

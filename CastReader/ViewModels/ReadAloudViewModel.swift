@@ -564,6 +564,27 @@ final class ReadAloudViewModel: ObservableObject {
     @Published var autoScrollEnabled: Bool = true
 
     private let audio = AudioPlayerService.shared
+    private let historyStore: HistoryStore
+    private let speechGenerator: any ParagraphSpeechGenerating
+    private let progressBoundaryToken: UUID?
+    private var resumeDocumentIndex = ReadingResumeDocumentIndex(paragraphs: [])
+    private var pendingReadingAudioCursor: ReadingResumeAudioCursor?
+    private var lastReadingCheckpoint: ReadingResumeCheckpoint?
+    private var lastReadingCheckpointWrite = Date.distantPast
+    private var hasObservedReadingPlayback = false
+    private var restoredReadingStructure: String?
+    @Published private(set) var resumeNotice: String?
+    @Published private(set) var resumeSourceRange: NSRange?
+#if DEBUG
+    @Published private(set) var debugResumeFirstPlaybackSeconds: Double?
+    private var debugResumeAwaitingFirstTick = false
+#endif
+    private var resumeSourceParagraphIndex = -1
+    var initialResumeViewportRange: NSRange? {
+        guard currentParagraphIndex == resumeSourceParagraphIndex,
+              !hasObservedReadingPlayback || pendingReadingAudioCursor != nil else { return nil }
+        return resumeSourceRange
+    }
     private let settings = AppSettings.shared
     private let pro = ProManager.shared
     private let quota = QuotaManager.shared
@@ -732,6 +753,8 @@ final class ReadAloudViewModel: ObservableObject {
                 "READ playback error para=\(self.currentParagraphIndex) " +
                 "error=\(message)"
             )
+            self.flushReadingProgress()
+            self.retainReadingCursorForQueueRebuild()
             self.status = .error(AppLocalized("音频播放失败，请重试"))
             self.endAnalyticsReadSession(
                 result: .failed,
@@ -766,9 +789,14 @@ final class ReadAloudViewModel: ObservableObject {
     init(
         document: ReadingDocument,
         analyticsContext: AnalyticsContentContext? = nil,
-        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil
+        analyticsSessionCoordinator: ReadAnalyticsSessionCoordinator? = nil,
+        historyStore: HistoryStore = .shared,
+        speechGenerator: any ParagraphSpeechGenerating = TTSService.shared
     ) {
         self.document = document
+        self.historyStore = historyStore
+        self.speechGenerator = speechGenerator
+        self.progressBoundaryToken = historyStore.progressBoundaryToken
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
             ?? ReadAnalyticsSessionCoordinator()
@@ -809,6 +837,7 @@ final class ReadAloudViewModel: ObservableObject {
             .voice(for: correctedLanguage ?? document.language)
         recomputeReadableIndices()
         bind()
+        restoreSavedReadingPosition()
         GrowthLoopConversionCoordinator.shared.contentBecameReady(document)
     }
 
@@ -850,6 +879,7 @@ final class ReadAloudViewModel: ObservableObject {
         playbackCoverURL = coverURL
         playbackChapterTitle = chapterTitle
         adoptStoredReadingLanguageCorrection()
+        restoreSavedReadingPosition()
     }
 
     /// A Kindle page handoff is safe only after the last readable chunk has
@@ -1138,6 +1168,7 @@ final class ReadAloudViewModel: ObservableObject {
             return false
         }
 
+        discardReadingResumeForConfirmedNavigation()
         guard let token = audio.transferActiveQueueSession(to: .readAloud) else {
             return false
         }
@@ -1248,6 +1279,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func recomputeReadableIndices() {
+        resumeDocumentIndex = ReadingResumeDocumentIndex(paragraphs: paras)
         readableIndices = paras.enumerated()
             .filter {
                 $0.element.type.isReadable &&
@@ -1272,6 +1304,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         webAudioSegments = []
         recomputeReadableIndices()
+        restoreSavedReadingPosition()
         if deferredWebAutoplay.contentBecameReady(isReady: !readableIndices.isEmpty) {
             ensurePlaying()
         }
@@ -1297,6 +1330,9 @@ final class ReadAloudViewModel: ObservableObject {
         weReadBoundary: WeReadPageSpeechBoundary? = nil
     ) {
         guard !isActive else { return }
+        pendingReadingAudioCursor = nil
+        pendingResumeParagraphIndex = nil
+        resumeNotice = nil
         invalidateAccessRetry()
         generationEpoch &+= 1
         liveWebTurnIntentSuspended = false
@@ -1358,6 +1394,10 @@ final class ReadAloudViewModel: ObservableObject {
         weReadBoundary: WeReadPageSpeechBoundary? = nil,
         resumeAnchor: WeReadPlaybackResumeAnchor? = nil
     ) {
+        flushReadingProgress()
+        pendingReadingAudioCursor = nil
+        pendingResumeParagraphIndex = nil
+        resumeNotice = nil
         let token = ensureAudioSessionClaim()
         invalidateAccessRetry()
         generationEpoch &+= 1
@@ -1415,6 +1455,7 @@ final class ReadAloudViewModel: ObservableObject {
               !p.isEmpty,
               !preparedSegments.isEmpty,
               canContinueAcrossLivePageBoundary else { return false }
+        discardReadingResumeForConfirmedNavigation()
         invalidateAccessRetry()
         generationEpoch &+= 1
         generationTask?.cancel()
@@ -1476,6 +1517,7 @@ final class ReadAloudViewModel: ObservableObject {
               !isFinished,
               audio.currentSegment?.id == carrySegmentID else { return false }
 
+        discardReadingResumeForConfirmedNavigation()
         invalidateAccessRetry()
         generationEpoch &+= 1
         let epoch = generationEpoch
@@ -1623,7 +1665,7 @@ final class ReadAloudViewModel: ObservableObject {
         generationTask = Task { [weak self] in
             guard let self else { return }
             do {
-                _ = try await TTSService.shared.generatePrefetchSegments(
+                _ = try await self.speechGenerator.generatePrefetchSegments(
                     paragraphIndex: paragraphIndex,
                     text: SpeechTextSanitizer.sanitizedForTTS(sourceText),
                     voice: voiceID,
@@ -1955,6 +1997,151 @@ final class ReadAloudViewModel: ObservableObject {
     /// 朗读词高亮背景：基色半透明（文字透出不被遮盖，深浅都可见）
     var highlightUIColor: UIColor { markBaseColor.withAlphaComponent(0.4) }
 
+    // MARK: - Durable read position
+
+    private var readingProgressID: String { playbackBookID ?? document.id }
+    private var readingProgressVariant: String? {
+        document.sourceKind == .youtube ? youtubeTranscriptCacheKey?.storageKey : nil
+    }
+
+    private func restoreSavedReadingPosition() {
+        guard !hasObservedReadingPlayback,
+              !readableIndices.isEmpty,
+              progressBoundaryToken == historyStore.progressBoundaryToken else { return }
+        let key = readingProgressID + ":" + resumeDocumentIndex.fingerprint
+        guard restoredReadingStructure != key else { return }
+        restoredReadingStructure = key
+        if let checkpoint = historyStore.readingCheckpoint(for: readingProgressID, variant: readingProgressVariant),
+           checkpoint.sourceKind == document.sourceKind {
+            guard let index = resumeDocumentIndex.resolve(checkpoint) else {
+                // Live providers may initially deliver a loading/earlier page.
+                // Retain the checkpoint until the actual saved page arrives.
+                resumeNotice = AppLocalized("内容已变化，无法准确恢复。请选择从哪里继续朗读。")
+                return
+            }
+            lastReadingCheckpoint = checkpoint
+            pendingReadingAudioCursor = checkpoint.audio
+            pendingResumeParagraphIndex = index
+            currentParagraphIndex = index
+            resumeSourceRange = checkpoint.visual?.range(in: paras[index].text)
+            resumeSourceParagraphIndex = index
+            if let range = resumeSourceRange, document.sourceKind.isOCRImageRendered {
+                let source = paras[index].text as NSString
+                var cursor = 0
+                for (wordIndex, word) in paras[index].words.enumerated() {
+                    let found = source.range(of: word.text, range: NSRange(location: cursor, length: source.length - cursor))
+                    guard found.location != NSNotFound else { continue }
+                    if NSIntersectionRange(found, range).length > 0 {
+                        photoHighlightWordIndex = wordIndex
+                        photoHighlightWordRange = wordIndex..<(wordIndex + 1)
+                        break
+                    }
+                    cursor = NSMaxRange(found)
+                }
+            }
+            resumeNotice = nil
+            ReaderRunLog.write("READ resume located source=\(document.sourceKind.rawValue) para=\(index)")
+        } else if historyStore.hasReadingCheckpoint(for: readingProgressID, variant: readingProgressVariant) {
+            resumeNotice = AppLocalized("无法读取上次的朗读位置。请选择从哪里继续朗读。")
+        } else if let legacy = historyStore.resumeParagraphIndex(for: readingProgressID),
+                  readableIndices.contains(legacy) {
+            restoreReadingPosition(legacy)
+        }
+    }
+
+    func flushReadingProgress() { saveReadingProgress(force: true) }
+
+    var hasPendingReadingResume: Bool {
+        pendingResumeParagraphIndex != nil || pendingReadingAudioCursor != nil
+    }
+
+    /// A confirmed page turn is a new position chosen by the user or by natural
+    /// completion. A previous-page checkpoint must not hijack its warm audio.
+    func discardReadingResumeForConfirmedNavigation() {
+        flushReadingProgress()
+        if hasPendingReadingResume, !hasObservedReadingPlayback { currentParagraphIndex = -1 }
+        pendingResumeParagraphIndex = nil
+        pendingReadingAudioCursor = nil
+        resumeSourceRange = nil
+        resumeNotice = nil
+    }
+
+    private func retainReadingCursorForQueueRebuild() {
+        guard let checkpoint = lastReadingCheckpoint,
+              resumeDocumentIndex.resolve(checkpoint) == currentParagraphIndex else { return }
+        pendingReadingAudioCursor = checkpoint.audio
+        pendingResumeParagraphIndex = currentParagraphIndex
+        if paras.indices.contains(currentParagraphIndex) {
+            resumeSourceRange = checkpoint.visual?.range(in: paras[currentParagraphIndex].text)
+            resumeSourceParagraphIndex = currentParagraphIndex
+        }
+    }
+
+    private func saveReadingProgress(force: Bool) {
+        guard hasObservedReadingPlayback,
+              ownsAudioQueue, !audio.isBuffering, pendingReadingAudioCursor == nil,
+              let segment = audio.currentSegment,
+              segment.paragraphIndex == currentParagraphIndex,
+              progressBoundaryToken == historyStore.progressBoundaryToken else { return }
+        let now = Date()
+        guard force || now.timeIntervalSince(lastReadingCheckpointWrite) >= 2 else { return }
+        let segments = segmentsByParagraph[currentParagraphIndex] ?? []
+        guard let cursor = ReadingResumeContract.captureAudio(
+            segments: segments, currentSegmentID: segment.id, time: audio.playbackPosition
+        ), var checkpoint = resumeDocumentIndex.checkpoint(
+            sourceKind: document.sourceKind, paragraphIndex: currentParagraphIndex, audio: cursor, now: now
+        ) else { return }
+        if paras.indices.contains(currentParagraphIndex) {
+            checkpoint.visual = ReadingResumeContract.captureVisual(
+                output: segments.map(\.text).joined(), offset: cursor.outputUTF16Offset,
+                length: cursor.outputUTF16Length,
+                source: paras[currentParagraphIndex].text)
+        }
+        if historyStore.saveReadingCheckpoint(checkpoint, for: readingProgressID, boundary: progressBoundaryToken, variant: readingProgressVariant) {
+            lastReadingCheckpoint = checkpoint
+            lastReadingCheckpointWrite = now
+            if force {
+                historyStore.updateReadingPosition(documentID: readingProgressID,
+                                                   paragraphIndex: currentParagraphIndex)
+            }
+        }
+    }
+
+    /// Used after regenerated output has reached the saved word. Earlier audio
+    /// never enters the playing queue, so there is no burst from paragraph zero.
+    private func loadResumedReadingAudio(
+        _ segments: [AudioSegment], cursor: ReadingResumeAudioCursor,
+        isComplete: Bool, autoPlay: Bool, session: AudioPlaybackSessionToken
+    ) -> Bool {
+        switch ReadingResumeContract.resolveAudio(cursor, segments: segments, isComplete: isComplete) {
+        case .waiting:
+            return false
+        case .unavailable:
+            resumeNotice = AppLocalized("语音内容已变化，无法准确恢复。请选择从哪里继续朗读。")
+            _ = audio.setMoreSegmentsExpected(false, session: session)
+            status = .error(resumeNotice!)
+            return false
+        case let .seek(segmentIndex, seconds):
+#if DEBUG
+            debugResumeFirstPlaybackSeconds = nil
+            debugResumeAwaitingFirstTick = true
+#endif
+            let remaining = Array(segments.dropFirst(segmentIndex))
+            guard let first = remaining.first,
+                  audio.loadSegments(remaining, autoPlay: false, session: session),
+                  audio.startQueuedSegment(id: first.id, progress: 0, initialTime: seconds,
+                                           autoPlay: autoPlay, session: session) else { return false }
+            pendingReadingAudioCursor = nil
+            // Pre-seed accounting so the seek itself never consumes listen time.
+            primeListenAccounting(segmentID: first.id, position: seconds)
+            analyticsSessionCoordinator.seedPlaybackCursor(
+                ownerID: analyticsSessionOwnerID, segmentID: first.id, position: seconds
+            )
+            ReaderRunLog.write("READ resume audio para=\(currentParagraphIndex) seg=\(segmentIndex) time=\(seconds)")
+            return true
+        }
+    }
+
     // MARK: - Bind
 
     private func bind() {
@@ -1962,18 +2149,10 @@ final class ReadAloudViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] t in self?.onTick(t) }
             .store(in: &cancellables)
-        // Persist the read-aloud position for own-content documents so a
-        // closed session resumes instead of restarting. HistoryStore ignores
-        // non-resumable source kinds and unchanged values.
-        $currentParagraphIndex
-            .receive(on: RunLoop.main)
-            .sink { [weak self] index in
-                guard let self, index >= 0 else { return }
-                HistoryStore.shared.updateReadingPosition(
-                    documentID: self.document.id,
-                    paragraphIndex: index
-                )
-            }
+        // Selection and prefetch are not listening. Only the owned player's
+        // actual position may replace a durable checkpoint.
+        NotificationCenter.default.publisher(for: UIApplication.willResignActiveNotification)
+            .sink { [weak self] _ in self?.flushReadingProgress() }
             .store(in: &cancellables)
         audio.$isPlaying
             .receive(on: RunLoop.main)
@@ -2019,6 +2198,8 @@ final class ReadAloudViewModel: ObservableObject {
     /// 退出激活（切到解读模式时调用）：必须停掉生成/预取，否则流式生成的新 segment 经 loadSegment 会自动
     /// 重新 playSegment（首段未播放时），导致「切到解读后朗读还在响」。
     func deactivate() {
+        flushReadingProgress()
+        retainReadingCursorForQueueRebuild()
         // The initial quota refresh happens before `activate()`. Invalidate it
         // even when this VM has not yet acquired playback ownership.
         invalidateAccessRetry()
@@ -2069,6 +2250,12 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func start(allowAccessRefresh: Bool) {
+        guard resumeNotice == nil else { return }
+        if currentParagraphIndex >= 0, ownsAudioQueue,
+           audio.currentSegment != nil || status.isLoading || status.isStreaming {
+            ensurePlaying()
+            return
+        }
         liveWebTurnIntentSuspended = false
         guard !readableIndices.isEmpty else { status = .error(AppLocalized("无可朗读内容")); return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
@@ -2100,7 +2287,7 @@ final class ReadAloudViewModel: ObservableObject {
         let resume = pendingResumeParagraphIndex.flatMap { readableIndices.contains($0) ? $0 : nil }
         pendingResumeParagraphIndex = nil
         generate(
-            preferred ?? resume ?? readableIndices[0],
+            preferred ?? resume ?? (readableIndices.contains(currentParagraphIndex) ? currentParagraphIndex : readableIndices[0]),
             allowAccessRefresh: allowAccessRefresh
         )
     }
@@ -2110,9 +2297,12 @@ final class ReadAloudViewModel: ObservableObject {
     func restoreReadingPosition(_ paragraphIndex: Int) {
         guard currentParagraphIndex < 0, paragraphIndex >= 0 else { return }
         pendingResumeParagraphIndex = paragraphIndex
+        if readableIndices.contains(paragraphIndex) { currentParagraphIndex = paragraphIndex }
     }
 
     func togglePlayPause() {
+        audio.sleepTimer.resumeByUser()
+        guard resumeNotice == nil else { return }
         liveWebTurnIntentSuspended = false
         if currentParagraphIndex < 0 { start(); return }
         if !audio.isPlaying,
@@ -2154,6 +2344,7 @@ final class ReadAloudViewModel: ObservableObject {
         }
         if let token = audioSessionToken {
             _ = audio.togglePlayPause(session: token)
+            if !audio.isPlaying { flushReadingProgress() }
         }
     }
 
@@ -2161,6 +2352,7 @@ final class ReadAloudViewModel: ObservableObject {
     /// Reattaching while audio is playing or TTS is still loading must not pause
     /// playback or start a duplicate generation request.
     func ensurePlaying() {
+        guard resumeNotice == nil else { return }
         liveWebTurnIntentSuspended = false
         if ownsAudioQueue, audio.isPlaying { return }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
@@ -2201,7 +2393,7 @@ final class ReadAloudViewModel: ObservableObject {
                 _ = audio.play(session: token)
             }
         } else if !isFinished {
-            jump(to: currentParagraphIndex)
+            generate(currentParagraphIndex)
         }
     }
 
@@ -2234,11 +2426,12 @@ final class ReadAloudViewModel: ObservableObject {
             clearPrefetch()
             _ = audio.clearQueue(session: token)
             _ = audio.setMoreSegmentsExpected(false, session: token)
-            _ = audio.loadSegments(
-                cached,
-                autoPlay: true,
-                session: token
-            )
+            if let cursor = pendingReadingAudioCursor {
+                guard loadResumedReadingAudio(cached, cursor: cursor, isComplete: true,
+                                              autoPlay: true, session: token) else { return }
+            } else {
+                _ = audio.loadSegments(cached, autoPlay: true, session: token)
+            }
             isFinished = false
             status = .ready
         case .regenerateParagraph:
@@ -2253,6 +2446,10 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func jump(to paragraphIndex: Int, allowAccessRefresh: Bool) {
         guard readableIndices.contains(paragraphIndex) else { return }
+        flushReadingProgress()
+        pendingReadingAudioCursor = nil
+        pendingResumeParagraphIndex = nil
+        resumeNotice = nil
         guard document.sourceKind == .youtube
                 || canStartAudio(persistentYouTubeCacheHit: false) else {
             if allowAccessRefresh {
@@ -2339,10 +2536,16 @@ final class ReadAloudViewModel: ObservableObject {
         autoplay: Bool = true,
         persistentYouTubeCacheHit: Bool = false
     ) {
+        guard resumeNotice == nil else { return }
+        if let restored = pendingResumeParagraphIndex, restored != paragraphIndex {
+            start()
+            return
+        }
         guard readableIndices.contains(paragraphIndex), !segments.isEmpty else {
             jump(to: paragraphIndex)
             return
         }
+        flushReadingProgress()
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.startWithPrefetchedSegments(
                 segments,
@@ -2391,6 +2594,7 @@ final class ReadAloudViewModel: ObservableObject {
         resetLiveWebCarryPrewarmState()
         clearPrefetch()
 
+        hasObservedReadingPlayback = false
         _ = audio.clearQueue(session: token)
         _ = audio.setMoreSegmentsExpected(false, session: token)
         setYouTubeAudioQuotaOrigin(
@@ -2412,7 +2616,11 @@ final class ReadAloudViewModel: ObservableObject {
         status = .ready
         if document.sourceKind.isWebRendered { webAudioSegments.append(contentsOf: segments) }
         let shouldAutoplay = autoplay && !liveWebTurnIntentSuspended
-        if let requestedID = initialSegmentID,
+        pendingResumeParagraphIndex = nil
+        if let cursor = pendingReadingAudioCursor {
+            guard loadResumedReadingAudio(segments, cursor: cursor, isComplete: true,
+                                          autoPlay: shouldAutoplay, session: token) else { return }
+        } else if let requestedID = initialSegmentID,
            segments.contains(where: { $0.id == requestedID }) {
             let loaded = audio.loadSegments(
                 segments,
@@ -2566,6 +2774,8 @@ final class ReadAloudViewModel: ObservableObject {
     /// UI call sites can safely ignore it because the VM retains the lane tail.
     @discardableResult
     func stop() -> Task<Void, Never>? {
+        flushReadingProgress()
+        retainReadingCursorForQueueRebuild()
         if !isFinished,
            youtubeCompletionSubmittedParagraph != currentParagraphIndex {
             saveYouTubeProgress(
@@ -2755,7 +2965,14 @@ final class ReadAloudViewModel: ObservableObject {
         voiceSwitchID: UUID? = nil,
         allowAccessRefresh: Bool = true
     ) {
-        guard isActive, paras.indices.contains(index) else { return }
+        guard resumeNotice == nil, isActive, paras.indices.contains(index) else { return }
+        flushReadingProgress()
+        if index != currentParagraphIndex {
+            pendingReadingAudioCursor = nil
+            pendingResumeParagraphIndex = nil
+        } else if voiceOverride != nil {
+            retainReadingCursorForQueueRebuild()
+        }
         if presentElapsedGrowthWallIfNeeded(resumeAfterPurchase: { [weak self] in
             self?.generate(
                 index,
@@ -2798,6 +3015,7 @@ final class ReadAloudViewModel: ObservableObject {
         resetLiveWebCarryPrewarmState()
         clearPrefetch()   // 重新生成某段 → 作废旧预取
 
+        hasObservedReadingPlayback = false
         _ = audio.clearQueue(session: session)
         _ = audio.setMoreSegmentsExpected(true, session: session)
         setYouTubeAudioQuotaOrigin(
@@ -2830,7 +3048,7 @@ final class ReadAloudViewModel: ObservableObject {
                     allowAccessRefresh: allowAccessRefresh
                 ) else { return }
                 NSLog("CRDBG generate request begin para=%d voice=%@ epoch=%llu", index, voice, epoch)
-                try await TTSService.shared.generateTTSForParagraph(
+                try await self.speechGenerator.generateTTSForParagraph(
                     paragraphIndex: index,
                     text: SpeechTextSanitizer.sanitizedForTTS(
                         para.resolvedSpeechText
@@ -2856,6 +3074,13 @@ final class ReadAloudViewModel: ObservableObject {
                           self.currentParagraphIndex == index,
                           self.audioSessionToken == session,
                           self.audio.isPlaybackSessionActive(session) else { return }
+                    if let cursor = self.pendingReadingAudioCursor {
+                        guard self.loadResumedReadingAudio(
+                            self.segmentsByParagraph[index] ?? [], cursor: cursor,
+                            isComplete: true, autoPlay: autoPlay && !self.liveWebTurnIntentSuspended,
+                            session: session
+                        ) else { return }
+                    }
                     self.finishPendingLiveWebResumeIfNeeded(
                         paragraph: index,
                         session: session
@@ -2894,7 +3119,7 @@ final class ReadAloudViewModel: ObservableObject {
                    self.currentParagraphIndex == index,
                    self.audioSessionToken == session,
                    self.audio.isPlaybackSessionActive(session),
-                   self.isActive {
+                   self.isActive, self.resumeNotice == nil {
                     // Audio remains session-only; keep one paragraph prefetched
                     // in memory and never hand the generated MP3 Data to the
                     // persistent transcript/artwork cache actor.
@@ -2971,7 +3196,12 @@ final class ReadAloudViewModel: ObservableObject {
         processedDisplayText = segs.map { $0.text }.joined()
         if document.sourceKind.isWebRendered { webAudioSegments.append(segment) }
         let shouldAutoPlay = autoPlay && !liveWebTurnIntentSuspended
-        if let pending = pendingLiveWebResume,
+        if let cursor = pendingReadingAudioCursor {
+            _ = loadResumedReadingAudio(segs, cursor: cursor, isComplete: false,
+                                        autoPlay: shouldAutoPlay, session: session)
+            status = .streaming
+            return
+        } else if let pending = pendingLiveWebResume,
            pending.paragraphIndex == paragraph {
             guard WeReadPlaybackResumeContract.segmentMatches(segment.text, anchor: pending.anchor) else {
                 status = .streaming
@@ -3161,6 +3391,7 @@ final class ReadAloudViewModel: ObservableObject {
             "READ prefetch start para=\(nextIndex) epoch=\(epoch) " +
             "chars=\(para.resolvedSpeechText.utf16.count)"
         )
+        let prefetchGenerator = speechGenerator
         prefetchTask = Task { [weak self] in
             do {
                 if let self,
@@ -3172,7 +3403,7 @@ final class ReadAloudViewModel: ObservableObject {
                     }
                     return
                 }
-                let collected = try await TTSService.shared.generatePrefetchSegments(
+                let collected = try await prefetchGenerator.generatePrefetchSegments(
                     paragraphIndex: nextIndex,
                     text: SpeechTextSanitizer.sanitizedForTTS(
                         para.resolvedSpeechText
@@ -3263,6 +3494,10 @@ final class ReadAloudViewModel: ObservableObject {
     /// 把已预取的下一段缓存「转正」为当前段：重置高亮状态 + 一次性入队播放（无 TTS 等待），并继续预取再下一段。
     private func promotePrefetch(to index: Int) {
         guard isActive else { return }
+        flushReadingProgress()
+        pendingReadingAudioCursor = nil
+        pendingResumeParagraphIndex = nil
+        hasObservedReadingPlayback = false
         guard let session = ensureAudioSessionClaim() else { return }
         let segs = prefetchedSegments
         let persistentYouTubeCacheHit = prefetchedYouTubeAudioIsQuotaExempt
@@ -3645,6 +3880,16 @@ final class ReadAloudViewModel: ObservableObject {
 
     private func onTick(_ t: Double) {
         guard ownsAudioQueue else { return }
+        if audio.isPlaying, !audio.isBuffering {
+#if DEBUG
+            if debugResumeAwaitingFirstTick {
+                debugResumeFirstPlaybackSeconds = audio.playbackPosition
+                debugResumeAwaitingFirstTick = false
+            }
+#endif
+            hasObservedReadingPlayback = true
+            saveReadingProgress(force: false)
+        }
         accountAnalyticsPlayback(t)
         accountListen(t)
         saveYouTubeProgress(t)
@@ -3927,7 +4172,8 @@ final class ReadAloudViewModel: ObservableObject {
                 setWebHighlight(WebHighlightCmd(paragraphIndex: currentParagraphIndex,
                                                 words: seg.timestamps.map { $0.word },
                                                 wordIndex: localIdx,
-                                                segSeq: segPos))
+                                                segSeq: segPos,
+                                                segmentTexts: segs.prefix(segPos).map(\.text)))
                 return
             }
             let segLen = (seg.text as NSString).length
@@ -4280,7 +4526,9 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func handlePlaybackState(_ playing: Bool) {
-        let ownedPlaying = playing && ownsAudioQueue
+        let ownedPlaying = playing && audio.isPlaying && ownsAudioQueue
+        if ownedPlaying, !audio.isBuffering { hasObservedReadingPlayback = true }
+        if !playing { flushReadingProgress() }
         isPlaying = ownedPlaying
         guard ownedPlaying else {
             analyticsSessionCoordinator.resetPlaybackCursor(

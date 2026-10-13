@@ -10,11 +10,13 @@ import SwiftUI
 import UIKit
 
 struct YouTubeListenView: View {
+    @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     let document: ReadingDocument
     @ObservedObject var readVM: ReadAloudViewModel
     let refocusToken: Int
 
     @State private var followsPlayback = true
+    @State private var textViews = TextViewRegistry()
 
     private var transcript: YouTubeTranscriptDocument? {
         document.youtubeTranscript
@@ -89,6 +91,14 @@ struct YouTubeListenView: View {
                 guard followsPlayback else { return }
                 scrollToPlayback(proxy, animated: true)
             }
+            .onChange(of: readVM.highlightRange) { _ in
+                guard followsPlayback else { return }
+                scrollToPlayback(proxy, animated: false)
+            }
+            .onChange(of: readVM.processedDisplayText) { _ in
+                guard followsPlayback else { return }
+                DispatchQueue.main.async { scrollToPlayback(proxy, animated: false) }
+            }
             .onChange(of: refocusToken) { _ in
                 followsPlayback = true
                 scrollToPlayback(proxy, animated: true)
@@ -157,9 +167,13 @@ struct YouTubeListenView: View {
                     text: displayedText,
                     highlightRange: isCurrent ? readVM.highlightRange : nil,
                     isCurrent: isCurrent,
-                    fontSize: 18,
+                    fontSize: appearance.textSize,
+                    lineSpacing: appearance.lineSpacing,
+                    usesSerif: appearance.usesSerif,
                     highlightColor: readVM.highlightUIColor,
-                    onReady: { _ in }
+                    readerViewportRange: isCurrent && followsPlayback
+                        ? (readVM.highlightRange ?? readVM.initialResumeViewportRange) : nil,
+                    onReady: { textViews[paragraph.id] = $0 }
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -200,6 +214,12 @@ struct YouTubeListenView: View {
     ) {
         let index = readVM.currentParagraphIndex
         guard index >= 0 else { return }
+        if textViews[index]?.revealFocusInReader() == true { return }
+        if readVM.highlightRange != nil || readVM.initialResumeViewportRange != nil {
+            proxy.scrollTo(index, anchor: .top)
+            DispatchQueue.main.async { textViews[index]?.revealFocusInReader() }
+            return
+        }
         if animated {
             withAnimation(.easeInOut(duration: 0.35)) {
                 proxy.scrollTo(index, anchor: UnitPoint(x: 0.5, y: 0.30))

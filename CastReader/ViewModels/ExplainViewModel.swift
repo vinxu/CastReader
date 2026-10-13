@@ -1253,6 +1253,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     func togglePlayPause() {
+        audio.sleepTimer.resumeByUser()
         liveWebTurnIntentSuspended = false
         guard ownsAudioQueue,
               audio.currentSegment != nil || audio.hasQueuedSegments else {

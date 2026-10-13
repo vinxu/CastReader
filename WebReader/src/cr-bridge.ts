@@ -109,6 +109,32 @@ export function initBridge(deps: CRDeps): void {
   // iframe 换页或被移除后仍能清掉上一页高亮。
   const overlayNodes = new Set<HTMLElement>()
   const overlayDocuments = new Set<Document>()
+  let autoScroll = true
+  let lastPaintedRange: { range: Range; el?: HTMLElement } | null = null
+
+  function revealRange(range: Range): void {
+    if (CR.disableScroll || !autoScroll) return
+    const doc = range.startContainer.ownerDocument
+    const win = doc?.defaultView
+    if (!win) return
+    // Keep the stopped word visible even when one paragraph spans many screens.
+    // Scroll inner containers first, then the document viewport.
+    let ancestor = range.startContainer.parentElement
+    while (ancestor && ancestor !== doc?.body) {
+      const style = win.getComputedStyle(ancestor)
+      if (/(auto|scroll)/.test(style.overflowY) && ancestor.scrollHeight > ancestor.clientHeight) {
+        const word = range.getBoundingClientRect(), box = ancestor.getBoundingClientRect()
+        if (word.top < box.top + 24 || word.bottom > box.bottom - 24) {
+          ancestor.scrollTop += word.top - box.top - ancestor.clientHeight * 0.3
+        }
+      }
+      ancestor = ancestor.parentElement
+    }
+    const rect = range.getBoundingClientRect()
+    if (rect.top < win.innerHeight * 0.18 || rect.bottom > win.innerHeight * 0.78) {
+      win.scrollBy({ top: rect.top - win.innerHeight * 0.3, behavior: 'instant' })
+    }
+  }
 
   const post = (type: string, payload: Record<string, unknown> = {}): void => {
     try {
@@ -120,6 +146,7 @@ export function initBridge(deps: CRDeps): void {
 
   // overlay 高亮：清掉旧矩形 div，按 range 各行 rect 画半透明矩形（跳过零宽，避免残留线）。
   function clearOverlay(): void {
+    lastPaintedRange = null
     overlayNodes.forEach((node) => {
       try { node.remove() } catch { /* detached/replaced frame */ }
     })
@@ -133,6 +160,8 @@ export function initBridge(deps: CRDeps): void {
   }
   function paintOverlay(range: Range, el?: HTMLElement): number {
     clearOverlay()
+    lastPaintedRange = { range, el }
+    revealRange(range)
     const ownerDocument = range.startContainer.ownerDocument || el?.ownerDocument || document
     const ownerWindow = ownerDocument.defaultView
     const host = ownerDocument.body || ownerDocument.documentElement
@@ -405,7 +434,7 @@ export function initBridge(deps: CRDeps): void {
       showDbg(info + ' ov=' + n)
     },
     // 词级高亮（英文）：native 下发当前 segment 的词数组 + 词索引，JS 在 DOM 虚拟全文前向匹配定位（不靠字符偏移）。
-    highlightWord(arg: { paragraphIndex: number; segSeq: number; words: string[]; wordIndex: number }): void {
+    highlightWord(arg: { paragraphIndex: number; segSeq: number; words: string[]; wordIndex: number; segmentTexts?: string[] }): void {
       const el = paraElements.get(arg.paragraphIndex)
       if (!el) { clearOverlay(); showDbg('w NOEL'); return }
       if (arg.paragraphIndex !== wcPara) {
@@ -415,6 +444,12 @@ export function initBridge(deps: CRDeps): void {
         wcSeg = -1
       }
       if (arg.segSeq !== wcSeg) {
+        if (arg.segSeq !== wcSeg + 1 && arg.segmentTexts) {
+          // Cold resume / backwards seek: replay preceding words to rebuild the
+          // source cursor, including repeated words, before aligning this chunk.
+          const priorWords = arg.segmentTexts.flatMap((text) => text.match(/\S+/g) || [])
+          paraCursor = buildWordRanges(el, priorWords, paraOffsets.get(arg.paragraphIndex) || 0).cursor
+        }
         wcSeg = arg.segSeq
         const built = buildWordRanges(el, arg.words || [], paraCursor)
         wcRanges = built.ranges
@@ -428,16 +463,30 @@ export function initBridge(deps: CRDeps): void {
         showDbg('w p' + arg.paragraphIndex + ' #' + arg.wordIndex + ' MISS')
       }
     },
-    clearHighlight(): void { clearOverlay(); wcPara = -1; wcSeg = -1; paraCursor = 0 },
+    clearHighlight(): void { clearOverlay(); lastPaintedRange = null; wcPara = -1; wcSeg = -1; paraCursor = 0 },
     // Play Books 之类分页阅读器由页面自己控制视口，滚动会破坏分页几何。
     disableScroll: false,
     setColor(arg: { hex: string }): void { color = arg.hex; markRenderer.setColor(arg.hex) },
     setActive(arg: { active: boolean }): void { if (arg.active) markRenderer.clear(); else clearOverlay() },
-    scrollTo(arg: { paragraphIndex: number }): void {
+    scrollTo(arg: { paragraphIndex: number; charStart?: number; charEnd?: number }): void {
       if (CR.disableScroll) return
-      paraElements.get(arg.paragraphIndex)?.scrollIntoView({ block: 'center', behavior: 'auto' })
+      const el = paraElements.get(arg.paragraphIndex)
+      if (!el) return
+      const base = paraOffsets.get(arg.paragraphIndex) || 0
+      const range = typeof arg.charStart === 'number' && typeof arg.charEnd === 'number'
+        ? charRangeInElement(el, arg.charStart + base, arg.charEnd + base)
+        : lastPaintedRange?.el === el ? lastPaintedRange.range : null
+      if (range) {
+        if (lastPaintedRange?.el === el && lastPaintedRange.range === range) {
+          // A paused reader receives no new word ticks after reflow. The DOM
+          // Range follows the text, but absolute overlay rectangles do not.
+          // Repaint the same stopped word using its new geometry.
+          paintOverlay(range, el)
+        } else revealRange(range)
+      }
+      else el.scrollIntoView({ block: 'center', behavior: 'auto' })
     },
-    setAutoScroll(_arg: { enabled: boolean }): void { /* M2 */ },
+    setAutoScroll(arg: { enabled: boolean }): void { autoScroll = arg.enabled },
     showMark(arg: { id: string; paragraphIndex: number; charStart: number; charEnd: number; action: string; n?: number; seed: number; weight?: string; role?: string }): void {
       const base = paraOffsets.get(arg.paragraphIndex) || 0
       markRenderer.show({

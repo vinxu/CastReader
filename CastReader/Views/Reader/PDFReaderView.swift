@@ -99,10 +99,10 @@ struct PDFReaderView: UIViewRepresentable {
                 if let cmd = readVM?.pdfHighlight {
                     ReaderRunLog.write("PDF refocus read word para=\(cmd.paragraphIndex) word=\(cmd.wordIndex)")
                     highlightWord(cmd)
-                    if autoScroll { scrollToParagraph(cmd.paragraphIndex) }
                 } else if let idx = readVM?.currentParagraphIndex, idx >= 0 {
                     ReaderRunLog.write("PDF refocus read para=\(idx)")
                     highlight(idx)
+                    revealResumeWord()
                 }
             case .explain:
                 let marks = explainVM?.activeMarks ?? []
@@ -123,6 +123,10 @@ struct PDFReaderView: UIViewRepresentable {
                 .removeDuplicates()
                 .receive(on: RunLoop.main)
                 .sink { [weak self] idx in self?.highlight(idx) }
+                .store(in: &cancellables)
+            readVM.$resumeSourceRange
+                .receive(on: RunLoop.main)
+                .sink { [weak self] _ in self?.revealResumeWord() }
                 .store(in: &cancellables)
             // 英文词级：当前句内 findString 定位 TTS 词 → 画词矩形（叠在句级淡高亮上，“老师指读”）。
             readVM.$pdfHighlight
@@ -377,26 +381,10 @@ struct PDFReaderView: UIViewRepresentable {
             let ns = (page.string ?? "") as NSString
 
             guard range.location >= 0, range.location + range.length <= ns.length else { lastHlIdx = idx; return }
-            // needle 用「句在 page.string 的精确子串」（原样、含 \n/空格）—— 它一定是 page.string 子串、findString 必匹配；
-            // PDFSelection 位置由 PDFKit 内部映射文本↔位置，不依赖 page.string 索引↔characterBounds（后者在某些 PDF
-            // 整体错位几字符 → 高亮偏移/跨句）。之前去 \n、用已 trim 的 para.text 破坏了「精确子串」才导致大多数句失配。
-            let needle = ns.substring(with: range)
-            guard needle.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2 else { lastHlIdx = idx; return }
-            let opts: NSString.CompareOptions = [.caseInsensitive]
-            var selection: PDFSelection?
-            // 顺序前向：朗读逐句推进，从上一句之后找下一个 → 长 PDF 重复句拿到「正在读的那一处」。
-            if idx == lastHlIdx + 1, let from = lastSel {
-                selection = pdfDoc.findString(needle, fromSelection: from, withOptions: opts)
-            }
-            if selection == nil {   // 首句 / 跳读 → 全文找，优先落当前页
-                let all = pdfDoc.findString(needle, withOptions: opts)
-                selection = all.first(where: { $0.pages.contains(page) }) ?? all.first
-            }
-            if selection == nil, range.length > 18 {   // 精确子串都没命中（极少）→ 句首片段兜底
-                let head = ns.substring(with: NSRange(location: range.location, length: 18))
-                let all = pdfDoc.findString(head, withOptions: opts)
-                selection = all.first(where: { $0.pages.contains(page) }) ?? all.first
-            }
+            // Exact parser coordinates also distinguish repeated sentences on
+            // the same page, without scanning the entire long document.
+            let selection = pdfDoc.selection(from: page, atCharacterIndex: range.location,
+                to: page, atCharacterIndex: NSMaxRange(range))
             lastHlIdx = idx
             guard let selection = selection else { return }
             lastSel = selection
@@ -411,6 +399,29 @@ struct PDFReaderView: UIViewRepresentable {
                 }
             }
             if autoScroll { pdfView.go(to: selection) }
+            revealResumeWord()
+        }
+
+        private func revealResumeWord() {
+            guard autoScroll, let vm = readVM, let range = vm.initialResumeViewportRange,
+                  let doc, doc.paragraphs.indices.contains(vm.currentParagraphIndex),
+                  let pdfView, let pdfDoc = pdfView.document else { return }
+            let para = doc.paragraphs[vm.currentParagraphIndex]
+            guard let pageIndex = para.pdfPageIndex, let page = pdfDoc.page(at: pageIndex),
+                  let sourceRange = Range(range, in: para.text) else { return }
+            let lower = para.text.distance(from: para.text.startIndex, to: sourceRange.lowerBound)
+            let upper = para.text.distance(from: para.text.startIndex, to: sourceRange.upperBound)
+            if let selection = pdfSelectionForMark(pdfDoc: pdfDoc, page: page, paragraph: para, charRange: lower..<upper) {
+                revealWord(selection.bounds(for: page), page: page)
+            }
+        }
+
+        private func revealWord(_ rect: CGRect, page: PDFPage) {
+            guard autoScroll, let pdfView, !rect.isNull else { return }
+            let viewportRect = pdfView.convert(rect, from: page)
+            if !pdfView.bounds.insetBy(dx: 0, dy: pdfView.bounds.height * 0.15).contains(viewportRect) {
+                pdfView.go(to: rect.insetBy(dx: 0, dy: -45), on: page)
+            }
         }
 
         /// 英文词级高亮：在当前句的 page.string 范围内顺序 findString 每个 TTS 词，按字符位置取 PDFSelection 画词矩形。
@@ -454,6 +465,7 @@ struct PDFReaderView: UIViewRepresentable {
             ann.color = color
             page.addAnnotation(ann)
             wordAnn = (page, ann)
+            revealWord(rect, page: page)
         }
     }
 }

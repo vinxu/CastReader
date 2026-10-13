@@ -336,7 +336,7 @@ final class GoogleBooksContractTests: XCTestCase {
         XCTAssertTrue(result.authenticated)
         XCTAssertTrue(result.hasAccountEvidence)
         XCTAssertTrue(result.isShelfContext)
-        XCTAssertTrue(result.isCompleteSnapshot)
+        XCTAssertFalse(result.isCompleteSnapshot, "Invalid cards must not authorize removal of saved books")
         XCTAssertEqual(result.account?.displayLabel, "Google · example.com")
         XCTAssertEqual(
             result.account?.identity,
@@ -609,7 +609,8 @@ final class GoogleBooksContractTests: XCTestCase {
             identity: GoogleBooksAccountIdentity.hash("reader@example.com"),
             hasAccountEvidence: true,
             isShelfContext: true,
-            isCompleteSnapshot: true
+            isCompleteSnapshot: true,
+            hasExplicitEmptyShelf: true
         )
         XCTAssertEqual(GoogleBooksShelfSyncContract.requiredStablePasses(bookCount: 0), 10)
         XCTAssertFalse(
@@ -628,7 +629,7 @@ final class GoogleBooksContractTests: XCTestCase {
                 stableEndPasses: 10
             )
         )
-        XCTAssertTrue(
+        XCTAssertFalse(
             GoogleBooksShelfSyncContract.canCommit(
                 bookCount: 1,
                 account: nil,
@@ -2203,7 +2204,7 @@ final class GoogleBooksLibraryScanWebTests: XCTestCase {
         XCTAssertGreaterThan((scrollTop as? NSNumber)?.doubleValue ?? 0, 0)
 
         var completed = first
-        for _ in 0..<4 where !completed.isCompleteSnapshot {
+        for _ in 0..<12 where !completed.isCompleteSnapshot {
             completed = try await scan(view)
         }
         XCTAssertTrue(completed.isCompleteSnapshot)
@@ -2264,7 +2265,7 @@ final class GoogleBooksLibraryScanWebTests: XCTestCase {
             """
             <!doctype html><html><body>
               <header><button data-email="empty@example.com">Account</button></header>
-              <main><p>No books yet</p></main>
+              <main><p role="status" data-testid="empty-library">No books yet</p></main>
             </body></html>
             """
         )

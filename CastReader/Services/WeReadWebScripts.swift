@@ -16,6 +16,22 @@ enum WeReadWebScripts {
 
     static let desktopUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
 
+    /// A real cover / native Aa panel is usable navigation UI even when it has
+    /// no extractable chapter text. Do not send it back to the shelf on timeout.
+    static let hasUsableNonTextReaderSurface = #"""
+    (() => {
+      if (location.hostname !== 'weread.qq.com' || !/^\/web\/reader\//.test(location.pathname)) return false;
+      if (!document.body.classList.contains('wr_page_reader')) return false;
+      if (!document.querySelector('button.readerControls_item.fontSizeButton')) return false;
+      // The live reader copies its cover into a canvas and hides the source
+      // DOM. Its rendered pager remains visible (observed on the iPhone).
+      return Array.from(document.querySelectorAll('.horizontalReaderCoverPage, .reader-font-control-panel-wrapper, button.renderTarget_pager_button')).some(el => {
+        const r = el.getBoundingClientRect(), style = getComputedStyle(el);
+        return r.width > 20 && r.height > 20 && style.display !== 'none' && style.visibility !== 'hidden' && Number(style.opacity) > 0;
+      });
+    })()
+    """#
+
     /// WeRead currently mounts two QR sign-in implementations in the same
     /// official modal. QuickWxLogin completes inside WeChat's own browser, so
     /// its cookies cannot return to CastReader's WKWebView after a same-phone

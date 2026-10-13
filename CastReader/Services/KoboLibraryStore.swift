@@ -22,12 +22,22 @@ enum KoboWebSession {
 
 @MainActor
 final class KoboLibraryStore: ObservableObject {
-    static let shared = KoboLibraryStore(
-        defaults: .standard,
-        historyStore: .shared,
-        websiteDataStore: KoboWebSession.websiteDataStore,
-        usesLegacyStorageWhenUnscoped: false
-    )
+    static let shared: KoboLibraryStore = {
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-CastReaderKoboHundredShelfFixture") {
+            let suite = "castreader.kobo.hundred-shelf-fixture.v1"
+            let defaults = UserDefaults(suiteName: suite)!
+            if ProcessInfo.processInfo.arguments.contains("-CastReaderResetKoboHundredFixture") {
+                defaults.removePersistentDomain(forName: suite)
+            }
+            return KoboLibraryStore(defaults: defaults, historyStore: .shared,
+                                    websiteDataStore: .nonPersistent(), usesLegacyStorageWhenUnscoped: false)
+        }
+#endif
+        return KoboLibraryStore(defaults: .standard, historyStore: .shared,
+                                websiteDataStore: KoboWebSession.websiteDataStore,
+                                usesLegacyStorageWhenUnscoped: false)
+    }()
 
     @Published private(set) var books: [KoboBook] = []
     @Published private(set) var hasConnected = false
@@ -51,6 +61,17 @@ final class KoboLibraryStore: ObservableObject {
     private let usesLegacyStorageWhenUnscoped: Bool
     private var accountScope: AccountContentScope?
     private var isLegacyTestingScopeActive = false
+    // A new boundary also invalidates A → B → A callbacks. It is independent
+    // of provider identity and works for isolated DEBUG stores without cookies.
+    private var storageBoundaryID = UUID()
+
+    func captureStorageBoundary() -> UUID? {
+        hasActiveStorage ? storageBoundaryID : nil
+    }
+
+    func isCurrentStorageBoundary(_ token: UUID) -> Bool {
+        hasActiveStorage && token == storageBoundaryID
+    }
 
     convenience init(defaults: UserDefaults = .standard) {
         self.init(
@@ -90,6 +111,7 @@ final class KoboLibraryStore: ObservableObject {
 
     func activateAccountScope(_ scope: AccountContentScope) {
         guard accountScope != scope || !hasActiveStorage else { return }
+        storageBoundaryID = UUID()
         resetInMemory()
         isLegacyTestingScopeActive = false
         accountScope = scope
@@ -97,6 +119,7 @@ final class KoboLibraryStore: ObservableObject {
     }
 
     func deactivateAccountScope() {
+        storageBoundaryID = UUID()
         resetInMemory()
         isLegacyTestingScopeActive = false
         accountScope = nil
@@ -104,6 +127,8 @@ final class KoboLibraryStore: ObservableObject {
 
 #if DEBUG
     func activateLegacyTestingScope() {
+        guard !isLegacyTestingScopeActive else { return }
+        storageBoundaryID = UUID()
         resetInMemory()
         accountScope = nil
         isLegacyTestingScopeActive = true
@@ -149,8 +174,14 @@ final class KoboLibraryStore: ObservableObject {
     /// Only a complete, same-account shelf snapshot can remove missing books.
     func mergeScrapedBooks(
         _ incoming: [KoboBook],
-        account: KoboAccountInfo?
+        account: KoboAccountInfo?,
+        expectedStorageBoundary: UUID? = nil
     ) {
+        guard hasActiveStorage,
+              expectedStorageBoundary.map(isCurrentStorageBoundary) ?? true else {
+            lastError = AppLocalized("请先登录")
+            return
+        }
         let valid = incoming
             .map(KoboBookMetadata.normalized)
             .filter(KoboBookValidator.isLikelyLibraryBook)

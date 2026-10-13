@@ -234,6 +234,7 @@ struct ExplainControlBar: View {
     private func performAction(
         for presentationState: ReaderExplainPlaybackPresentationState
     ) {
+        AudioPlayerService.shared.sleepTimer.resumeByUser()
         switch presentationState {
         case .start, .retry:
             vm.start()

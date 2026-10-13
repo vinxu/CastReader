@@ -230,6 +230,7 @@ final class WebReaderContainerView: UIView {
 }
 
 struct WebReaderView: UIViewRepresentable {
+    @ObservedObject private var appearance = ReaderAppearanceSettings.shared
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.scenePhase) private var scenePhase
     let document: ReadingDocument
@@ -322,14 +323,10 @@ struct WebReaderView: UIViewRepresentable {
         }
         if document.sourceKind == .weread {
             config.websiteDataStore = CommercialWebSession.websiteDataStore
-            // Desktop identity and viewport sizing are separate concerns.
-            // The custom desktop UA below keeps WeRead on its web reader, while
-            // mobile content mode makes its existing `width=device-width` meta
-            // viewport equal the already-final native surface. Forcing desktop
-            // content mode gives WKWebView an approximately 980pt CSS viewport
-            // and then shrinks it into 430pt, which both makes the book tiny and
-            // breaks Canvas-to-DOM geometry matching used by TTS extraction.
-            config.defaultWebpagePreferences.preferredContentMode = .mobile
+            // Match the binding/shelf browser from the first request. A Mac UA
+            // alone must not be combined with WebKit's mobile content policy.
+            // Keep the existing measured canvas crop independent of identity.
+            config.defaultWebpagePreferences.preferredContentMode = .desktop
         }
 
         let isWeRead = document.sourceKind == .weread
@@ -373,6 +370,7 @@ struct WebReaderView: UIViewRepresentable {
         webView.backgroundColor = .clear
         webView.isOpaque = false
         context.coordinator.webView = webView
+        ReaderWebAppearanceCenter.shared.register(webView, documentID: document.id)
         webView.navigationDelegate = context.coordinator
         context.coordinator.configure(
             expectsDynamicWebContent: document.sourceKind == .web,
@@ -389,6 +387,12 @@ struct WebReaderView: UIViewRepresentable {
 
         let isDarkMode = colorScheme == .dark
         let loadAction = {
+#if DEBUG
+            if ReadingResumeScenario.isEnabled, document.sourceKind == .web {
+                webView.loadHTMLString(ReadingResumeScenario.webHTML, baseURL: URL(string: "https://resume-scenario.invalid/article"))
+                return
+            }
+#endif
             // 网址源：直接加载网页（保留原排版）。
             if (
                 document.sourceKind == .web
@@ -443,6 +447,13 @@ struct WebReaderView: UIViewRepresentable {
     }
 
     func updateUIView(_ container: WebReaderContainerView, context: Context) {
+        if document.sourceKind != .weread,
+           LiveWebPlatformID(sourceKind: document.sourceKind) == nil {
+            let zoom = appearance.textSize / 18
+            if abs(container.webView.pageZoom - zoom) > 0.001 {
+                container.webView.pageZoom = zoom
+            }
+        }
         let isApplicationActive = scenePhase == .active
         context.coordinator.applicationActivityChanged(isActive: isApplicationActive)
         context.coordinator.updateLiveWebViewport(

@@ -242,7 +242,7 @@ struct MainTabView: View {
             // View 永不重建 → 收起再展开保留滚动位置、UITextView registry、解读 mark（根治重建丢状态）。
             if let s = coordinator.session {
                 ReaderHostView(readVM: s.readVM, explainVM: s.explainVM, coordinator: coordinator, document: s.document)
-                    .id(s.id)   // 仅换文档（session 变）才重建；同文档收起/展开不重建
+                    .id(s.instanceID)   // 新 VM 重建桥接；收起/展开仍保留同一会话
                     .offset(y: coordinator.isReaderPresented ? 0 : UIScreen.main.bounds.height)
                     .transition(.move(edge: .bottom))   // 首次 open / close 时从底部滑入滑出
                     .animation(.spring(response: 0.4, dampingFraction: 0.9), value: coordinator.isReaderPresented)
@@ -455,7 +455,7 @@ struct MainTabView: View {
             requestLibraryConnection(.oreilly, entryPoint: "reader_reconnect")
         }
         .onChange(of: kindleCenter.isPresented) { isPresented in
-            if isPresented { coordinator.close() }
+            if isPresented { coordinator.close(preservingSleepTimer: true) }
         }
         .onChange(of: growthLoop.softOffer?.id) { _ in
             guard let offer = growthLoop.softOffer,
@@ -997,6 +997,17 @@ struct MainTabView: View {
         let explicitStart = request.entry == .history
             ? nil
             : request.reference.startSeconds
+        // The unified checkpoint locates the saved word before regeneration.
+        // Keep explicit timestamp links as deliberate navigation; ordinary
+        // reopens must not turn an accurate cursor into a paragraph-start jump.
+        if explicitStart == nil, readVM.hasPendingReadingResume {
+            guard armYouTubePlaybackAcceptance(
+                request: request, readVM: readVM, contentSessionKey: contentSessionKey,
+                durableAcceptance: durableAcceptance
+            ) else { return false }
+            readVM.ensurePlaying()
+            return true
+        }
         let savedProgress: YouTubePlaybackProgress?
         if explicitStart == nil, let cache = YouTubeCacheProvider.shared {
             // Transcript selection/store already touched this entry. Resume
@@ -1151,7 +1162,7 @@ struct MainTabView: View {
            coordinator.session?.id != document.contentSessionKey {
             // Same video, different track: keep the warm document, it is what
             // makes the *next* switch fast.
-            coordinator.close(releasingYouTubeWarmSession: false)
+            coordinator.close(releasingYouTubeWarmSession: false, preservingSleepTimer: true)
         }
         coordinator.open(document, mode: .read, autoplay: false)
         guard let session = coordinator.session,

@@ -12,6 +12,9 @@
 import Foundation
 import WebKit
 import Combine
+#if DEBUG
+import CryptoKit
+#endif
 
 enum WebExtractionReadiness {
     static let minimumParagraphCount = 3
@@ -145,6 +148,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     private var googleBooksNetworkRetries = 0
     private var koboSessionRecoveryAttempts = 0
     private var koboSessionRecoveryTask: Task<Void, Never>?
+    private var koboInitialReaderRecovery = KoboInitialReaderRecoveryPolicy()
+    private var koboInitialReaderAccountBoundary: AccountContentBoundaryToken?
     private var googleBooksReadinessRetries = 0
     private var googleBooksReadinessTask: Task<Void, Never>?
     private var googleBooksMainFrameWatchdogTask: Task<Void, Never>?
@@ -420,6 +425,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         self.isWeRead = isWeRead
         self.livePlatform = livePlatform
         self.liveBookID = bookID
+        updateHomeValidationReadiness()
         self.oreillyBoundReaderHost = nil
         self.oreillyBoundContentID = nil
         if livePlatform == .oreilly,
@@ -432,6 +438,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             self.oreillyBoundContentID = contentID
         }
         self.koboSessionRecoveryAttempts = 0
+        self.koboInitialReaderRecovery = KoboInitialReaderRecoveryPolicy()
+        self.koboInitialReaderAccountBoundary = AccountContentIsolation.captureBoundaryToken()
         self.koboSessionRecoveryTask?.cancel()
         self.koboSessionRecoveryTask = nil
         // Reuse one native paging coordinator. Platform-specific DOM/actions
@@ -442,6 +450,41 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             // Baseline before WeRead touches the shared website data store.
             KindleSessionProbe.logCookies(reason: "weread-create")
         }
+    }
+
+    /// The home-to-reader UI check observes only accepted, visible page text.
+    /// Expose counts and a digest, never book text or authentication data.
+    private func updateHomeValidationReadiness(
+        paragraphs: [ReadingParagraph]? = nil
+    ) {
+#if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        let validatesKobo = livePlatform == .kobo && arguments.contains("-CastReaderKoboHomeValidation")
+        let validatesGoogle = livePlatform == .googleBooks && arguments.contains("-CastReaderGoogleBooksHomeValidation")
+        guard validatesKobo || validatesGoogle, let webView else { return }
+        let rawURL = webView.url?.absoluteString ?? ""
+        let sourceID = validatesKobo
+            ? KoboBookValidator.bookUUID(from: rawURL)
+            : GoogleBooksBookValidator.volumeID(from: rawURL)
+        let stableID = sourceID.map { validatesKobo
+            ? KoboBookValidator.stableID(bookUUID: $0)
+            : GoogleBooksBookValidator.stableID(volumeID: $0, readerURL: rawURL, title: "") }
+        guard let paragraphs, let sourceID, stableID == liveBookID else {
+            webView.accessibilityValue = "not-ready"
+            return
+        }
+        let texts = paragraphs.map(\.text)
+        let characterCount = texts.reduce(0) { $0 + $1.count }
+        guard characterCount > 0 else {
+            webView.accessibilityValue = "not-ready"
+            return
+        }
+        let digest = SHA256.hash(
+            data: Data(texts.joined(separator: "\u{001F}").utf8)
+        ).prefix(16).map { String(format: "%02x", $0) }.joined()
+        webView.accessibilityValue =
+            "ready:\(sourceID):\(characterCount):\(digest)"
+#endif
     }
 
     private func allowsLiveMainFrameNavigation(_ url: URL?) -> Bool {
@@ -499,6 +542,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         liveWebBottomOcclusion = occlusion
         hasLiveWebViewport = true
         if hadViewport, livePlatform?.needsViewportRelayout == true {
+            updateHomeValidationReadiness()
             onLiveWebNeedsLoadingCover?()
         }
         sendLiveWebViewport(reason: "surface-size")
@@ -556,6 +600,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             "\(livePlatform?.logPrefix ?? "LIVEWEB") manual page button " +
             "direction=\(direction.rawValue) mode=\(isReadMode ? "read" : "explain")"
         )
+        updateHomeValidationReadiness()
         call("gbManualPage", ["direction": direction.rawValue])
     }
 
@@ -564,6 +609,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
               livePlatform.supportsReaderRetry,
               let webView else { return }
         livePlatform.clearReaderError()
+        updateHomeValidationReadiness()
         onLiveWebNeedsLoadingCover?()
         if livePlatform == .kobo {
             koboSessionRecoveryAttempts = 0
@@ -789,8 +835,12 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             .receive(on: RunLoop.main)
             .sink { [weak self] idx in
                 guard idx >= 0, self?.readVM?.autoScrollEnabled == true else { return }
-                self?.call("scrollTo", ["paragraphIndex": idx, "anchor": 0.3])
+                self?.revealCurrentReadPosition()
             }
+            .store(in: &cancellables)
+        readVM.$autoScrollEnabled
+            .receive(on: RunLoop.main)
+            .sink { [weak self] enabled in self?.call("setAutoScroll", ["enabled": enabled]) }
             .store(in: &cancellables)
 
         // 解读：activeMarks → DOM 手写标注；scrollTarget → 跟随滚动。
@@ -860,6 +910,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                     "type=\(messageType ?? "")"
                 )
                 return
+            }
+            if self.livePlatform == .googleBooks, let webView = message.webView {
+                ReaderWebAppearanceCenter.shared.registerReaderFrame(frameInfo, in: webView)
             }
             self.handle(body)
         }
@@ -2452,6 +2505,9 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         let segs = rps.map { ["paragraphIndex": $0.id, "text": $0.text] as [String: Any] }
         call("init", ["segments": segs, "color": AppSettings.shared.highlightColorHex])
         didInit = true
+
+        call("setAutoScroll", ["enabled": readVM.autoScrollEnabled])
+        revealCurrentReadPosition()
 
         // 段落就绪后才自动开播，且按「当前模式」启动对应 VM（剪贴板/网址 autoplay 进解读时启动解读，
         // 避免用空段落请求后端 → 解读 HTTP 400 / 朗读无内容）。从 Mini Player 展开会重建 bridge（didAutoStart 重置），
@@ -4261,9 +4317,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 koboSessionRecoveryAttempts = 0
                 koboSessionRecoveryTask?.cancel()
                 koboSessionRecoveryTask = nil
+                koboInitialReaderRecovery.pageDidCommit()
                 onLiveWebSurfaceStable?()
             }
             livePlatform?.clearReaderError()
+            updateHomeValidationReadiness(
+                paragraphs: pageForDOMMapping.explainParagraphs
+            )
             HistoryStore.shared.updateDetectedLanguage(
                 documentID: readVM.document.id,
                 language: pageForDOMMapping.language
@@ -4575,9 +4635,13 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             koboSessionRecoveryAttempts = 0
             koboSessionRecoveryTask?.cancel()
             koboSessionRecoveryTask = nil
+            koboInitialReaderRecovery.pageDidCommit()
             onLiveWebSurfaceStable?()
         }
         livePlatform?.clearReaderError()
+        updateHomeValidationReadiness(
+            paragraphs: parsed.explainParagraphs
+        )
         ReaderRunLog.write(
             "GBOOKS page commit reason=\(reason.rawValue) paras=\(parsed.paragraphs.count) " +
             "cross=\(parsed.boundary != nil ? "Y" : "N") sig=\(String(signature.prefix(24))) " +
@@ -5093,6 +5157,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 ReaderRunLog.write("GBOOKS ignored stale manual intent")
                 return
             }
+            updateHomeValidationReadiness()
             let audioWasGated =
                 AudioPlayerService.shared.isQueuedSegmentGated
             let shouldResumeReadBeforeCancellation =
@@ -5491,6 +5556,28 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             }
             googleBooksAwaitingReaderRecovery = false
             googleBooksReadinessRetries = 0
+            if livePlatform == .kobo, !didInit,
+               koboSessionRecoveryAttempts < 2 {
+                guard let boundary = koboInitialReaderAccountBoundary,
+                      AccountContentIsolation.isCurrent(boundary) else { return }
+                switch koboInitialReaderRecovery.readinessTimedOut(
+                    readerURL: webView?.url,
+                    bookID: liveBookID,
+                    isActive: isApplicationActive,
+                    recoveryInProgress: koboSessionRecoveryTask != nil
+                ) {
+                case .scheduleReload(let ticket):
+                    beginKoboSessionRecovery(
+                        reason: "initial-empty-timeout",
+                        initialReadinessTicket: ticket
+                    )
+                    return
+                case .wait, .ignore:
+                    return
+                case .showError:
+                    break
+                }
+            }
             livePlatform?.reportReaderError(
                 AppLocalized("内容暂时无法打开，请重试")
             )
@@ -5528,6 +5615,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         reason: String,
         clearConsumedCursor: Bool
     ) {
+        updateHomeValidationReadiness()
         rememberGoogleBooksRecoveryPlaybackIntent()
         activeGoogleBooksFrameSessionID = nil
         googleBooksFailedTurnSignature = nil
@@ -5748,7 +5836,8 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard !googleBooksPageVisualsAreSuspended else { return }
         if cmd.isWord {
             call("highlightWord", ["paragraphIndex": cmd.paragraphIndex, "segSeq": cmd.segSeq,
-                                   "words": cmd.words ?? [], "wordIndex": cmd.wordIndex])
+                                   "words": cmd.words ?? [], "wordIndex": cmd.wordIndex,
+                                   "segmentTexts": cmd.segmentTexts ?? []])
         } else {
             call("highlightRange", [
                 "paragraphIndex": cmd.paragraphIndex,
@@ -5901,13 +5990,24 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         if readMode {
             guard let readVM, readVM.autoScrollEnabled, readVM.currentParagraphIndex >= 0 else { return }
             ReaderRunLog.write("WEB refocus read para=\(readVM.currentParagraphIndex) token=\(token) didInit=\(didInit)")
-            call("scrollTo", ["paragraphIndex": readVM.currentParagraphIndex, "anchor": 0.3, "reason": "refocus"])
+            revealCurrentReadPosition()
         } else {
             let target = explainVM?.activeMarks.last?.paragraphIndex ?? explainVM?.scrollTarget ?? -1
             guard target >= 0 else { return }
             ReaderRunLog.write("WEB refocus explain para=\(target) token=\(token) didInit=\(didInit)")
             call("scrollTo", ["paragraphIndex": target, "anchor": 0.35, "reason": "refocus"])
         }
+    }
+
+    private func revealCurrentReadPosition() {
+        guard didInit, isReadMode, let vm = readVM, vm.autoScrollEnabled,
+              vm.currentParagraphIndex >= 0 else { return }
+        var payload: [String: Any] = ["paragraphIndex": vm.currentParagraphIndex]
+        if let range = vm.initialResumeViewportRange {
+            payload["charStart"] = range.location
+            payload["charEnd"] = NSMaxRange(range)
+        }
+        call("scrollTo", payload)
     }
 
     // MARK: - WeRead lifecycle / viewport recovery
@@ -6254,6 +6354,15 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                   !Task.isCancelled,
                   self.lastWeReadFingerprint.isEmpty,
                   self.webView?.url?.absoluteString == expected else { return }
+            if let webView = self.webView,
+               (try? await webView.evaluateJavaScript(WeReadWebScripts.hasUsableNonTextReaderSurface)) as? Bool == true {
+                guard !Task.isCancelled, webView.url?.absoluteString == expected else { return }
+                self.finishWeReadEntryRecoveryIfNeeded()
+                ReaderRunLog.write("WEREAD entry retained usable cover/appearance without text")
+                return
+            }
+            guard !Task.isCancelled, self.lastWeReadFingerprint.isEmpty,
+                  self.webView?.url?.absoluteString == expected else { return }
             let forceShelf = self.weReadEntryRecoveryStage == .loadingLocalFallback ||
                 self.weReadEntryRecoveryStage == .loadingRecoveredEntry
             self.startWeReadEntryRecovery(failedURL: expected, reason: "reader-ready-timeout", forceShelf: forceShelf)
@@ -6288,6 +6397,19 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     func webView(
         _ webView: WKWebView,
         decidePolicyFor navigationAction: WKNavigationAction,
+        preferences: WKWebpagePreferences,
+        decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void
+    ) {
+        if isWeRead { preferences.preferredContentMode = .desktop }
+        // Preserve the existing provider navigation security policy below.
+        self.webView(webView, decidePolicyFor: navigationAction) { policy in
+            decisionHandler(policy, preferences)
+        }
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
     ) {
         guard let livePlatform else {
@@ -6314,6 +6436,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             return
         }
         decisionHandler(.allow)
+    }
+
+    func webView(
+        _ webView: WKWebView,
+        didStartProvisionalNavigation navigation: WKNavigation!
+    ) {
+        ReaderWebAppearanceCenter.shared.resetReaderFrame(in: webView)
+        updateHomeValidationReadiness()
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
@@ -6359,6 +6489,17 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         // Amazon-session snapshot taken from the WeRead side, written into the
         // Kindle probe log so both readers share one timeline. Observation only.
         KindleSessionProbe.logCookies(reason: "weread-didFinish")
+        #if DEBUG
+        Task { @MainActor [weak webView] in
+            guard let webView else { return }
+            for delay: UInt64 in [0, 2_000_000_000] {
+                if delay > 0 { try? await Task.sleep(nanoseconds: delay) }
+                if let snapshot = try? await webView.evaluateJavaScript(ReaderWebAppearanceCenter.presentationProbe) {
+                    ReaderRunLog.write("WEREAD presentation contentMode=\(webView.configuration.defaultWebpagePreferences.preferredContentMode.rawValue) delay=\(delay) snapshot=\(snapshot)")
+                }
+            }
+        }
+        #endif
         // The layout width was fixed before navigation, so revealing the
         // native reader here can no longer expose a second-width flash. Do not
         // keep an opaque app-side cover up while geometry/TTS indexing runs.
@@ -6483,7 +6624,10 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
     /// reissue the original trusted reader request without cache. Cookies,
     /// sessionStorage and the shared WKWebsiteDataStore remain untouched, so
     /// Google and Kobo account sign-in are preserved.
-    private func beginKoboSessionRecovery(reason: String) {
+    private func beginKoboSessionRecovery(
+        reason: String,
+        initialReadinessTicket: UUID? = nil
+    ) {
         guard livePlatform == .kobo,
               koboSessionRecoveryTask == nil,
               let webView else { return }
@@ -6517,6 +6661,33 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             )
             guard let self, let webView, !Task.isCancelled else { return }
             self.koboSessionRecoveryTask = nil
+            if let initialReadinessTicket {
+                guard self.livePlatform == .kobo,
+                      self.webView === webView,
+                      !self.didInit,
+                      let boundary = self.koboInitialReaderAccountBoundary,
+                      AccountContentIsolation.isCurrent(boundary) else { return }
+                guard self.koboInitialReaderRecovery.consumeReload(
+                    initialReadinessTicket,
+                    readerURL: webView.url,
+                    bookID: self.liveBookID,
+                    isActive: self.isApplicationActive
+                ) else {
+                    if !self.isApplicationActive {
+                        // A backgrounded app cannot complete the delayed
+                        // action. Leave a visible retry on return, not a cover
+                        // with no remaining readiness task behind it.
+                        self.livePlatform?.reportReaderError(
+                            AppLocalized("内容暂时无法打开，请重试")
+                        )
+                    }
+                    return
+                }
+                // Keep the authorized browser profile and current trusted
+                // entry. This one-shot path never refreshes a committed page.
+                webView.reloadFromOrigin()
+                return
+            }
             if attempt == 1 {
                 webView.reloadFromOrigin()
                 return

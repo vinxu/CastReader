@@ -963,6 +963,117 @@ enum KindleWebScripts {
     })();
     """
 
+    /// Open Amazon's own Aa surface. Never apply CastReader font/CSS settings
+    /// to Kindle: its pagination, themes and persisted preferences own layout.
+    private static let readerAppearanceHelpers = """
+      \(uiSemanticHelpers)
+      function crAppearanceNodes() {
+        var roots = [document], seen = new Set(), nodes = [];
+        while (roots.length) {
+          var root = roots.shift();
+          if (!root || seen.has(root)) continue;
+          seen.add(root);
+          Array.from(root.querySelectorAll('*')).forEach(function(el) {
+            nodes.push(el);
+            if (el.shadowRoot) roots.push(el.shadowRoot);
+            if (el.tagName === 'IFRAME') {
+              try { if (el.contentDocument) roots.push(el.contentDocument); } catch (_) {}
+            }
+          });
+        }
+        return nodes.filter(crKindleUIIsVisible);
+      }
+      function crAppearanceTrigger(nodes) {
+        return nodes.filter(function(el) {
+          return el.matches('button,[role="button"],ion-button,[data-action],[data-testid],span,div');
+        }).map(function(el) {
+          var glyph = String(el.innerText || el.textContent || '').replace(/\\s+/g, '');
+          var score = /^aa$/i.test(glyph) ? 1000 : crKindleUISemanticScore(el, 'settings');
+          if (el.tagName === 'DIV' && !/^aa$/i.test(glyph)) score = 0;
+          if (!/^aa$/i.test(glyph) && crKindleUISemanticScore(el, 'font-size') >= 100) score = 0;
+          if (el.closest('[role="dialog"],[role="menu"],ion-menu,.popover-content')) score = 0;
+          return { el:el, score:score };
+        }).filter(function(item) { return item.score >= 45; })
+          .sort(function(a,b) { return b.score-a.score; })[0];
+      }
+      function crAppearancePanel(nodes) {
+        return nodes.find(function(el) {
+          if (!el.matches('ion-menu,[role="dialog"],[role="menu"],.popover-content,.modal-wrapper,[data-testid]')) return false;
+          var controls = el.querySelectorAll('ion-range,[role="slider"],input[type="range"],[role="radio"],ion-segment-button,select').length;
+          return controls > 0 && (crKindleUISemanticScore(el, 'settings') >= 45 || controls >= 2);
+        });
+      }
+      function crAppearanceOpen(nodes) {
+        var trigger = crAppearanceTrigger(nodes);
+        return !!crAppearancePanel(nodes) || !!(trigger && trigger.el.getAttribute('aria-expanded') === 'true');
+      }
+      function crAppearanceClick(el) {
+        if (!el) return false;
+        var target = el.closest('button,[role="button"],ion-button') || el;
+        var rect = target.getBoundingClientRect();
+        var opts = { bubbles:true, cancelable:true, clientX:rect.left+rect.width/2, clientY:rect.top+rect.height/2 };
+        ['pointerdown','mousedown','pointerup','mouseup'].forEach(function(type) {
+          try { target.dispatchEvent(type.indexOf('pointer') === 0 ? new PointerEvent(type, opts) : new MouseEvent(type, opts)); } catch (_) {}
+        });
+        target.click();
+        return true;
+      }
+    """
+
+    static let beginReaderAppearance = """
+    (function() {
+      window.__crKindleAppearanceActive = true;
+      if (window.__crKindleSetPageModeLocked) window.__crKindleSetPageModeLocked(false);
+      return JSON.stringify({ok:true});
+    })()
+    """
+
+    static let endReaderAppearance = """
+    (function() {
+      window.__crKindleAppearanceActive = false;
+      if (window.__crKindleSetPageModeLocked) window.__crKindleSetPageModeLocked(true);
+      return JSON.stringify({ok:true});
+    })()
+    """
+
+    static let openReaderAppearance = """
+    (function() {
+      \(readerAppearanceHelpers)
+      var nodes = crAppearanceNodes();
+      if (crAppearanceOpen(nodes)) return JSON.stringify({ok:true, open:true});
+      var trigger = crAppearanceTrigger(nodes);
+      return JSON.stringify({ok:!!trigger && crAppearanceClick(trigger.el), open:false,
+        trigger:trigger ? {tag:trigger.el.tagName,id:trigger.el.id,role:trigger.el.getAttribute('role'),score:trigger.score} : null});
+    })();
+    """
+
+    static let readerAppearanceState = """
+    (function() {
+      \(readerAppearanceHelpers)
+      return JSON.stringify({open:crAppearanceOpen(crAppearanceNodes())});
+    })();
+    """
+
+    static let closeReaderAppearance = """
+    (function() {
+      \(readerAppearanceHelpers)
+      var nodes = crAppearanceNodes();
+      if (!crAppearanceOpen(nodes)) return JSON.stringify({ok:true});
+      var panel = crAppearancePanel(nodes);
+      var close = panel && nodes.find(function(el) {
+        return panel.contains(el) && el.matches('button,[role="button"],ion-button') &&
+          (crKindleUISemanticScore(el, 'close') >= 45 ||
+           crKindleUITextMatches('close', el.getAttribute('aria-label')) ||
+           crKindleUITextMatches('close', el.innerText || el.textContent));
+      });
+      if (close) return JSON.stringify({ok:crAppearanceClick(close)});
+      var trigger = crAppearanceTrigger(nodes);
+      if (trigger) return JSON.stringify({ok:crAppearanceClick(trigger.el)});
+      document.dispatchEvent(new KeyboardEvent('keydown', {key:'Escape',code:'Escape',bubbles:true}));
+      return JSON.stringify({ok:true});
+    })();
+    """
+
     static let applyReaderPreferences = """
     (function() {
       \(uiSemanticHelpers)
@@ -4667,6 +4778,7 @@ enum KindleWebScripts {
         } catch (_) {}
       }
       function crKindleHideCastReaderChrome(locked) {
+        locked = locked && !window.__crKindleAppearanceActive;
         try {
           var root = document.documentElement;
           var hiddenClass = 'cr-kindle-castreader-hidden-chrome';
@@ -5406,6 +5518,7 @@ enum KindleWebScripts {
         } catch (_) {}
       }
       function crKindleHideCastReaderChrome(locked) {
+        locked = locked && !window.__crKindleAppearanceActive;
         try {
           var root = document.documentElement;
           var hiddenClass = 'cr-kindle-castreader-hidden-chrome';

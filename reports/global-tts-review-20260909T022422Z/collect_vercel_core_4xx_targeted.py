@@ -1,0 +1,52 @@
+"""Read fixed error metadata only; never export request payloads or exception text."""
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+import sys,json,hashlib,re,urllib.request,urllib.parse
+HERE=Path(__file__).resolve().parent; ROOT=HERE.parents[1]
+sys.path.insert(0,str(ROOT/'reports/audio-playback-recovery-rollout-20260907/monitoring'))
+import collect_vercel_preset_events as v
+import ssl
+v.tls_context=ssl.create_default_context
+project=json.loads((v.REPO/'.vercel/project.json').read_text())
+token=json.loads((Path.home()/'Library/Application Support/com.vercel.cli/auth.json').read_text())['token']
+phrases=['FUNCTION_INVOCATION_TIMEOUT','EDGE_FUNCTION_INVOCATION_TIMEOUT','FUNCTION_INVOCATION_FAILED','MIDDLEWARE_INVOCATION_TIMEOUT','Request timed out','Task timed out','60 seconds','fetch failed','ECONNRESET','ETIMEDOUT','UND_ERR_SOCKET','quota','QUOTA','rate_limit','rate limit','Rate limit','RATE_LIMIT','daily_limit','limit_exceeded','TTS_REQUEST_CANCELLED','TTS_TOTAL_BUDGET_EXCEEDED','too_many_requests','member','free','pro','Redis','Upstash','database','connection','credential','denied','CONNECT_TIMEOUT','incomplete','storage failure','lease release failed','processed','updated','failed','picked','Unauthorized','not supported','Not Allowed','Method Not Allowed','budget','timeout','timed out','429','503','502','500']
+def safe_path(raw):
+ p=str(raw or '').split('?',1)[0]
+ return p if re.fullmatch(r'/[A-Za-z_/-]{1,140}',p) else '[path-redacted]'
+def metadata(value):
+ if isinstance(value,list):return [metadata(v) for v in value]
+ if not isinstance(value,dict):return None
+ allowed={'source','region','durationMs','invocationDurationMs','statusCode','status','errorCode','requestMethod','method','hasFunctionCrashed','error','type','executionDuration','duration','code','functionTimeout'}
+ out={}
+ for k,vv in value.items():
+  if k in allowed and (vv is None or type(vv) in {int,float,bool} or isinstance(vv,str) and re.fullmatch(r'[A-Za-z0-9_. -]{1,100}',vv)):out[k]=vv
+  elif isinstance(vv,(dict,list)) and k in {'events','functionEvents','proxyEvents'}:out[k]=metadata(vv)
+ return out
+
+def one(task):
+ mask,left,right,search=task
+ q={'projectId':project['projectId'],'ownerId':project['orgId'],'page':0,'environment':'production','statusCode':mask,'startDate':int(v.utc(left).timestamp()*1000),'endDate':int(v.utc(right).timestamp()*1000)}
+ q['search']=search
+ req=urllib.request.Request('https://vercel.com/api/logs/request-logs?'+urllib.parse.urlencode(q),headers={'Authorization':'Bearer '+token,'Accept':'application/json'})
+ opener=urllib.request.build_opener(urllib.request.HTTPSHandler(context=v.tls_context()),v.NoRedirect())
+ with opener.open(req,timeout=30) as response: data=json.loads(response.read(v.MAX_HTTP_BYTES))
+ rows=[]
+ for r in data.get('rows',[]):
+  logs=[]
+  for l in r.get('logs',[]):
+   s=str(l.get('message',''));events=[]
+   for line in s.splitlines():
+    try:e=v.safe_event(json.loads(line))
+    except (ValueError,TypeError):continue
+    if e:events.append(e)
+   logs.append({'level':l.get('level'),'messageSha256':hashlib.sha256(s.encode()).hexdigest(),'messageBytes':len(s.encode()),'messageTruncated':l.get('messageTruncated'),'fixedFragments':[p for p in phrases if p in s],'events':events})
+  meta=[]
+  for e in r.get('events',[]):
+   meta.append({k:e[k] for k in ['source','type','statusCode','region','duration','durationMs'] if k in e and (type(e[k]) in {int,float,bool} or re.fullmatch(r'[A-Za-z0-9_.-]{1,70}',str(e[k])))})
+  rows.append({'key':v.anonymous(r.get('requestId')),'atUTC':r.get('timestamp'),'path':safe_path(r.get('requestPath')),'method':r.get('requestMethod'),'status':r.get('statusCode'),'durationMs':r.get('requestDurationMs'),'deploymentId':r.get('deploymentId'),'logs':logs,'eventsMetadata':meta,'recordFieldNames':sorted(r),'platformMetadata':metadata(r),'uaClass':('ios' if 'iPhone' in str(r.get('clientUserAgent')) or 'CastReader/' in str(r.get('clientUserAgent')) else 'android' if 'okhttp' in str(r.get('clientUserAgent')) else 'browser' if 'Mozilla/' in str(r.get('clientUserAgent')) else 'tool' if any(s in str(r.get('clientUserAgent','')).lower() for s in ['curl','python','node','vercel']) else 'other')})
+ return {'query':task,'hasMoreRows':data.get('hasMoreRows'),'rows':rows}
+tasks=[('4xx','2026-09-08T02:24:22Z','2026-09-09T02:24:22Z',q) for q in ['captioned_speech','quickread','voice-clone','markdown-tts','/api/tts/']]
+with ThreadPoolExecutor(max_workers=2) as pool: values=list(pool.map(one,tasks))
+out={'readOnly':True,'productionModified':False,'rawContentExported':False,'queries':values,'collectorSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
+with (HERE/'vercel-core-4xx-targeted.json').open('x') as f:json.dump(out,f,indent=2)
+print(json.dumps({'queries':len(values),'rows':sum(len(x['rows']) for x in values),'hasMore':[x['hasMoreRows'] for x in values]}))

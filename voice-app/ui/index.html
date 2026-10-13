@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Voice Studio · CastReader</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header><a class="brand" href="/">CastReader <span>/ Voice Studio</span></a><div class="header-tools"><span class="local">LOCAL APP · 127.0.0.1</span><select id="ui-language" aria-label="Interface language"><option value="en">English</option><option value="zh-CN">中文</option></select></div></header>
+  <main>
+    <div class="intro"><p class="eyebrow">YOUR WORDS, OUT LOUD</p><h1>Write it. Hear it. Keep it.</h1><p>Give your words a voice. Write a short script, choose how it sounds, and save an MP3 you can use anywhere.</p></div>
+    <p id="notice" role="status" aria-live="polite">Opening your local workspace…</p>
+    <section class="panel connection" aria-labelledby="connection-title">
+      <div><h2 id="connection-title">1. Connect your voice</h2><p id="connection-status">The API key stays in the Node.js server environment.</p></div>
+      <button id="connect" type="button">Load ready voices</button>
+      <label class="voice-field">Authorized voice<select id="voice" disabled><option value="">Load voices to choose</option></select></label>
+      <p id="voice-note" class="hint">Voice discovery and planning do not generate audio.</p>
+      <p class="hint setup-link"><a href="https://voice.castreader.com/request-access" target="_blank" rel="noreferrer">Get API access</a> <span>· API usage is separate from CastReader Pro.</span></p>
+    </section>
+    <div class="workspace">
+      <section class="panel editor" aria-labelledby="editor-title">
+        <div class="section-head"><div><h2 id="editor-title">2. Write your script</h2><p>500 characters per clip · Add more clips when you need them</p></div><button id="add" class="secondary" type="button">+ Add clip</button></div>
+        <label>Project title<input id="title" maxlength="80" value="My first voice project" autocomplete="off"></label>
+        <p class="hint">Choose the language your text is written in. Each clip becomes its own MP3.</p>
+        <div id="cards" class="card-list"></div>
+        <div class="editor-footer"><span id="count" class="hint"></span><button id="plan" type="button" disabled>Preview cost</button></div>
+      </section>
+      <aside>
+        <section class="panel" aria-labelledby="run-title">
+          <h2 id="run-title">3. Review &amp; generate</h2>
+          <div id="plan-summary"><p>Preview the cost of your script, then generate when you are ready.</p></div>
+          <label class="confirm"><input id="confirm" type="checkbox" disabled><span>I approve the displayed maximum cost. Resuming can generate any clips that have not started.</span></label>
+          <button id="start" type="button" disabled>Generate audio</button>
+          <p class="hint">Clips generate one at a time. Your progress is saved so you can return later.</p>
+        </section>
+        <section class="panel" aria-labelledby="history-title">
+          <div class="section-head"><h2 id="history-title">Saved projects</h2><button id="refresh" class="secondary small" type="button">Refresh</button></div>
+          <label>Open a project<select id="history"><option value="">Choose a project</option></select></label>
+          <p id="history-warning" class="hint" role="status" hidden></p>
+          <p class="hint">Return to a saved project to play, download, or continue your audio.</p>
+        </section>
+      </aside>
+    </div>
+    <section class="panel results" aria-labelledby="results-title">
+      <div class="section-head"><div><h2 id="results-title">Your audio</h2><p id="progress-label">Your studio is ready for its first clip.</p></div><div class="actions"><button id="manifest" class="secondary" type="button" disabled>Manifest</button><button id="archive" type="button" disabled>Download all · ZIP</button></div></div>
+      <progress id="progress" max="1" value="0" aria-label="Saved clips"></progress>
+      <p id="run-error" role="status" class="hint"></p>
+      <div id="results"><p class="empty">Saved clips will appear here. Replay and download use your local files without generating again.</p></div>
+    </section>
+    <footer>Powered by CastReader Voice API · Made to be heard.</footer>
+  </main>
+</body>
+</html>

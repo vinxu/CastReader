@@ -160,6 +160,7 @@ struct ReaderPrimaryPlaybackButtonContent: View {
 /// remains true it deliberately refuses to accept transient `.paused` values
 /// caused by `isPlaying` dropping at a segment boundary.
 struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View>: View {
+    @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     let stablePresentation: Presentation
     let rawWaiting: Bool
     let waitingPresentation: Presentation
@@ -213,7 +214,8 @@ struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View
     }
 
     private var displayedPresentation: Presentation {
-        ReaderPlaybackWaitingDebounceContract.resolve(
+        if sleepTimer.requiresExplicitResume { return stablePresentation }
+        return ReaderPlaybackWaitingDebounceContract.resolve(
             rawWaiting: rawWaiting,
             waitingHasExceededDelay: waitingHasExceededDelay,
             previousStablePresentation: previousStablePresentation,
@@ -456,6 +458,7 @@ struct ReaderHostView: View {
             }
         }
         .background(AppTheme.background.ignoresSafeArea())
+        .environment(\.readerAppearanceSource, appearanceSource)
         .onAppear { scheduleRefocusBurst(reason: "appear") }
         .onDisappear {
             refocusTask?.cancel()
@@ -476,6 +479,7 @@ struct ReaderHostView: View {
             if phase == .active, coordinator.isReaderPresented {
                 scheduleRefocusBurst(reason: "foreground")
             } else if phase != .active {
+                readVM.flushReadingProgress()
                 readVM.flushYouTubeProgressForLifecycle()
             }
         }
@@ -529,6 +533,16 @@ struct ReaderHostView: View {
         }
     }
 
+    private var appearanceSource: ReaderAppearanceSource {
+        switch document.sourceKind {
+        case .photo, .pdf: return .fixedLayout
+        case .web, .docx: return .webText
+        case .googleBooks, .kobo, .oreilly, .weread:
+            return .web { await ReaderWebAppearanceCenter.shared.open(documentID: document.id) }
+        default: return .text
+        }
+    }
+
     private var readerSurface: some View {
         GeometryReader { geometry in
             let surfaceSize = geometry.size
@@ -555,6 +569,8 @@ struct ReaderHostView: View {
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(AppTheme.foreground)
             }
+            .accessibilityIdentifier("readerMinimizeButton")
+            .accessibilityLabel(Text(AppLocalized("返回")))
             Text(document.title)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
@@ -1144,6 +1160,7 @@ struct ReaderPlaybackConsole<PlaybackControls: View>: View {
 
             voiceControl
             SpeedMenu(style: .compact)
+            ReaderMoreButton()
         }
     }
 
@@ -1280,6 +1297,18 @@ private struct ReadControlBar: View {
                 .fixedSize(horizontal: true, vertical: false)
             }
         }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            if let notice = vm.resumeNotice {
+                Text(notice)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: 420)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("readingResumeNotice")
+            }
+        }
     }
 
     private func playbackStatus(
@@ -1404,8 +1433,21 @@ private struct ReaderLandscapeReadOverlay: View {
                         )
                     }
                     SpeedMenu()
+                    ReaderMoreButton()
                 }
                 .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
+            }
+        }
+        .safeAreaInset(edge: .top, spacing: 8) {
+            if let notice = vm.resumeNotice {
+                Text(notice)
+                    .font(.footnote)
+                    .foregroundStyle(AppTheme.foreground)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(12)
+                    .frame(maxWidth: 420)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("readingResumeNotice")
             }
         }
     }
@@ -1484,6 +1526,7 @@ private struct ReaderLandscapeExplainOverlay: View {
                         }
                         PlaybackVoiceButton(language: vm.playbackLanguage, size: 34)
                         SpeedMenu()
+                        ReaderMoreButton()
                     }
                     .shadow(color: .black.opacity(0.08), radius: 8, y: 2)
                 }
@@ -1561,6 +1604,7 @@ private struct ReaderLandscapeExplainOverlay: View {
     private func performExplainAction(
         for presentationState: ReaderExplainPlaybackPresentationState
     ) {
+        AudioPlayerService.shared.sleepTimer.resumeByUser()
         switch presentationState {
         case .start, .retry:
             vm.start()

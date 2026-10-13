@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## 本地真机包的基线校验（2026-09-11）
+
+- 当前已验证的 iOS 1.2.37 发布源码为提交 `b6dd4d7`；对应工作树：
+  `/Users/xuxuheng/Documents/.worktrees/CastReader-reading-resume-real-libraries-20260909`。
+- 主目录的 `codex/adaptive-voice-clone-denoise` 工作树不是该发布基线。不得仅因当前目录或更大的 Build 号就在此打包覆盖真机，也不得整文件覆盖发布分支。
+- 本轮“更多 / Aa / 睡眠定时”只在上述发布工作树增量整合。打包前运行该工作树的 `bash scripts/build-reader-more-integration.sh --check`；真机包运行同脚本的 `--device`。
+- 后续发布更新时，以已验证的新发布提交更新本节，核对祖先关系、源码差异、独立 DerivedData 与回归结果后再安装；版本号不是源码基线证据。
+- 本轮至少保留 Kindle 位置恢复、手动翻页确认、预热书架遮挡、原生字号重排、WeRead/Kobo 恢复和播放器失败恢复的发布版实现。不得用旧工作树的新功能实现替换这些子系统。
+
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## 产品定位

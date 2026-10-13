@@ -1,8 +1,15 @@
 # US / GB Apple Ads 增长闭环数据目标与拉数 SOP
 
+> **当前投放状态（2026-09-27 13:10 CST）：用户明确指示“美国暂停，英国继续投放”。英国 Discovery（2144503591）已恢复并独立回读为 ENABLED / RUNNING，日预算 RMB120；其探索组和 Kindle Exact 组均 RUNNING，预算、出价、关键词和否定词保留。美国 Discovery（2144343127）和旧 Exact（2144344391）继续 PAUSED / NOT_RUNNING，其他国家仍暂停。执行证据：[9/27英国恢复](../reports/apple-ads/2026-09-27-resume-gb/README.md)。英国 9/27 为恢复混合日，9/28 为首个完整账户日；恢复后 cohort 单列。9/17 10:54 的停投及其截断的 9/15–17 实验保留为历史，不与本轮恢复混算：[9/17获客暂停](../reports/apple-ads/2026-09-17-pause-acquisition/README.md)。**
+
+> **最新调整（2026-10-13 11:32 CST）：用户授权执行本轮英国建议。Broad `listen to kindle books` Max CPT 10→8、`reading assistant` 10→7；新增 campaign EXACT negative `kindle`。独立回读及全资源差异检查通过。英国仍 RUNNING / RMB120 日预算，Search Match 默认价与其他资源不变。美国两个 Campaign、加拿大仍 PAUSED，澳大利亚尚无 Campaign；三国扩展仅讨论，未开启。10/13 为混合日，10/14 为首个完整账户日。详见第 16 节和[执行验证](../reports/apple-ads/2026-10-13-gb-adjustment/verification.json)。**
+
+> **上轮调整（2026-10-02 21:50 CST）：用户授权“好 做调整”。英国 Broad `epub reader` Max CPT 10→8、`ebook reader` 8→6.40；新增 campaign EXACT negatives `whats app`、`boom reader`、`boomreader parents`、`kindle app for iphone`。独立回读及全资源差异检查通过。英国仍 RUNNING / RMB120 日预算，美国两个 Campaign 仍 PAUSED；Search Match 默认价、其他词和 Kindle Exact 出价/分流不变。10/2 是调整混合日，10/3 为首个完整账户日。详见第 15 节和[执行验证](../reports/apple-ads/2026-10-02-gb-adjustment/verification.json)。**
+
 > 生效日：2026-08-23
-> 最新路由变更：2026-08-23 11:52 CST
-> 广告路由切点：2026-08-24 00:00（Asia/Shanghai，UTC+8）
+> 最新路由变更：2026-09-09 10:24 CST（新增 US / GB Exact 广告组与组级否定分流，详见第 12 节）
+> 当前路由实验切点：2026-09-10 00:00（Asia/Shanghai，UTC+8）；历史累计仍从 2026-08-24 起，不混作本轮效果。
+> 最新出价实验：2026-09-11 10:44（Asia/Shanghai），US / GB 各 1 个 Exact 词显式出价改为 RMB10；完整观测日 9/12–9/13，详见第 13 节。9/6 历史出价实验保留于第 11 节。
 > 数据口径修订：2026-09-04；当前 1.2.33 (build 53)，不同首次安装 build 分开展示，不把升级日当安装日。
 > 状态：**Apple Ads 增长分析的唯一现行口径**
 
@@ -308,3 +315,137 @@ install→trial ≥ 25%
 ```
 
 若 install→trial 只能保持20%，则安装 CPA 必须进一步降到约¥18.4。所以下一版本内部运营目标采用 72h 绑定/导入≥35%、install→trial≥25%；原 20% 与 7% 保留为失败红线和首年打平线。
+
+## 11. 当前已执行：2026-09-06 分词降价实验
+
+用户批准策略后，于北京时间 2026-09-06 09:23 完成以下两项，并通过 Apple Ads 独立 GET 回读：
+
+| 国家 | Campaign / Ad Group / Keyword ID | Broad 关键词 | Max CPT |
+|---|---|---|---|
+| US | 2144343127 / 2149992107 / 2297161990 | listen to kindle books | RMB 10 → 8 |
+| GB | 2144503591 / 2150470773 / 2303076128 | ebook reader | RMB 10 → 8 |
+
+本轮仅调整以上两词。两国日均预算仍各 RMB 120，Search Match 与默认出价 RMB 10、其他词、否定词、状态和国家均不变。未执行 GB listen to kindle books → RMB 9 的可选项；Exact / 否定词方案等待本轮数据后另作一轮。第 9 节预算 RMB 60 是 8/23 的历史记录，不是当前预算。
+
+下次拉数必须同时保留两个视角：
+
+1. **9/6 出价实验（已被后续路由实验截断）**：排除 9/6 混合日，从 9/7 00:00 Asia/Shanghai（9/6 16:00 UTC）开始；对照 8/31–9/5 当前预算基线。原计划三日 9/7–9/9、七日 9/7–9/13；因 9/9 10:24 新增 Exact 路由，这两段不再是纯出价实验。只有 9/7–9/8 为完整未混入新路由的出价日，9/9 为混合日。按实际天数与星期结构解释点击量，不能直接比较不等长窗口总量，也不能把后续新增 Exact 效果归因于 9/6 降价。
+2. **完整增长 cohort**：历史 8/24 起累计和首次 build 分层仍保留；设备继续按 UTC received_at / fresh_install 和成熟分母，不把 9/7 广告出价切点当产品版本切点，不将 ORTZ 同日期的 ASA 全量与设备子集混算。可信财务认证仍需 UTC 日事实与完整性滞后。
+
+快捷报表曾将 totalInstalls / taps 标成 tap→install。本轮分析已直接读取 Apple 原始字段；后续点击转化率必须使用 tapInstalls / taps，浏览归因及 totalInstalls 分列，点击安装 CPA 与总安装 CPA 分列。旧标签尚未在本轮修改代码，不能原样引用。UNKNOWN keywordId 也不能直接当作 Search Match；广告搜索词来源用 Apple searchTermSource 分类。
+
+调整后每国×词×match 至少 20 taps 或 5 安装再判断表现；样本不足只看方向，不每日连续调价。核对实际 CPT、点击安装率、安装 CPA 和真实激活/试用质量，不承诺降价后安装数不降。维持不扩量及成熟正价 CAC 门槛。本节仅记录已获授权动作与读取口径，不授权未来自动改价或自动化监控。
+
+完整审计：[2026-09-06 出价执行与验证](../reports/apple-ads/2026-09-06-bid-adjustment/README.md)。
+
+## 12. 当前已执行：2026-09-09 Exact 意图分流
+
+用户授权“先推进出价和投放的调整，产品先出需求”。北京时间 2026-09-09 10:21 创建暂停组和关键词，10:24 启用并完成原组否定分流。Campaign 不变、两国日均预算仍各 RMB 120，不启用旧 US Exact Campaign。
+
+| 国家 | 新广告组 ID / 名称 | Exact 关键词（每词显式 Max CPT） |
+|---|---|---|
+| US | 2150932283 / US Exact Own Content 20260909 | read aloud app；listen to pdf；pdf text to speech；scan text and read aloud：均 RMB 7 |
+| GB | 2150932284 / GB Exact Kindle 20260909 | kindle read aloud；kindle text to speech；listen to kindle books；read kindle books aloud：均 RMB 8 |
+
+新组均 Search Match 关闭、iPhone only、无 CPA goal；组默认出价与关键词显式出价一致。原 Broad / Search Match 组维持原状态、默认出价与关键词出价，包括 9/6 两词 RMB 8。
+
+否定分流：仅暂停 US campaign-level EXACT negative `read aloud app`（2317144174）、`scan text and read aloud`（2317144299），其他 campaign negatives 不变。US 原组 2149992107 新增四个对应词 + `audible` 的 EXACT negatives；GB 原组 2150470773 新增四个对应词的 EXACT negatives。新 Exact 组无组级否定；不在 campaign 层屏蔽新词，不对 GB 添加 audible，不 Broad 否定 kindle。
+
+这是一轮“意图分流 + US audible 排除”的组合实验，不能独立识别两项的因果贡献；audible 曾带来安装，排除是意图假设，不是已验证没有价值。Exact 分流可能减少旧组点击；新组低竞价可能无量。单 campaign 内广告组共享预算，没有组级硬配额，不能宣称固定花费比例。
+
+读取与判断规则：
+
+1. 9/9 为混合日，仅作运行审计；首个完整效果日 **9/10 Asia/Shanghai**。三完整日 9/10–9/12 最早 9/13 D+1 看方向，七日 9/10–9/16 最早 9/17 看完整获客。未成熟/不足样本不硬下结论；没有设置每日监控或自动改价。
+2. 每国必须读取两个组，按 campaignId × adGroupId × keywordId × matchType 对比新 Exact 与原探索组；Search Term 使用 Apple searchTermSource，不用 UNKNOWN keywordId 猜 Search Match。原快捷报表 campaign 级拉取不限定旧组，但 normalize/top10 不保留完整组/关键词 ID，因此必须保留原始分页明细，不能用快捷摘要替代实验表。
+3. 20 taps 或 5 点击安装/词可初看获客，30 广告安装/国才初看激活，均给人数与不确定性。无量先查状态、否定冲突、匹配与实际展示，再提议调价；不自动抬到 $2.5，不自动提高预算。
+4. 点击安装率用 tapInstalls/taps，totalInstalls 和浏览归因单列；生产设备仍走 UTC fresh-install / 首次 build / 成熟度规则，不能直接拿账户日期与 UTC 同名日期混算 coverage/CAC。新 adGroup 不得从摄入或查询中被旧白名单丢掉。
+5. US 归因质量未达标时保留 UNKNOWN 门；改善目标实际 CPT≤$1.20、点击安装≥40%、安装试用先10%再20%、同 cohort 成熟试用转正≥30% 只是本轮里程碑。历史 ≥35% 转正、≥7% 安装付费及 CAC≤¥329 / 扩量≤¥263 等经济验收门不放宽。$50–65 高于 US 首年净 LTV，不等于可扩量。
+
+产品只交接需求，不在本轮实现或发布：[首次价值与试用转化产品需求及验收](./US-GB-首次价值与试用转化-产品需求与验收-2026-09-09.md)。产品首次 build 切点必须另记，不能拿广告切点代替。
+
+完整执行与回读证据：[2026-09-09 Exact 路由审计](../reports/apple-ads/2026-09-09-exact-routing/README.md)。本节不授权后续自动修改、监控或扩量。
+
+## 13. 当前已执行：2026-09-11 两词 Exact 竞价探测
+
+用户批准“每国只选择1个现有Exact词改为¥10，观察两个完整日，其他不变”的小实验。北京时间9/11 10:44执行：
+
+| 国家 | Campaign / Group / Keyword ID | Exact 词 | 显式 Max CPT |
+|---|---|---|---|
+| US | 2144343127 / 2150932283 / 2309512511 | read aloud app | RMB7 → 10 |
+| GB | 2144503591 / 2150932284 / 2309509917 | kindle read aloud | RMB8 → 10 |
+
+选择理由：各保留一个较短、直接描述当前TTS任务的现有Exact作诊断词；不是宣称已验证高搜索量或高转化。Apple建议价均null，因此RMB10只是与原探索组默认价对齐的试验档位，不是市场建议价，也不保证获得展示。
+
+不变项：两campaign日均预算仍各RMB120；新Exact组默认价US7/GB8；剩余6个Exact分别保持US7/GB8；原Broad组默认/显式出价、所有Search Match开关、定向、状态与全部否定词均不变。没有新增关键词，没有修改产品或部署，没有创建定时监控/自动回退。
+
+观测与解释：
+
+1. 9/11为本轮提价混合日；**两个完整效果日是9/12与9/13 Asia/Shanghai，最早9/14读取D+1方向结果**。9/12可先看今日9/11混合日运行状态，但不得当完整实验日。
+2. 9/9路由首个完整日9/10继续保留。原计划9/10–9/12三完整日现在混入9/11提价，不能再称为未变出价的纯路由实验；只有9/10是全日原起价的新路由数据。其余6词虽然显式价不变，也共享campaign预算，不作为严格随机对照。
+3. 首要指标是测试词展示、点击、实际CPT，其次点击安装率与点击安装CPA；每个国家×adGroup×keyword×match分开。没有展示不能评判安装/试用转化；有少量展示不构成扩量证据。
+4. 若提价词开始获得展示，说明竞价可能影响可获流量，仍需考虑时间/需求变化，不宣称因果确定。若仍零展示，优先核查实际搜索需求与相关性，不连续自动提价。
+5. 若产生点击但没有安装，CPA为无有限估计，不报¥0；若有安装但样本低于20taps或5安装，仅作方向信号。install→trial/paid继续遵守UTC、fresh-install、首次build、成熟度和身份质量门。
+6. 无论测试结果如何都不自动加总预算；试验后恢复原价或继续调整必须另行获得用户授权。本段日期是复盘口径，不是定时任务。
+
+执行回执及独立资源回读：[9/11两词竞价探测](../reports/apple-ads/2026-09-11-exact-bid-probe/README.md)。
+
+## 14. 当前已执行：2026-09-14 US Search Match 受控降价
+
+北京时间10:17:45，仅US原探索组2149992107的默认Max CPT从RMB10降到8，Search Match保持开启。该组15个活跃手动关键词均有显式价，全部不变；两国Exact、GB全部资源、全部负词和两campaign日均预算各RMB120不变。独立回读2campaign、4组、53关键词及全部负词，只有默认价与修改时间变化。
+
+9/14是混合日；完整观察日9/15–17，最早9/18读D+1方向。按Search Term source=AUTO拆分，不混同手动Broad；样本门仍20点击或5点击安装。无量/无安装不报0元CPA，不将浏览安装混入tap→install。若AUTO20点击仍0点击安装，或至少5点击安装而CPA仍>RMB35，只触发进一步收紧建议，不能自动暂停、回退或加价；没有创建每日监控。
+
+9/12–13两个完整日Exact探测结果为零展示，已经完成既定观察窗口，不再称为“尚未等满两日”。两词¥10暂保持，不连续自动抬价；后续需需求/相关性与可投诊断依据。新增产品修复当前只是隔离候选，未发布，不能归因本次广告结果为产品改善。
+
+执行与验证：[9/14 US Search Match受控降价](../reports/apple-ads/2026-09-14-us-searchmatch-cpt/README.md)。
+
+## 15. 已执行：2026-10-02 英国广泛匹配收紧
+
+用户在 10/2 英国复盘和成本归因后明确授权“好 做调整”。本轮是两词降价与四条精确否定组合调整，不是独立随机实验；不将随后效果完全归因于某一个动作。
+
+北京时间 21:50:17 完成出价写入，21:50:21 完成否定词写入，21:50:35 完成独立 GET 回读。Campaign 2144503591、原探索组 2150470773：
+
+| Broad 关键词 | Keyword ID | Max CPT（RMB） |
+|---|---:|---:|
+| epub reader | 2303076127 | 10 → 8 |
+| ebook reader | 2303076128 | 8 → 6.40 |
+
+两词均降 20%，保持 ACTIVE。它们占 9/28–10/1 已观察花费约 56.5%；本轮减少竞价强度，不保证花费或安装成本也按比例下降，不通过降低组默认价假装覆盖显式关键词价。
+
+新增 campaign 层 EXACT negatives：
+
+| 查询 | Negative ID | 9/28–10/1 花费 / 点击 / 点击安装 |
+|---|---:|---|
+| whats app | 2347433125 | RMB1.79 / 1 / 0 |
+| boom reader | 2347433126 | RMB9.61 / 1 / 0 |
+| boomreader parents | 2347433127 | RMB8.07 / 1 / 0 |
+| kindle app for iphone | 2347433128 | RMB30.52 / 4 / 0 |
+
+这四条合计约 RMB49.99、7 点击、0 安装。前三项按通讯/学校阅读记录的非目标任务排除；`kindle app for iphone` 按品牌导航意图做排除试验，但历史上确实带来过安装，不声称其永久无价值。只精确否定这四个查询，不 broad 否定 kindle，也不屏蔽已带安装的 audible / libby。精确否定不保证所有近似变体一起被挡住。
+
+其他设置：英国日均预算仍 RMB120，Search Match 开启且默认 Max CPT RMB10；其余 Broad、四个 Kindle Exact 及原否定分流不变。美国两个 Campaign 和其他国家保持暂停。全账户 Campaign 与英国组/关键词/否定词的前后差异检查，只发现上述计划内变化及 Apple 修改时间等派生字段。
+
+Exact 复查：Campaign/组 RUNNING、四词 ACTIVE；无结束日期、daypart 或 CPA goal；与有量探索组同为 iPhone 定向；campaign+Exact 组未发现字面否定冲突。两组 Ads 列表均为空，而探索组有真实展示，不能据此认定 Exact 缺广告。零展示的需求、相关性和竞价成因仍未分离，本轮不再提价。英国公开商店文案也已只读检查，标题包含 Read Aloud Books，描述开头强调 Safari/设备支持；文案排序与广告任务匹配是后续假设，不把它认定为已证实的低转化原因，本轮未修改商店内容。
+
+复盘口径：10/2 为混合日，10/3–10/5 为最初三个完整账户日，10/6 起可人工拉取 D+1 方向结果；仍需注明归因回补。优先看各词实际 CPT、点击安装 CPA、AUTO/Broad 分量及安装后的首次有效使用，至少 20 点击或 5 点击安装后再对单词做较稳定初判；低样本不每日连续改价。D10 正价与身份/花费完整性门保持不变。该日期安排只定义后续观察窗口，未创建自动复盘、自动调整或暂停任务。
+
+证据：[计划](../reports/apple-ads/2026-10-02-gb-adjustment/plan.json)、[执行验证](../reports/apple-ads/2026-10-02-gb-adjustment/verification.json)、[诊断](../reports/apple-ads/2026-10-02-gb-adjustment/diagnostic.json)、[调整前快报](../reports/apple-ads/2026-10-02-gb-followup/summary.json)。原始前后快照和逐次请求/响应日志保存在同目录；没有删除资源。
+
+## 16. 已执行：2026-10-13 英国成本反弹收紧
+
+用户在看到 10/10–10/12 关键词拆解及具体建议后指示“调整 和讨论是不是应该把美 澳 加 这三个地区也加上？”。本轮执行既定英国调整；美国、澳大利亚、加拿大仅作扩展讨论，未新增或恢复投放。
+
+北京时间 11:32:57 完成两词出价写入，11:32:59 完成精确否定写入，11:33:04 完成独立 GET 回读与全资源差异验证。Campaign 2144503591、探索组 2150470773：
+
+| Broad 关键词 | Keyword ID | Max CPT（RMB） |
+|---|---:|---:|
+| listen to kindle books | 2303076135 | 10 → 8 |
+| reading assistant | 2303076130 | 10 → 7 |
+
+新增 campaign 层 EXACT negative `kindle`（ID 2352209154，ACTIVE），仅排除该完整查询，不采用 Broad negative，以保留 `kindle read aloud` 等较长任务词。英国预算继续 RMB120/日，Search Match 默认价 RMB10，其他 Broad、Exact 与既有否定分流不变。美国两个 Campaign 与加拿大仍暂停，澳大利亚尚无 Campaign。
+
+调整依据：账户日 10/10–12 花费 RMB331.22、47 点击、5 点击安装，CPI RMB66.24；此前 10/3–9 CPI RMB27.06，整体 CPT 从 RMB7.33 降至 RMB7.05，反弹主要体现为安装率下降。两项降价词占最近三天花费 48.2%；`reading assistant` 十天只有 10 点击、1 安装，降价为控制风险，不宣称低样本已证明关键词无效。具体搜索词未披露的花费占 69.6%，不能将其编造为已知查询。
+
+本轮为两词降价与精确否定的组合调整，不是随机实验。10/13 排除为混合日，首批完整观察日 10/14–16，最早 10/17 读取 D+1 方向结果并注明归因回补；单词达到 20 点击或 5 点击安装再作较稳定初判。先观察实际 CPT、点击安装率和 CPI 是否向反弹前水平恢复，不能将该参考水平当作英国盈利阈值。下游仍按同 cohort 的 72h 使用、D10 正价与完整性门判断；没有安排自动复盘或后续自动改价。
+
+证据：[调整前分析](../reports/apple-ads/2026-10-13-cost-rebound/analysis.json)、[执行计划](../reports/apple-ads/2026-10-13-gb-adjustment/plan.json)、[独立验证](../reports/apple-ads/2026-10-13-gb-adjustment/verification.json)。前后资源快照与逐次写入记录位于同一执行目录。

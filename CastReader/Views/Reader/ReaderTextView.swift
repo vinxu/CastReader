@@ -41,6 +41,7 @@ final class ReaderRoundedBackgroundLayoutManager: NSLayoutManager {
 // MARK: - ReaderUITextView（自适应高度 + 字符范围矩形）
 
 final class ReaderUITextView: UITextView {
+    var viewportFocusRange: NSRange?
 
     static func make() -> ReaderUITextView {
         let storage = NSTextStorage()
@@ -68,6 +69,35 @@ final class ReaderUITextView: UITextView {
     override func layoutSubviews() {
         super.layoutSubviews()
         invalidateIntrinsicContentSize()
+        if viewportFocusRange != nil {
+            DispatchQueue.main.async { [weak self] in self?.revealFocusInReader() }
+        }
+    }
+
+    /// A paragraph can be many screens tall. Reveal its actual word in the
+    /// outer SwiftUI scroll view without creating an inner scrolling surface.
+    @discardableResult
+    func revealFocusInReader() -> Bool {
+        guard window != nil, !isScrollEnabled, let range = viewportFocusRange,
+              let rect = rects(forCharRange: range).first else { return false }
+        var ancestor = superview
+        while let view = ancestor {
+            if let scroll = view as? UIScrollView, scroll.isScrollEnabled {
+                guard !scroll.isDragging, !scroll.isDecelerating, scroll.bounds.height > 0 else { return true }
+                let target = convert(rect, to: scroll)
+                let visible = scroll.bounds.inset(by: scroll.adjustedContentInset)
+                let comfortable = visible.insetBy(dx: 0, dy: visible.height * 0.18)
+                if target.minY < comfortable.minY || target.maxY > comfortable.maxY {
+                    let y = target.minY - visible.height * 0.30 - scroll.adjustedContentInset.top
+                    let minY = -scroll.adjustedContentInset.top
+                    let maxY = max(minY, scroll.contentSize.height - scroll.bounds.height + scroll.adjustedContentInset.bottom)
+                    scroll.setContentOffset(CGPoint(x: scroll.contentOffset.x, y: min(maxY, max(minY, y))), animated: false)
+                }
+                return true
+            }
+            ancestor = view.superview
+        }
+        return false
     }
 
     /// 计算某字符范围（按行）的矩形，坐标系为本 textview（已含 textContainerInset 偏移）。
@@ -100,11 +130,14 @@ struct ReaderTextView: UIViewRepresentable {
     /// 是否当前段落（非当前段落整体淡化）。
     var isCurrent: Bool = true
     var fontSize: CGFloat = 18
+    var lineSpacing: CGFloat = 8
+    var usesSerif: Bool = true
     var highlightColor: UIColor = UIColor(red: 253/255, green: 95/255, blue: 1/255, alpha: 0.5)
     /// The normal reader owns scrolling at the paragraph level. The compact
     /// onboarding sample opts into an internal viewport so longer locales keep
     /// the active word visible without making the first screen unbounded.
     var autoScrollsHighlight: Bool = false
+    var readerViewportRange: NSRange? = nil
     /// 暴露底层 textview（供解读 mark 定位）。布局完成后回调。
     var onReady: ((ReaderUITextView) -> Void)? = nil
 
@@ -114,6 +147,7 @@ struct ReaderTextView: UIViewRepresentable {
 
     func updateUIView(_ tv: ReaderUITextView, context: Context) {
         tv.isScrollEnabled = autoScrollsHighlight
+        tv.viewportFocusRange = readerViewportRange
         tv.attributedText = buildAttributedString()
         tv.invalidateIntrinsicContentSize()
         tv.setNeedsLayout()
@@ -133,7 +167,7 @@ struct ReaderTextView: UIViewRepresentable {
         let base = UIColor(AppTheme.foreground)
         let color = isCurrent ? base : base.withAlphaComponent(0.55)
         let para = NSMutableParagraphStyle()
-        para.lineSpacing = 8
+        para.lineSpacing = lineSpacing
         let attrs: [NSAttributedString.Key: Any] = [
             .font: font(),
             .foregroundColor: color,
@@ -148,6 +182,8 @@ struct ReaderTextView: UIViewRepresentable {
     }
 
     private func font() -> UIFont {
-        UIFont(name: "Georgia", size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+        usesSerif
+            ? (UIFont(name: "Georgia", size: fontSize) ?? UIFont.systemFont(ofSize: fontSize))
+            : UIFont.systemFont(ofSize: fontSize)
     }
 }
