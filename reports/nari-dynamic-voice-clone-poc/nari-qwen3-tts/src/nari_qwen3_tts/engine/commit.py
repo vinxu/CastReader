@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from nari_qwen3_tts.contract.result import (
     CodecStateDelta,
@@ -29,7 +30,8 @@ from nari_qwen3_tts.engine.state import (
     ResourceExhaustedError,
     StaleCompletionError,
 )
-from nari_qwen3_tts.executor.cache import PendingKVPublication
+if TYPE_CHECKING:
+    from nari_qwen3_tts.executor.cache import PendingKVPublication
 
 
 @dataclass(frozen=True, slots=True)
@@ -307,6 +309,7 @@ class Committer:
         delta: TalkerStateDelta,
         *,
         terminal: bool,
+        stop_reason: str | None = None,
     ) -> None:
         state.generation.token = delta.token
         state.generation.hidden = delta.hidden
@@ -322,6 +325,7 @@ class Committer:
             state.generation.phase = (
                 GenerationPhase.DONE if terminal else GenerationPhase.CODE_PREDICTOR
             )
+            state.generation.stop_reason = stop_reason
         state.generation.version += 1
         if state.generation.phase is GenerationPhase.DONE:
             state.codec.producer_done = True
@@ -366,6 +370,7 @@ class Committer:
         *,
         kv_publications: tuple[PendingKVPublication, ...] = (),
         talker_terminal: tuple[bool, ...] = (),
+        talker_stop_reasons: tuple[str | None, ...] = (),
     ) -> tuple[str, ...]:
         claimed = self._claimed_batch(handle, completion.batch_id)
         batch = claimed.batch
@@ -396,6 +401,21 @@ class Committer:
             self._discard_publications(kv_publications)
             self._release_batch(handle, batch.batch_id, restore=True)
             raise StaleCompletionError("non-Talker completion cannot carry Talker resources")
+
+        # Validate evidence before publishing any KV or mutating any row. Old
+        # in-process callers may omit it; those results remain unproven, not EOS.
+        if talker_stop_reasons and (
+            len(talker_stop_reasons) != len(results)
+            or not talker_terminal
+            or any(
+                reason not in {None, "eos", "max_tokens"}
+                or bool(reason) != terminal
+                for reason, terminal in zip(talker_stop_reasons, talker_terminal)
+            )
+        ):
+            self._discard_publications(kv_publications)
+            self._release_batch(handle, batch.batch_id, restore=True)
+            raise StaleCompletionError("Talker completion stop reasons do not match its rows")
 
         if any(self.store.request(row.request_id).cancel_requested for row in claimed.rows):
             self._discard_publications(kv_publications)
@@ -449,6 +469,7 @@ class Committer:
                     batch.stage,
                     delta,
                     terminal=talker_terminal[index],
+                    stop_reason=talker_stop_reasons[index] if talker_stop_reasons else None,
                 )
             elif isinstance(delta, CodePredictorStateDelta):
                 self._apply_code_predictor(state, delta)

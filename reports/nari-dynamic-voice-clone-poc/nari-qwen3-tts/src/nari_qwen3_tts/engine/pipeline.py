@@ -126,6 +126,7 @@ class _CompletionEnvelope:
     kv_publications: tuple[PendingKVPublication, ...] = ()
     talker_terminal: tuple[bool, ...] = ()
     codec_outputs: tuple[tuple[str, torch.Tensor, bool], ...] = ()
+    talker_stop_reasons: tuple[str | None, ...] = ()
 
 
 class SynthesisPipeline:
@@ -600,6 +601,7 @@ class SynthesisPipeline:
             raise ValueError("Talker output row count does not match the stage batch")
         deltas: list[TalkerStateDelta] = []
         terminal: list[bool] = []
+        stop_reasons: list[str | None] = []
         for index, state in enumerate(states):
             request = self._admitted_input(state).request
             suppress_eos = decode and self._suppress_decode_eos(state)
@@ -626,6 +628,9 @@ class SynthesisPipeline:
                 )
             )
             terminal.append(eos or reached_limit)
+            # Preserve the old terminal behavior, but do not conflate a hard
+            # generation limit with model EOS in the new evidence protocol.
+            stop_reasons.append("max_tokens" if reached_limit else "eos" if eos else None)
         return _CompletionEnvelope(
             completion=StageExecutionCompletion(
                 batch_id=batch.batch_id,
@@ -634,6 +639,7 @@ class SynthesisPipeline:
             ),
             kv_publications=tuple(kv_publications),
             talker_terminal=tuple(terminal),
+            talker_stop_reasons=tuple(stop_reasons),
         )
 
     def _code_predictor_completion(
@@ -761,6 +767,7 @@ class SynthesisPipeline:
             completion,
             kv_publications=envelope.kv_publications,
             talker_terminal=envelope.talker_terminal,
+            talker_stop_reasons=envelope.talker_stop_reasons,
         )
         if self.output_queue is not None and batch.stage is SynthesisStage.CODEC and committed:
             committed_ids = set(committed)

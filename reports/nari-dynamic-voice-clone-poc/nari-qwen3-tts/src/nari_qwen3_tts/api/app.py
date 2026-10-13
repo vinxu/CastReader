@@ -6,12 +6,13 @@ import asyncio
 import re
 import uuid
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 import anyio.to_thread
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, Header, HTTPException, WebSocket
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 
-from nari_qwen3_tts.api.http import error_response, stream_bytes
+from nari_qwen3_tts.api.http import completion_stream_bytes, error_response, stream_bytes
 from nari_qwen3_tts.api.schemas import (
     SpeechRequestBody,
 )
@@ -20,7 +21,10 @@ from nari_qwen3_tts.api.websocket import WS_PROTOCOL, handle_speech_websocket
 from nari_qwen3_tts.config import DEFAULT_MODEL_ID, ApiConfig
 from nari_qwen3_tts.contract.health import ServicePhase
 from nari_qwen3_tts.contract.request import TextFrontend
-from nari_qwen3_tts.engine.engine import Engine
+from nari_qwen3_tts.completion_protocol import MEDIA_TYPE, PROTOCOL, request_fingerprint
+
+if TYPE_CHECKING:
+    from nari_qwen3_tts.engine.engine import Engine
 
 _PCM_MEDIA_TYPE = "audio/pcm"
 _WAV_MEDIA_TYPE = "audio/wav"
@@ -146,6 +150,33 @@ def create_app(  # noqa: PLR0915
             )
         except BaseException as error:
             raise error_response(error) from error
+
+    @app.post("/internal/v1/audio/speech-complete")
+    def speech_complete(body: SpeechRequestBody, accept: str | None = Header(default=None)):
+        # Never alter the public/raw PCM transport. This endpoint is deliberately
+        # opt-in and requires the worker to verify the named wire contract.
+        if accept != MEDIA_TYPE:
+            raise HTTPException(406, "explicit completion protocol negotiation is required")
+        if body.response_format != "pcm" or not body.stream or body.ignore_eos:
+            raise HTTPException(422, "completion evidence requires streamed PCM with EOS enabled")
+        try:
+            request = body.to_domain(served_model_id=model_id)
+        except (ValueError, TypeError) as error:
+            raise HTTPException(422, str(error)) from error
+        request_id = f"complete-{uuid.uuid4().hex}"
+        try:
+            stream = engine.submit(request_id, request, timeout_s=api_config.command_timeout_s)
+        except BaseException as error:
+            raise error_response(error) from error
+        return StreamingResponse(
+            completion_stream_bytes(
+                engine, request_id, stream,
+                fingerprint=request_fingerprint(body.model_dump(exclude_unset=True)),
+                command_timeout_s=api_config.command_timeout_s,
+            ),
+            media_type=MEDIA_TYPE,
+            headers={"Cache-Control": "no-store", "X-Nari-Completion-Protocol": PROTOCOL},
+        )
 
     @app.websocket("/v1/audio/speech/ws")
     async def speech_websocket_endpoint(websocket: WebSocket) -> None:

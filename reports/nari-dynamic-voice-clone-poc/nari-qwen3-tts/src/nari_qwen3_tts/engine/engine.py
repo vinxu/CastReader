@@ -726,7 +726,7 @@ class Engine:
             and not record.internal_probe
             and not record.stream.terminal
         ):
-            record.stream.close()
+            record.stream.close(stop_reason=state.generation.stop_reason)
 
     def _poll_records(self) -> None:
         self._assert_engine_thread()

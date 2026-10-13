@@ -17,10 +17,10 @@ import subprocess
 import threading
 import time
 import uuid
-import wave
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
 import httpx
 import numpy as np
@@ -29,6 +29,12 @@ import torch
 from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
+from nari_completion_client import (
+    CLONE_COMPLETION_HEADER,
+    CLONE_COMPLETION_PROTOCOL,
+    collect_completed_wav,
+    require_completed_wav,
+)
 
 from adaptive_denoise import (
     AdaptiveDenoiseError,
@@ -123,6 +129,7 @@ ASR_MODEL_DIR = Path(ASR_MODEL_DIR_VALUE).expanduser() if ASR_MODEL_DIR_VALUE el
 ASR_WARMUP = os.environ.get("CLONE_ASR_WARMUP", "0").strip() == "1"
 DENOISE_PIPELINE_VERSION = "fixed-deepfilter-atten24-v1"
 DENOISE_ATTENUATION_DB = 24
+REFERENCE_SPEAKER_POLICY = "warn-only-v1"
 DEEPFILTER_BIN = Path(
     os.environ.get("CLONE_DEEPFILTER_BIN", DATA_ROOT / "denoise/bin/deep-filter")
 )
@@ -175,6 +182,7 @@ DENOISE_TELEMETRY: dict[str, int] = {
     "created_atten24": 0,
     "denoise_failures": 0,
     "denoise_reference_rejections": 0,
+    "speaker_consistency_warnings": 0,
     "multiple_speaker_rejections": 0,
     "diarization_unavailable": 0,
 }
@@ -215,6 +223,7 @@ class CaptionedSpeechRequest(BaseModel):
     response_format: str = "mp3"
     return_timestamps: bool = True
     stream: bool = False
+    required_clone_completion: Literal["eos-v1"] | None = None
 
 
 class GeneratedAudioQualityError(RuntimeError):
@@ -388,6 +397,7 @@ def denoise_health() -> dict[str, object]:
         "prompt_builds": 1,
         "probe_count": 0,
         "raw_fallback": False,
+        "reference_speaker_policy": REFERENCE_SPEAKER_POLICY,
         "ready": bool(
             deepfilter["ready"]
             and diarization["ready"]
@@ -1080,11 +1090,15 @@ def _relative_reference_speaker_guard(
         and math.isfinite(float(value))
         for value in (baseline, selected)
     )
-    # Short valid references can contain fewer than two comparable 2.4 s
-    # windows. Absence of that relative statistic is not identity mismatch:
-    # raw diarization and the candidate's input-quality gate still apply.
+    # These are minima over each recording's own VAD-selected windows, not
+    # aligned before/after identity scores. A relative drop is advisory only;
+    # raw diarization and the candidate's input-quality gate remain mandatory.
+    # Short valid references may not provide enough windows for this statistic.
     return {
         "backend": "campplus-window-consistency",
+        "policy": REFERENCE_SPEAKER_POLICY,
+        "action": "warn_only",
+        "blocking": False,
         "comparable": comparable,
         "passed": (
             float(selected) >= float(baseline) - RELATIVE_SPEAKER_FLOOR
@@ -1161,26 +1175,15 @@ def build_voice_pipeline(
                     selected_reference,
                 )
                 if reference_guard["passed"] is False:
-                    increment_denoise_metric("denoise_reference_rejections")
+                    increment_denoise_metric("speaker_consistency_warnings")
+                    selected_reference.warnings.append("speaker_consistency_relative_drop")
                     structured_log(
-                        "voice_denoise_reference_rejected",
+                        "voice_denoise_reference_warning",
                         voice_id=voice_id,
                         pipeline_version=DENOISE_PIPELINE_VERSION,
-                        code="VOICE_REFERENCE_DENOISE_REJECTED",
+                        code="VOICE_REFERENCE_SPEAKER_CONSISTENCY_WARNING",
                         quality=reference_guard,
                         raw_fallback=False,
-                    )
-                    raise HTTPException(
-                        422,
-                        detail={
-                            "code": "VOICE_REFERENCE_DENOISE_REJECTED",
-                            "message": "Noise reduction could not preserve the voice reliably. Please record again in a quieter place.",
-                            "metrics": reference_guard,
-                        },
-                        headers={
-                            "X-Voice-Retryable": "false",
-                            "X-Voice-Error-Code": "VOICE_REFERENCE_DENOISE_REJECTED",
-                        },
                     )
                 raise_if_creation_cancelled()
             except ReferenceQualityError as error:
@@ -1545,44 +1548,17 @@ def nari_streamed_wav(
     *,
     deadline_at: float,
 ) -> tuple[int, bytes]:
-    """Collect PCM over a cancellable HTTP stream and return a complete WAV.
+    """Require ordered PCM plus explicit model EOS before publishing any WAV.
 
-    Closing the HTTP stream before Nari reaches a terminal state executes its
-    ``stream_bytes`` finalizer, which cancels the engine request. A worker or
-    scheduler deadline therefore releases the GPU instead of merely abandoning
-    a still-running non-streaming request.
+    This is an internal completion contract, not a word-alignment guarantee.
+    A missing/old Nari endpoint fails closed; there is no raw-PCM fallback.
     """
 
-    remaining = deadline_at - time.monotonic()
-    if remaining <= 0.25:
-        raise TimeoutError("Nari request deadline expired before submission")
-    transport_payload = {
-        **payload,
-        "response_format": "pcm",
-        "stream": True,
-    }
-    with NARI_CLIENT.stream(
-        "POST",
-        f"{NARI_URL}/v1/audio/speech",
-        json=transport_payload,
-        timeout=max(0.25, min(NARI_REQUEST_TIMEOUT_SECONDS, remaining)),
-    ) as response:
-        if response.status_code != 200:
-            return response.status_code, b""
-        pcm = bytearray()
-        for chunk in response.iter_bytes():
-            if time.monotonic() >= deadline_at:
-                raise TimeoutError("Nari streamed synthesis exceeded its deadline")
-            pcm.extend(chunk)
-    if not pcm or len(pcm) % 2:
-        raise HTTPException(503, "Nari returned invalid PCM")
-    output = io.BytesIO()
-    with wave.open(output, "wb") as wav:
-        wav.setnchannels(1)
-        wav.setsampwidth(2)
-        wav.setframerate(SAMPLE_RATE)
-        wav.writeframes(pcm)
-    return 200, output.getvalue()
+    return collect_completed_wav(
+        NARI_CLIENT, NARI_URL, payload,
+        deadline_at=deadline_at,
+        request_timeout=NARI_REQUEST_TIMEOUT_SECONDS,
+    )
 
 
 def request_nari(request: SpeechRequest) -> bytes:
@@ -2657,6 +2633,15 @@ def captioned_speech(
 
     def synthesize(validated: ValidatedVoiceAudio) -> dict[str, object]:
         wav = validated.wav
+        if request.required_clone_completion is not None:
+            # Never infer completion from the request, duration or word labels.
+            # Only the exact WAV minted by the verified Nari transaction may ACK.
+            require_completed_wav(
+                wav,
+                input_text=request.input,
+                voice_prompt=request.voice,
+                language=normalize_language(request.language),
+            )
         try:
             mp3, duration = apply_speed(wav, request.speed)
         except subprocess.SubprocessError as error:
@@ -2788,6 +2773,10 @@ def captioned_speech(
         response.headers[key] = value
     response.headers["X-TTS-Idempotency"] = idempotency_source
     response.headers["X-TTS-Content-Cache"] = content_source
+    if request.required_clone_completion == CLONE_COMPLETION_PROTOCOL:
+        # All fresh and cached success values passed synthesize's evidence gate;
+        # the negotiated field is included in the cache/idempotency fingerprint.
+        response.headers[CLONE_COMPLETION_HEADER] = CLONE_COMPLETION_PROTOCOL
     return result.value
 
 

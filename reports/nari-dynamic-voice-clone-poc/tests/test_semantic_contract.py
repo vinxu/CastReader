@@ -13,6 +13,13 @@ from unittest.mock import patch
 import numpy as np
 import torch
 from fastapi import HTTPException, UploadFile
+from nari_qwen3_tts.completion_protocol import (
+    MEDIA_TYPE,
+    PROTOCOL,
+    pcm_events,
+    request_fingerprint,
+    start_event,
+)
 
 import build_prompt
 import clone_worker
@@ -23,6 +30,31 @@ IOS_ENGLISH_GUIDE = (
     "My favorite thing is learning. I read every day, discover new ideas, "
     "and hope to understand the world a little better."
 )
+
+
+class CompletedNariResponse:
+    """A model double must speak the negotiated internal protocol, not raw PCM."""
+
+    status_code = 200
+    headers = {"content-type": MEDIA_TYPE, "x-nari-completion-protocol": PROTOCOL}
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def iter_bytes(self):
+        request_id = "unit-xvector"
+        yield start_event(request_id, request_fingerprint(self.payload))
+        yield from pcm_events(
+            [b"\x00\x00" * clone_worker.SAMPLE_RATE],
+            request_id=request_id,
+            stop_reason=lambda: "eos",
+        )
 
 
 class VoiceCloneSemanticContractTests(unittest.TestCase):
@@ -714,28 +746,19 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
         xvector.assert_called_once_with(request, reason="VOICE_PROMPT_UNATTESTED")
 
     def test_xvector_fallback_uses_nari_captured_mode(self) -> None:
-        class FakeResponse:
-            status_code = 200
-            content = b"fast-wav"
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_args):
-                return False
-
-            def iter_bytes(self):
-                yield b"\x00\x00" * clone_worker.SAMPLE_RATE
-
         class FakeClient:
             def __init__(self) -> None:
                 self.payload = None
                 self.timeout = None
+                self.url = None
+                self.headers = None
 
-            def stream(self, _method, _url, *, json, timeout):
+            def stream(self, _method, _url, *, json, timeout, headers):
                 self.payload = json
                 self.timeout = timeout
-                return FakeResponse()
+                self.url = _url
+                self.headers = headers
+                return CompletedNariResponse(json)
 
         client = FakeClient()
         metadata = clone_worker.VoicePromptMetadata(
@@ -768,28 +791,17 @@ class VoiceCloneSemanticContractTests(unittest.TestCase):
         self.assertEqual(client.payload["voice_clone_mode"], "x_vector")
         self.assertEqual(client.payload["response_format"], "pcm")
         self.assertTrue(client.payload["stream"])
+        self.assertTrue(client.url.endswith("/internal/v1/audio/speech-complete"))
+        self.assertEqual(client.headers, {"Accept": MEDIA_TYPE})
 
     def test_two_sampled_rejections_use_one_deterministic_xvector_attempt(self) -> None:
-        class FakeResponse:
-            status_code = 200
-            content = b"candidate"
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_args):
-                return False
-
-            def iter_bytes(self):
-                yield b"\x00\x00" * clone_worker.SAMPLE_RATE
-
         class FakeClient:
             def __init__(self) -> None:
                 self.payloads = []
 
-            def stream(self, _method, _url, *, json, timeout):
+            def stream(self, _method, _url, *, json, timeout, headers):
                 self.payloads.append(json)
-                return FakeResponse()
+                return CompletedNariResponse(json)
 
         client = FakeClient()
         metadata = clone_worker.VoicePromptMetadata(

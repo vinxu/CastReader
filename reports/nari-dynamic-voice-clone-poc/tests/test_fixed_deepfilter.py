@@ -165,33 +165,37 @@ class FixedDeepFilterTests(unittest.TestCase):
             harness.builder.save.assert_not_called()
             self.assertEqual(tuple(root.iterdir()), ())
 
-    def test_candidate_quality_or_relative_identity_failure_is_nonretryable_without_fallback(self):
-        for failure in ("quality", "identity"):
-            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as directory:
-                root = Path(directory)
-                with self._harness(root, candidate=self._reference(min_speaker_similarity=0.7)) as harness:
-                    if failure == "quality":
-                        harness.quality.side_effect = clone_worker.ReferenceQualityError("VOICE_REFERENCE_NO_SPEECH", "No speech", {"speech_duration_s": 0.0})
-                    with self.assertRaises(HTTPException) as captured:
-                        self._create()
-                self.assertEqual(captured.exception.status_code, 422)
-                code = (
-                    "VOICE_REFERENCE_NO_SPEECH"
-                    if failure == "quality"
-                    else "VOICE_REFERENCE_DENOISE_REJECTED"
-                )
-                self.assertEqual(captured.exception.detail["code"], code)
-                self.assertEqual(captured.exception.headers["X-Voice-Retryable"], "false")
-                self.assertEqual(captured.exception.headers["X-Voice-Error-Code"], code)
-                if failure == "quality":
-                    self.assertEqual(captured.exception.detail["message"], "No speech")
-                    self.assertEqual(captured.exception.detail["metrics"], {"speech_duration_s": 0.0})
-                else:
-                    self.assertIn("quieter", captured.exception.detail["message"])
-                    self.assertFalse(captured.exception.detail["metrics"]["passed"])
-                harness.enhance.assert_called_once()
-                harness.builder.save.assert_not_called()
-                self.assertEqual(tuple(root.iterdir()), ())
+    def test_candidate_quality_failure_is_nonretryable_without_fallback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self._harness(root, candidate=self._reference(min_speaker_similarity=0.7)) as harness:
+                harness.quality.side_effect = clone_worker.ReferenceQualityError("VOICE_REFERENCE_NO_SPEECH", "No speech", {"speech_duration_s": 0.0})
+                with self.assertRaises(HTTPException) as captured:
+                    self._create()
+            self.assertEqual(captured.exception.status_code, 422)
+            self.assertEqual(captured.exception.detail["code"], "VOICE_REFERENCE_NO_SPEECH")
+            self.assertEqual(captured.exception.headers["X-Voice-Retryable"], "false")
+            self.assertEqual(captured.exception.headers["X-Voice-Error-Code"], "VOICE_REFERENCE_NO_SPEECH")
+            self.assertEqual(captured.exception.detail["message"], "No speech")
+            self.assertEqual(captured.exception.detail["metrics"], {"speech_duration_s": 0.0})
+            harness.enhance.assert_called_once()
+            harness.builder.save.assert_not_called()
+            self.assertEqual(tuple(root.iterdir()), ())
+
+    def test_relative_speaker_drop_preserves_live_warn_only_policy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with self._harness(root, candidate=self._reference(min_speaker_similarity=0.7)) as harness:
+                result = self._create()
+            guard = result["adaptive_denoise"]["reference_speaker_guard"]
+            self.assertEqual(guard["policy"], "warn-only-v1")
+            self.assertEqual(guard["action"], "warn_only")
+            self.assertFalse(guard["blocking"])
+            self.assertFalse(guard["passed"])
+            self.assertIn("speaker_consistency_relative_drop", harness.candidate.warnings)
+            harness.enhance.assert_called_once()
+            harness.builder.save.assert_called_once()
+            self.assertFalse(result["adaptive_denoise"]["raw_fallback"])
 
     def test_short_recording_without_comparable_speaker_windows_still_creates(self):
         with tempfile.TemporaryDirectory() as directory:

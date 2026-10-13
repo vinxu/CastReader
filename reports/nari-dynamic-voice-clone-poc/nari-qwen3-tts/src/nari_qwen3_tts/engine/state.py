@@ -37,6 +37,7 @@ class CodecPhase(str, Enum):
 @dataclass(slots=True)
 class GenerationLane:
     phase: GenerationPhase = GenerationPhase.TALKER_PREFILL
+    stop_reason: str | None = None
     generation_step: int = 0
     frame_index: int = 0
     next_sampling_offset: int = 0
@@ -213,6 +214,7 @@ class RequestState:
             self.version,
             self.cancel_requested,
             self.generation.phase,
+            self.generation.stop_reason,
             self.generation.generation_step,
             self.generation.frame_index,
             self.generation.next_sampling_offset,

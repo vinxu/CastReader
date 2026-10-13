@@ -25,6 +25,7 @@ class PCMStream:
         self._inflight = False
         self._inflight_value = b""
         self._terminal = False
+        self._stop_reason: str | None = None
         self._detached = False
         self._error: SynthesisError | None = None
         self._condition = threading.Condition()
@@ -38,6 +39,11 @@ class PCMStream:
     def terminal(self) -> bool:
         with self._condition:
             return self._terminal
+
+    @property
+    def stop_reason(self) -> str | None:
+        with self._condition:
+            return self._stop_reason
 
     @property
     def detached(self) -> bool:
@@ -70,11 +76,16 @@ class PCMStream:
             self._buffered_bytes += len(value)
             self._condition.notify()
 
-    def close(self) -> None:
+    def close(self, *, stop_reason: str | None = None) -> None:
+        # None preserves existing in-process consumers, but is never sufficient
+        # evidence for the opt-in completion protocol.
+        if stop_reason not in {None, "eos", "max_tokens"}:
+            raise ValueError("invalid model stop reason")
         with self._condition:
             if self._terminal:
                 raise RuntimeError("PCM stream terminal was already published")
             self._terminal = True
+            self._stop_reason = stop_reason
             self._condition.notify_all()
 
     def fail(self, error: SynthesisError) -> None:

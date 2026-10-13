@@ -6,7 +6,7 @@ import asyncio
 import json
 import uuid
 from dataclasses import dataclass, replace
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from fastapi import WebSocket, WebSocketDisconnect
 
@@ -21,7 +21,8 @@ from nari_qwen3_tts.contract.errors import (
 )
 from nari_qwen3_tts.contract.request import FragmentTokenization, SynthesisRequest, TextFrontend
 from nari_qwen3_tts.contract.stream import PCMStream
-from nari_qwen3_tts.engine.engine import Engine
+if TYPE_CHECKING:
+    from nari_qwen3_tts.engine.engine import Engine
 
 WS_PROTOCOL = "nari.speech.v1"
 _NORMAL_FRAME_CAPACITY = 32
