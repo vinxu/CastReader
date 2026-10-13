@@ -1,0 +1,12 @@
+{
+  "app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "configuration": "Release",
+  "version": "1.2.47 (72)",
+  "sha256": "511c78de8c364590a86d926c2dbab82e2ca9d10494bfd4d6bcd8a7279d3d32d2",
+  "includes": [
+    "WeRead desktop pageZoom 0.8",
+    "Retained reader viewport frozen while minimized and during navigation transition"
+  ],
+  "buildLog": "/tmp/mac-core-release.log",
+  "previousNormalReleaseBackup": "/tmp/CastReaderMacBeforeCoreConvergence.app"
+}

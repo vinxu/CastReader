@@ -1,0 +1,6 @@
+{
+  "startedAt": "2026-10-05T08:14:45.610612+08:00",
+  "logByteOffset": 3092684,
+  "candidate": "g08-kobo-contracts/modal-candidate-identity.json",
+  "scenario": "30 minutes continuous real Read, >=20 automatic turns, resize/theme/mini-player; original font7 Bella1x"
+}

@@ -93,6 +93,45 @@ final class ProStatusSynchronizationTests: XCTestCase {
                                        email: nil, read: manager.beginServerRead())
     }
 
+    func testColdAccountDoesNotPresentFreeUntilAnAuthoritativeResponse() throws {
+        let manager = ProManager.makeForTesting()
+        XCTAssertFalse(manager.hasResolvedServerEntitlement)
+        apply(nil, to: manager)
+        manager.setLocalStoreKitForTesting(true)
+        XCTAssertFalse(manager.hasResolvedServerEntitlement,
+            "Network failure and local receipts do not establish the server account tier")
+        XCTAssertFalse(manager.isPro)
+        apply(try revokedStatus(), to: manager)
+        XCTAssertTrue(manager.hasResolvedServerEntitlement)
+        XCTAssertFalse(manager.isPro)
+        apply(nil, to: manager)
+        XCTAssertTrue(manager.hasResolvedServerEntitlement,
+            "A later refresh failure retains the last authoritative presentation")
+    }
+
+    func testColdPaidAccountResolvesWithoutAnIntermediateFreeResult() throws {
+        let manager = ProManager.makeForTesting()
+        apply(try activeStatus(), to: manager)
+        XCTAssertTrue(manager.hasResolvedServerEntitlement)
+        XCTAssertTrue(manager.isPro)
+        let pending = manager.beginServerRead()
+        XCTAssertTrue(manager.hasResolvedServerEntitlement)
+        manager.clearEntitlementsForAccountTransition()
+        XCTAssertFalse(manager.hasResolvedServerEntitlement)
+        XCTAssertFalse(manager.applyServerEntitlement(try activeStatus(),
+            userId: "support-replay-account", email: nil, read: pending))
+        XCTAssertFalse(manager.hasResolvedServerEntitlement,
+            "An old account response must not settle the new account's UI")
+        XCTAssertFalse(manager.isPro)
+    }
+
+    func testMismatchedStatusCannotResolveAccountPresentation() throws {
+        let manager = ProManager.makeForTesting()
+        XCTAssertFalse(manager.applyServerEntitlement(try revokedStatus(),
+            userId: "different-account", email: nil, read: manager.beginServerRead()))
+        XCTAssertFalse(manager.hasResolvedServerEntitlement)
+    }
+
     func testUnavailableNeverBecomesFalseOrResurrectsTrue() throws {
         let manager = ProManager.makeForTesting()
         apply(try activeStatus(), to: manager)

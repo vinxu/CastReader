@@ -1,0 +1,13 @@
+{
+  "startedAt": "2026-10-05T02:43:50.772976+08:00",
+  "logOffset": 1039581,
+  "candidate": "g06-viewport-candidate/identity.json",
+  "pid": 5464,
+  "book": "B002RKRMSY",
+  "initialWindowPoints": [
+    613,
+    563
+  ],
+  "mode": "explain",
+  "rate": 1.0
+}

@@ -1,0 +1,25 @@
+{
+  "at": "2026-10-05T08:29:59.596869",
+  "removed": [
+    {
+      "path": "/tmp/CastReaderMacTests.UlWIkh/DerivedData/ModuleCache.noindex",
+      "logicalBytes": 126300281,
+      "kind": "regenerable cache after completed build-for-testing"
+    },
+    {
+      "path": "/tmp/CastReaderMacTests.UlWIkh/DerivedData/Index.noindex",
+      "logicalBytes": 21408860,
+      "kind": "regenerable cache after completed build-for-testing"
+    },
+    {
+      "path": "/tmp/CastReaderIsolatedTests.m1lwF2/DerivedData/ModuleCache.noindex",
+      "logicalBytes": 93269679,
+      "kind": "regenerable cache after completed build-for-testing"
+    },
+    {
+      "path": "/tmp/CastReaderIsolatedTests.m1lwF2/DerivedData/Index.noindex",
+      "logicalBytes": 14641520,
+      "kind": "regenerable cache after completed build-for-testing"
+    }
+  ]
+}

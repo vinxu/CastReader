@@ -1,0 +1,14 @@
+{
+  "startedAt": "2026-10-05T15:14:58.215568+08:00",
+  "logByteOffset": 5748786,
+  "book": "ayBBEQAAQBAJ",
+  "bookTitle": "Moody's Addresses",
+  "mode": "explain",
+  "voice": "af_bella",
+  "speed": 1,
+  "status": "FAIL_DOUBLE_PAGE_CONFIRMATION_TIMEOUT",
+  "candidateIdentity": "../g09-google-cold-resume/final-candidate-identity.json",
+  "endLogByteOffset": 5879820,
+  "finishedAt": "2026-10-05T15:27:24.647714+08:00",
+  "result": "FAIL_DOUBLE_PAGE_CONFIRMATION_TIMEOUT"
+}

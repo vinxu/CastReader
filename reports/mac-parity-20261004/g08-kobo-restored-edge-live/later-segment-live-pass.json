@@ -1,0 +1,13 @@
+{
+  "status": "PASS_LATER_SEGMENT_EDGE_REPLAY",
+  "candidateIdentity": "../g08-kobo-contracts/paused-producer-candidate-identity.json",
+  "restoredSegment": "1-1",
+  "restoredProgress": 0.708,
+  "reboundCue": 0,
+  "originalCueSegment": "1-0",
+  "beforePlay": "paused, narrow provider page 121/393; current word off-page",
+  "afterPlay": "provider page 122/393, visible word highlight, same segment continued, then automatically entered following page/paragraph",
+  "limitations": [
+    "Real network latency determines whether a late producer arrives after drain; deterministic delayed-tail cases passed on both platforms."
+  ]
+}

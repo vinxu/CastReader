@@ -1541,7 +1541,11 @@ enum LiveWebSourceReflowContract {
                     shifts.insert(start + offset - location)
                 }
             }
-            for shift in shifts where shift >= 0 {
+            // A reopened Google paragraph may start at the old audio's tail.
+            // Its source identity now numbers that tail from zero, so retaining
+            // the immutable audio prefix requires a signed virtual origin.
+            // Only the exact unique visible overlap below authorizes the map.
+            for shift in shifts {
                 let lo = max(shift, start), hi = min(shift + old.length, start + current.length)
                 guard hi - lo >= 24,
                       old.substring(with: NSRange(location: lo - shift, length: hi - lo)) ==

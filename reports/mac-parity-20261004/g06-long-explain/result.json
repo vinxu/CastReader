@@ -1,0 +1,10 @@
+{
+  "result": "FAILED",
+  "reason": "Large-to-small resize searches only adjacent two pages; no semantic match then pauses",
+  "observedAt": "2026-10-05T02:56:24.426356+08:00",
+  "automaticTransitions": 12,
+  "marksDrawn": 46,
+  "maximumRequiredMinutes": 15,
+  "continuous15MinutesPassed": false,
+  "nativeError": "Wait for the page to load and try again, or use the reader\u2019s Aa settings."
+}

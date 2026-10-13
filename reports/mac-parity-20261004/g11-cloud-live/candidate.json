@@ -1,0 +1,13 @@
+{
+  "recordedAt": "2026-10-05T17:48:19.873954+08:00",
+  "candidate": "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app",
+  "sources": {
+    "CastReader/CloudStorage.xcstrings": "1ace2e3f643c9ee526470bfff81a22e596a9e92dc77b4a920ac4bdcb44282b8e",
+    "CastReader/Views/CloudStorage/CloudStorageViews.swift": "11993dc13ca1858cddde131dedbaa4e36a6411dcf7b7267d9c8525ba93489b2a",
+    "CastReader/Services/GoogleDriveProvider.swift": "85d44a2492be52cbfac2298810e9cb21d75d3f87373d45fd66d1e15e234f63bb",
+    "CastReader/Services/CloudHistoryReopenService.swift": "4bdfe80db5f6f71b77b3d1cba4899a8f778329c9f099d486c56345f37363ba1d",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "c9c6e3f52a57ddf2acc661b56c69033c96061d250109b6953565ba23d1aab0c6",
+    "CastReaderTests/ReadingResumeTests.swift": "9b977bdc96d02872dc57a41c93cc61d66df0338c9e104ac705f9b3eee9f95762"
+  },
+  "binarySHA256": "f41c8135b22077f8ef62cdf7bb1ca9ee5410238b302d4bcbe80a406e97cabcfa"
+}

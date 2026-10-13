@@ -1,0 +1,11 @@
+{
+  "status": "PASS_PARTIAL",
+  "case": "Paused font 8\u21929\u21928\u21927",
+  "savedTimeSeconds": 11.831407042,
+  "restoredSegmentProgress": 0.583,
+  "durationSeconds": 20.3,
+  "unintendedParagraphTap": false,
+  "unintendedManualTurn": false,
+  "remainedPaused": true,
+  "remaining": "Playing resize/theme/carry and full long Read/Explain gates"
+}

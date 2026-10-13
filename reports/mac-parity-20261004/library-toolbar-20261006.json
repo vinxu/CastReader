@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-06",
+  "scope": "Mac Library toolbar grouping and removal while a reader overlays the tab",
+  "source_sha256": {
+    "CastReader/Views/Library/LibraryView.swift": "e2b5c419c0fefbca8b794ab78c64cb99a292bc824efabde4b5683819efcedcb3",
+    "CastReader/Views/MainTabView.swift": "cd2d0ea717205b49b252de2e6202a7da6c2dc27bdcbdcfbfe8b426599f8a9b17"
+  },
+  "debug": {
+    "build": "PASS",
+    "log": "/tmp/mac-library-toolbar-debug.log",
+    "checks": {
+      "library_three_buttons_one_trailing_group": "PASS",
+      "downloaded_navigation_and_back": "PASS",
+      "library_sources_navigation_and_back": "PASS",
+      "import_panel_and_cancel": "PASS",
+      "Kindle_open_has_no_library_buttons": "PASS",
+      "three_mouse_return_and_expand_cycles": "PASS",
+      "return_restores_all_three_buttons_and_mini": "PASS",
+      "real_Kindle_reading_word_highlight_with_clean_header": "PASS",
+      "mouse_return_preserves_reading_in_mini": "PASS"
+    }
+  },
+  "release": {
+    "status": "PASS",
+    "log": "/tmp/mac-library-toolbar-release.log",
+    "configuration": "Release arm64",
+    "installed_app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+    "executable_sha256": "1c4fe1fb50ae50c04fe2b61899b1bf5b14d954736949fc0963a5b12ed8e8299d",
+    "signing_report": "/tmp/mac-library-toolbar-signing.json",
+    "checks": {
+      "library_three_buttons_one_trailing_group": "PASS",
+      "reader_library_buttons_absent": "PASS",
+      "real_Kindle_reading_word_highlight_with_clean_header": "PASS",
+      "mouse_return_restores_toolbar_and_playing_mini": "PASS",
+      "expand_preserves_playing_without_toolbar_leak": "PASS",
+      "second_mouse_return_and_pause_mini": "PASS"
+    },
+    "final_state": "Library with paused Kindle Mini Player; original voice and 1.5x speed retained"
+  },
+  "limits": [
+    "Focused UI acceptance only",
+    "iPhone/iPad retain their previous toolbar branch; no new device acceptance",
+    "No broad playback or service matrix was rerun"
+  ]
+}

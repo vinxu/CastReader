@@ -670,14 +670,16 @@ Android 可以按设备性能调整轮询间隔，但不能降低身份和 exact
 
 ### 11.3 物理翻页优先级
 
-当前 iOS 优先级：
+当前共享阅读脚本优先级（2026-10-05 Mac 双栏章节末页验证后调整）：
 
 ```text
-1. Kobo UR engine 精确页码 API
-2. Kobo footer progress slider 精确位置事件
-3. 明确的上一页/下一页 page button
+1. 明确且可用的上一页/下一页 page button（排除 chapter button）
+2. Kobo UR engine 精确页码 API
+3. Kobo footer progress slider 精确位置事件
 4. 无可用动作则失败；不在同一 turn 中轮换重试
 ```
+
+桌面双栏在章节末尾可能只报告一个有文字的叶页，另一页为空白。此时按 `currentPage + 1` 算出的百分比仍落在当前双栏，官方 page button 才能正确跨章。自动隐藏阅读工具栏不等于分页按钮不可调用；仍沿用既有按钮身份、禁用状态和阅读 root 校验。手机布局无 page button 时继续走 UR/slider。每个 turn 只执行一次物理动作，超时不改用第二种方法补点。
 
 #### A. UR engine
 
@@ -1085,7 +1087,7 @@ https://readnow.kobo.com/b849f0ce-d6b3-42f6-bcb6-e6774d00d132?backref_url=https%
 - owner-document 高亮和 marks 已接入；
 - 相邻页/下一句预览已接入；
 - 自动/手动翻页 identity 和稳定提交已接入；
-- 自动翻页优先使用 UR exact progress，footer slider 为安全 fallback；
+- 自动翻页优先调用已识别且可用的原生页按钮；无页按钮的布局使用 UR exact progress，其后才是 footer slider。一次翻页只执行一个已选动作，不在超时后追加动作；
 - App 包内 adapter marker 为 `2026-07-30-progress-v1`；
 - `npm run test:kobo` 通过；
 - iOS 真机 Kobo 合同和书架扫描共 20 项测试通过；

@@ -1,0 +1,5 @@
+# Keep upload/build logs and duplicate capture intermediates local.
+*.log
+screenshots/**/*.jpg
+prepare_metadata.py
+*-private.json

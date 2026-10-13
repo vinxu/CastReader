@@ -1,0 +1,10 @@
+{
+  "builtAt": "2026-10-05T07:41:11.144681+08:00",
+  "files": {
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "dd5c7058ff9dd6ccfb9a28828f94f19cff40004ff387e7904f95616e5164c3eb",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac.debug.dylib": "12df5be987dc170ce3e1ebc7de972b7d65fe27e6adc6891930bc8503e037df2f",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Services/WebReaderBridge.swift": "1d4abc4860981c0118adffc133084f6fe2bbc2e74a9d591c16474290178d2c42",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/ViewModels/ReadAloudViewModel.swift": "49a918914013412e509583c220873cb3b3d1520ee5ae3cae982e5784bf6fc95e",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/WebAssets/bundle.js": "92deba5e2cdb7d1d73eae9d0b246e8c34659935e6a7f4790d307839d92487e0d"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "startedAt": "2026-10-05T04:19:19.298579",
+  "logByteOffset": 953617,
+  "pid": 15586,
+  "book": "老人与海",
+  "source": "WeRead",
+  "voice": "晓萱",
+  "speed": "1x",
+  "initialSurface": "1024x578",
+  "initialState": "Restored saved page and paused; explicit Play follows",
+  "binarySHA256": "d77471df02772025ad3580444ce6ec4adbb10c7a845a0c7b03c323dd2878fc08",
+  "sourceSHA256": {
+    "CastReader/Services/WebReaderBridge.swift": "689991b3e6e31894ed581b0d46a7c567c99492c8a5da5274b941689ff639fba3",
+    "CastReader/Services/WeReadWebScripts.swift": "06f033655e45593921e84b9385c28bc933ecfd34c7be115da668676529fccb7b"
+  }
+}

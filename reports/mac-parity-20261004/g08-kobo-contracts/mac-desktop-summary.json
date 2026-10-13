@@ -1,0 +1,53 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 132,
+      "skippedTests" : 1,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1791152010.271,
+  "passedTests" : 132,
+  "result" : "Failed",
+  "skippedTests" : 1,
+  "startTime" : 1791151610.525,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "Asynchronous wait failed: Exceeded timeout of 3 seconds, with unfulfilled expectations: \"trusted shell progress reaches native persistence\".",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 7,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testCanonicalShellLocationReachesProgressWithoutReaderFrameID()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/GoogleBooksWebBridgeTests/testCanonicalShellLocationReachesProgressWithoutReaderFrameID",
+      "testName" : "testCanonicalShellLocationReachesProgressWithoutReaderFrameID()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "10% of duration",
+      "text" : "2 longest test runs with outlier durations exceeding 12.22s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 134
+}

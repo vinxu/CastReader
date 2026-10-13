@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "app": "/Users/xuxuheng/Documents/CastReader-Releases/Mac-1.2.47-73-20261006/CastReaderMac-1.2.47-73.xcarchive/Products/Applications/CastReaderMac.app",
+  "strictDeepSignature": "PASS",
+  "bundles": [
+    {
+      "bundle": "com.same.castreader",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    },
+    {
+      "bundle": "com.same.castreader.CastReaderMacShare",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    },
+    {
+      "bundle": "com.same.castreader.CastReaderMacWidget",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    }
+  ]
+}

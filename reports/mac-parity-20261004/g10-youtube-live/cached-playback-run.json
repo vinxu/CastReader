@@ -1,0 +1,26 @@
+{
+  "startedAt": "2026-10-05T16:38:23.869267+08:00",
+  "logByteOffset": 6093476,
+  "video": "MdIL4rxiYDM",
+  "candidate": "candidate-identity.json",
+  "status": "PARTIAL_PASS_SCROLL_FOLLOW_DEFECT",
+  "endedAt": "2026-10-05T16:50:15.939257+08:00",
+  "endLogByteOffset": 6153468,
+  "observations": {
+    "languages": "Chinese to English at 06:02 mapped to English paragraph 05:57; English 06:59 mapped to Chinese 06:53. Uses paragraph start anchors, not a claim of sample-exact cross-language seek.",
+    "voice": "Xiaoxuan -> Bella -> Xiaoxuan; language selection starts audio, matching unchanged iOS MainTabView.",
+    "highlight": "English individual words liquid and becomes visibly highlighted. Chinese displayed whole segment fallback, consistent with shared timestamp-quality gate; Chinese word-level effect not passed.",
+    "windows": "800x600 stacked layout and caption panel, 1024x768 side-by-side transcript layout, controls visible.",
+    "skip": "15 seconds is current TTS segment seek clamped to its bounds in shared AudioPlayerService, not a YouTube video-time jump. Forward reached segment end and continued; paused backward cleared word focus without resuming.",
+    "coldResume": {
+      "paragraphIndex": 35,
+      "sourceTimestamp": "07:19",
+      "savedAudioSeconds": 6.39723625,
+      "firstPlaybackSeconds": 6.413560418,
+      "errorSeconds": 0.016324168,
+      "state": "Opened paused, explicit Play resumed and advanced naturally."
+    },
+    "cache": "Transcript/artwork cache only; production persistent YouTube audio cache is disabled in current iOS. Live TTS required.",
+    "defect": "Mouse wheel scroll moved away without Return to current position button; fixing recognizer integration."
+  }
+}

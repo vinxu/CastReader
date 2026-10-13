@@ -1,0 +1,10 @@
+{
+  "CastReader/Services/WebReaderBridge.swift": "4ef7f2d5b1fec946677a7c7be1ecee9c60a679c51efd4006ae4600bed3b1bf9a",
+  "CastReaderTests/ReaderAppearanceTests.swift": "aa7d7aa165647ab80f259268bfb9bdcc9718ef6e9bfcb356d7f56efbc5343b78",
+  "CastReader/Views/MainTabView.swift": "4a27d877ed58f650c69a46914bd9bc3535aa8c7c2ae47ac8af82525da2e47621",
+  "CastReader/Views/Home/HomeView.swift": "d5b0bf5594fe9bdd0411c4ef81451b285c567b9f90038c769cb4ed3f6d18f707",
+  "CastReader/Views/Settings/VoiceBrowserView.swift": "07b7ed10c15e8703290d437532faaad4906675483af2995fe1dd7210160c068f",
+  "CastReader/Views/GoogleBooks/GoogleBooksLibraryViews.swift": "d7a725ad9e6858a7e5e2b49da1de617c2531acfdae2ff5ed204a92fd35afa051",
+  "CastReader/Views/Kobo/KoboLibraryViews.swift": "7c5de3b775fbbbb63e7f064b9683e574833db92909b1d9e687886af1ad1d97b5",
+  "CastReader/Views/WeRead/WeReadLibraryViews.swift": "8edde74769431f1e4c409abf98cc9520d8e143a814b7be20134f045db52cee22"
+}

@@ -1,0 +1,16 @@
+[
+  {
+    "path": "../CastReader/WebAssets/bundle.js",
+    "sha256": "13d29d02d440ecfd95cd7948ab16934b30e826a81a5bcdaf8f53e149e0dd50b1",
+    "prefixPreserved": "11d2ab331434ecb484bd7a21253161c0be5e3a2fae6db4f8601eeccd7f9d0d41",
+    "suffixPreserved": "3c2e7c1694bb6c0fb1b374f7b812c1283cd27e26cd43c88d29eab7dc3dbc739c",
+    "paintSha256": "4ecd6f3093435551579d0b07f2b82da486584d2f45db31e9c43a515463cac5a1"
+  },
+  {
+    "path": "../CastReaderTests/Fixtures/google-books-webreader-xctest.js",
+    "sha256": "b1d4a5fd1226afbf5ab823f85381498d23db5fac59ad49fed05e06a8ecae80ec",
+    "prefixPreserved": "11d2ab331434ecb484bd7a21253161c0be5e3a2fae6db4f8601eeccd7f9d0d41",
+    "suffixPreserved": "82185117795d36a8949bfdcfae4392c384e9bca2a26a92264a106dd06c17ed7c",
+    "paintSha256": "4ecd6f3093435551579d0b07f2b82da486584d2f45db31e9c43a515463cac5a1"
+  }
+]

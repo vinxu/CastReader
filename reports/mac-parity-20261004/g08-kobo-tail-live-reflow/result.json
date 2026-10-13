@@ -1,0 +1,5 @@
+{
+  "status": "FAILED",
+  "reason": "Font controls in shadow DOM triggered underlying paragraph selection; AX press on hidden provider controls also crashed WebKit.",
+  "recordedAt": "2026-10-05T07:58:39.790026+08:00"
+}

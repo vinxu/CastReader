@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1791144339.706,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791144307.729,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "failed - WeRead state did not settle",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "WeReadPageAvailabilityTests/testNativePageButtonNavigatesFreshCoverWithoutStartingAudio()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/WeReadPageAvailabilityTests/testNativePageButtonNavigatesFreshCoverWithoutStartingAudio",
+      "testName" : "testNativePageButtonNavigatesFreshCoverWithoutStartingAudio()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 1
+}

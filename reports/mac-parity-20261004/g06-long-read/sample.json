@@ -1,0 +1,10 @@
+{
+  "sampleAt": "2026-10-05T02:25:32.807645+08:00",
+  "elapsedSeconds": 1523,
+  "distinctPresentedPages": 80,
+  "anchorUpdates": 1478,
+  "maxAnchorGapSeconds": 2.669,
+  "alignmentRecords": 93,
+  "alignmentMismatches": [],
+  "lastAnchor": "02:25:32.053 [active] KINDLE audiobook anchor saved reason=coalesced-timer book=71debdff7385 key=1501fa2586c3 hash=f08c186656a3 p=1 w=34 offset=167 schema=1 reader=1"
+}

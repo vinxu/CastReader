@@ -20,6 +20,10 @@ final class PaymentTests: XCTestCase {
         session = try SKTestSession(configurationFileNamed: "Configuration")
         session.disableDialogs = true     // 购买不弹确认框，自动成交
         session.clearTransactions()
+        #if targetEnvironment(macCatalyst)
+        // Clear StoreKit's client receipt cache as well as the test ledger.
+        try await AppStore.sync()
+        #endif
         await MainActor.run {
             AuthService.shared.signOut()
             ProManager.shared.debugForcePro = false      // 关模拟解锁 → isPro 走真实权益
@@ -221,7 +225,7 @@ final class PaymentTests: XCTestCase {
         XCTAssertEqual(request.value(forHTTPHeaderField: "X-Auth-Provider"), "session")
         XCTAssertEqual(body["analytics_anonymous_id"] as? String, context.analyticsAnonymousId)
         XCTAssertEqual(body["stable_device_id"] as? String, context.stableDeviceId)
-        XCTAssertEqual(body["client_platform"] as? String, "ios")
+        XCTAssertEqual(body["client_platform"] as? String, Constants.clientPlatform)
         XCTAssertNil(body["user_id"])
         XCTAssertNil(body["backend_user_id"])
         XCTAssertNil(body["email"])
@@ -245,7 +249,7 @@ final class PaymentTests: XCTestCase {
         XCTAssertEqual(body["analytics_anonymous_id"] as? String, context.analyticsAnonymousId)
         XCTAssertEqual(body["stable_device_id"] as? String, context.stableDeviceId)
         XCTAssertEqual(body["device_id"] as? String, context.stableDeviceId)
-        XCTAssertEqual(body["client_platform"] as? String, "ios")
+        XCTAssertEqual(body["client_platform"] as? String, Constants.clientPlatform)
         XCTAssertEqual(body["signed_transaction"] as? String, "test-jws")
         XCTAssertEqual(body["app_build"] as? String, "58")
         XCTAssertNil(body["user_id"])
@@ -575,6 +579,7 @@ final class PaymentTests: XCTestCase {
         try await seedStoreKitPurchase(ProManager.monthlyID)
         XCTAssertTrue(ProManager.shared.storeKitPro, "购买后 storeKitPro=true")
         XCTAssertEqual(ProManager.shared.isPro, ProManager.shared.serverPro, "本地购买凭据上报后，以服务端账号权益为准")
+        XCTAssertFalse(ProManager.shared.isPro, "本地测试交易不能代替服务端账号权益确认")
     }
 
     @MainActor
@@ -649,11 +654,26 @@ final class PaymentTests: XCTestCase {
     // MARK: 6. 恢复购买
 
     @MainActor
-    func testRestorePurchase() async throws {
+    func testRestoreWithoutSessionPreservesReceiptButClearsUnboundAccount() async throws {
         try await seedStoreKitPurchase(ProManager.yearlyID)
         XCTAssertTrue(ProManager.shared.storeKitPro, "购买年度后应 Pro")
-        await ProManager.shared.restore()                  // AppStore.sync + refresh
-        XCTAssertTrue(ProManager.shared.storeKitPro, "恢复后仍 Pro")
+        // The synthetic profile has no cms_ credential. The real restore
+        // path must close that invalid account, not grant server Pro from a
+        // receipt. StoreKit's valid purchase itself must remain recoverable.
+        await ProManager.shared.restore()
+        XCTAssertFalse(AuthService.shared.isSignedIn)
+        XCTAssertFalse(ProManager.shared.storeKitPro)
+        XCTAssertFalse(ProManager.shared.isPro)
+        var retainsYearlyReceipt = false
+        for await result in Transaction.currentEntitlements {
+            if case .verified(let transaction) = result,
+               transaction.productID == ProManager.yearlyID,
+               transaction.revocationDate == nil {
+                retainsYearlyReceipt = true
+            }
+        }
+        XCTAssertTrue(retainsYearlyReceipt,
+            "Closing an invalid app account must not erase the StoreKit purchase")
     }
 
     // MARK: 7. 订阅过期 → 回落免费
@@ -666,31 +686,65 @@ final class PaymentTests: XCTestCase {
         // 验证 refreshEntitlements 在无有效权益时把 storeKitPro 归 false（不依赖 expireSubscription 的续订日时序）。
         session.clearTransactions()
         await MainActor.run { ProManager.shared.clearServerEntitlement() }
-        await ProManager.shared.refreshEntitlements()
+        #if targetEnvironment(macCatalyst)
+        try await AppStore.sync()
+        #endif
+        // Wait for the refreshed receipt before asserting revocation.
+        for _ in 0..<60 {
+            await ProManager.shared.refreshEntitlements()
+            if !ProManager.shared.storeKitLocalPro { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
         XCTAssertFalse(ProManager.shared.storeKitPro, "订阅失效 → storeKitPro=false")
         XCTAssertFalse(ProManager.shared.isPro, "失效后 isPro=false（已关模拟解锁）")
     }
 
-    /// `Product.purchase()` needs a presentation anchor and can wait forever
-    /// in a headless XCTest host on recent simulators. SKTestSession's direct
-    /// purchase API creates the same verified StoreKit entitlement without UI,
-    /// so entitlement, restore and expiry transitions remain deterministic.
+    /// Catalyst has no SKTestSession Swift purchase overlay. Its app-hosted
+    /// tests use StoreKit's real presentation API with the local test session's
+    /// dialogs disabled, then verify the resulting receipt instead of skipping.
     @MainActor
     private func seedStoreKitPurchase(_ productID: String) async throws {
+        signInPurchaseAccount()
+        #if targetEnvironment(macCatalyst)
+        let products = try await Product.products(for: [productID])
+        let product = try XCTUnwrap(products.first)
+        let completed = expectation(description: "Mac local StoreKit purchase completes")
+        var purchaseResult: Result<Transaction, Error>?
+        let task = Task { @MainActor in
+            do {
+                switch try await product.purchase() {
+                case .success(.verified(let transaction)):
+                    purchaseResult = .success(transaction)
+                case .success(.unverified(_, let error)):
+                    purchaseResult = .failure(error)
+                case .pending, .userCancelled:
+                    purchaseResult = .failure(StoreKitError.unknown)
+                @unknown default:
+                    purchaseResult = .failure(StoreKitError.unknown)
+                }
+            } catch { purchaseResult = .failure(error) }
+            completed.fulfill()
+        }
+        await fulfillment(of: [completed], timeout: 25)
+        task.cancel()
+        let receipt = try XCTUnwrap(purchaseResult, "No completed Mac purchase").get()
+        XCTAssertEqual(receipt.productID, productID)
+        XCTAssertEqual(receipt.environment, .xcode, "Only local, non-billing test purchases are allowed")
+        await receipt.finish()
+        #else
         do {
             _ = try await session.buyProduct(identifier: productID)
         } catch {
-            // Xcode 26 can run this app-hosted suite in "off-device buy"
-            // mode, where StoreKitTest reports notEntitled even though the
-            // same Configuration.storekit products load correctly. Record
-            // that host limitation explicitly instead of hanging on the
-            // presentation-based Product.purchase() API or reporting a false
-            // product regression.
-            throw XCTSkip(
-                "StoreKitTest purchase is unavailable in this XCTest host: \(error)"
-            )
+            throw XCTSkip("StoreKitTest purchase is unavailable in this XCTest host: \(error)")
         }
-        await ProManager.shared.refreshEntitlements()
+        #endif
+        // Wait for the real receipt, never inject a Pro boolean.
+        for _ in 0..<60 {
+            await ProManager.shared.refreshEntitlements()
+            if ProManager.shared.storeKitLocalPro { return }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTFail("StoreKit did not publish the verified test entitlement within the bounded wait")
     }
 
     // MARK: 8. 首购免费试用

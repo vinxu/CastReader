@@ -1,0 +1,34 @@
+{
+  "result": "BLOCKED_BY_PROVIDER_ACCESS_GATE",
+  "stopAt": "04:37:30.434",
+  "firstPlaying": "04:19:32.752",
+  "lastPlaying": "04:37:26.875",
+  "confirmedPlaybackSpanSeconds": 1074.123,
+  "confirmedPageCommits": 24,
+  "playingEvents": 282,
+  "continuousHandoffs": 13,
+  "boundaryCarryCommits": 5,
+  "observedChapters": [
+    1,
+    2
+  ],
+  "testedSurfaces": [
+    "1024x578",
+    "523x273",
+    "1376x708 (2 columns)"
+  ],
+  "fontLevels": [
+    1,
+    3
+  ],
+  "manualPauseDuringRun": false,
+  "limitations": [
+    "30-minute criterion not met: official reader displayed sign-in/trial-ended gate",
+    "An 18-minute span does not establish an uninterrupted 30-minute run",
+    "Settings panel, Escape minimization and mini-player return exercised during run"
+  ],
+  "pendingCandidateChanges": [
+    "Mac login instructions",
+    "Escape closes current WeRead settings panel before minimizing reader"
+  ]
+}

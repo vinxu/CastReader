@@ -288,6 +288,23 @@ final class GoogleBooksShelfSyncTests: XCTestCase {
     }
 
     @MainActor
+    func testRecentShelfKeepsOpenedBooksAheadOfFreshSyncAndHasStableTies() throws {
+        try withStore { store, defaults, history in
+            let first = book(1), second = book(2), third = book(3)
+            XCTAssertTrue(store.mergeScrapedBooks([third, second, first], account: account()))
+            XCTAssertEqual(store.sortedBooks(sort: .recent, query: "").map(\.id), [first.id, second.id, third.id])
+            store.markOpened(second)
+            XCTAssertTrue(store.mergeScrapedBooks([first, third, second], account: account()))
+            let expected = [second.id, first.id, third.id]
+            XCTAssertEqual(store.sortedBooks(sort: .recent, query: "").map(\.id), expected,
+                           "A sync is not a new reading event")
+            let reloaded = GoogleBooksLibraryStore(defaults: defaults, historyStore: history)
+            XCTAssertEqual(reloaded.homeBooks.map(\.id), expected,
+                           "Cold launch must retain the same recent order")
+        }
+    }
+
+    @MainActor
     func testPartialRescanAndReloadRetainGoodMetadataAndReadingAnchor() throws {
         try withStore { store, defaults, history in
             var first = book(1)

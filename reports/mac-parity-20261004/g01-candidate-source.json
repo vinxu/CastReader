@@ -1,0 +1,18 @@
+{
+  "baseline": "09456f1979cc14ca19977ede4b1edde043c5f840",
+  "changedFiles": {
+    "CastReader.xcodeproj/project.pbxproj": "c6881667b65edff6ef0eef446cbc477b7e4fd14c1d20792ba52ad0d24dc3b63f",
+    "CastReader.xcodeproj/xcshareddata/xcschemes/CastReaderMac.xcscheme": "63f6e7e45ae552295e798508e6e1aacff77015fde527a6c2f129c2fdd6935400",
+    "CastReader/CastReaderApp.swift": "264413153890652f87bfb393c54b10ce520afd4f3e47365730c6a79202e4075d",
+    "CastReader/CastReaderMac.entitlements": "346d501232b12f8731d86689baa1e2e075c175f6db076bb67015477bd5cabd79",
+    "CastReader/Services/AppRegion.swift": "427b099ce349b2d929901290c4232fbfd391804dec6bc1f62e4b4dbb887c3fc1",
+    "CastReader/Services/ServiceRouting.swift": "a0bba2029440ed13f31b06f86a67b9f4ca7b9784407a591ce334e92015e65fce",
+    "CastReader/Utils/AdaptiveLayout.swift": "32666989ef597568d0905ddf9ced9074f313f4cb47c89217bb53c7a70e4ce38c",
+    "CastReader/Views/Auth/LoginView.swift": "76badc132d415daee64bcec7aa9fb124b4de0dcee2d0f930f7ace2df3cff9e87",
+    "CastReaderMacTests/MacDistributionTests.swift": "ab79331c312b72201bb910101b5a484b418d4f20e254f1df0d9c6d526efbff81",
+    "scripts/sync-mac-project.rb": "51c67b672eabf836d0688966533e77af1ef2375b9b3a812d9c266b5235ef12ff",
+    "scripts/verify-isolated-unit-tests.sh": "dd86832e9a66c8f211725391d5dc43626738a023a9a6b76869316b85d9a89445",
+    "scripts/verify-mac-project.rb": "0ae62aa0964e4d5180597cc1c536fd4962482f91d81ae68043f2477f0d1035bb",
+    "scripts/verify-mac-unit-tests.sh": "97d9d8d4ae025d1cb6f9260042453cc87450ef7deef49da89b446a31fef4416a"
+  }
+}

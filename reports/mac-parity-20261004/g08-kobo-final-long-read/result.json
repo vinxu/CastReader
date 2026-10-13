@@ -1,0 +1,10 @@
+{
+  "result": "FAILED",
+  "failureAt": "2026-10-05T06:47:47.315+08:00",
+  "reason": "Font shrink reflow retained the old 492 UTF-16 speech paragraph but used the shortened new boundary; held cue failed to overlap carry source, causing anchor_ack_timeout.",
+  "recovery": {
+    "tryOpeningAgain": "Verified real recovery overlay; reload cleared block and remained paused. Explicit Play resumed word highlights and multiple page turns.",
+    "verifiedAt": "2026-10-05T06:57:57.906534+08:00"
+  },
+  "acceptance": "30-minute long read not passed"
+}

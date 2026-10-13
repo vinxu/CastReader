@@ -1,0 +1,15 @@
+{
+  "status": "PASS_SCOPED",
+  "sample": "existing OAuth demo TXT",
+  "paragraphs": 26,
+  "blocks": 8,
+  "finishedSegments": 8,
+  "firstPlayingEvent": "17:31:27.865 AUDIO state reason=time-control actual=playing waiting=N rate=1.00 segment=0-0",
+  "lastFinishedEvent": "17:33:55.294 AUDIO item finished segment=7-0 index=0/1",
+  "uiTerminal": "Explanation complete",
+  "windowsPoints": [
+    "1024x768",
+    "800x600"
+  ],
+  "scope": "real import + cold history reopen + full Explain; not fresh authorization or cross-account access"
+}

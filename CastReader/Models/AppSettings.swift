@@ -8,6 +8,9 @@
 import Foundation
 import Combine
 import WidgetKit
+#if targetEnvironment(macCatalyst)
+import UIKit
+#endif
 
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system
@@ -161,6 +164,10 @@ final class AppLanguageManager: ObservableObject {
         Self.sharedDefaults?.set(language.rawValue, forKey: Self.defaultsKey)
         selectedLanguage = language
         WidgetCenter.shared.reloadTimelines(ofKind: "CastReaderContinueWidget")
+        #if targetEnvironment(macCatalyst)
+        // UIKit retains the Mac menu independently of the SwiftUI view tree.
+        DispatchQueue.main.async { UIMenuSystem.main.setNeedsRebuild() }
+        #endif
     }
 
     private static func bundle(for language: AppLanguage) -> Bundle {

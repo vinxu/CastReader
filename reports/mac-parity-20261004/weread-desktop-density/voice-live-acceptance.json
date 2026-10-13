@@ -1,0 +1,46 @@
+{
+  "date": "2026-10-06",
+  "client": "Normal installed CastReader for Mac Release 1.2.47 (72)",
+  "clientSHA256": "94b6cd44547586dea26b84151e6cc77705daa87cece6e1b88d17d9d714be0526",
+  "productionCommit": "481dcce5d4b3a2fc333ca95d84c381d8e1eb61ff",
+  "sample": {
+    "name": "Calm Narrator",
+    "communityVoiceId": "vl_b5c9589c1370164a19fe",
+    "durationSeconds": 11.990125,
+    "selectedSeconds": 10.0,
+    "validSpeechSeconds": 8.7,
+    "authorization": "User explicitly authorized community Voice API samples for clone acceptance",
+    "usage": "private test voice"
+  },
+  "createdVoice": {
+    "id": "vc_9d60f868d880442aac1f74e8053d5ef8",
+    "initialName": "My Voice 23",
+    "name": "Mac QA Calm Narrator",
+    "visibility": "private"
+  },
+  "results": {
+    "importAndAnalysis": "PASS",
+    "selectedClipPreview": "PASS",
+    "create": "PASS",
+    "renameAndLibraryReadback": "PASS",
+    "readAloud": "PASS: selected Mac QA Calm Narrator, Preparing -> Reading Aloud/Playing -> Paused at final word; replay observed shortcut word highlight",
+    "explain": "PASS: selected same voice, generated actual narration, Part 1 of 1 / Playing and caption, orange original-text annotation, Explanation complete",
+    "cloudPreview": "PASS: normal-account Mac Debug follow-up observed loading -> Stop Preview (stop.fill) -> Preview; short playback required consecutive observations."
+  },
+  "testDocument": {
+    "title": "Shortcut Text",
+    "text": "Mac shortcut acceptance. Reading connects listening with seeing each word."
+  },
+  "limits": [
+    "Functional playback verified through UI state, narration captions and synchronized highlights; no subjective listening-quality evaluation",
+    "No voice sharing/publishing/deletion or full billing lifecycle claimed",
+    "WeRead retained-page restoration, YouTube new extraction and Mac purchase remain independent unresolved acceptance items"
+  ],
+  "cleanup": {
+    "englishVoice": "Heart restored and read back",
+    "playback": "Closed test mini-player; returned Home",
+    "testVoice": "Retained privately for user review",
+    "chineseVoicePreference": "Restored Chinese 晓萱 (zf_001), verified in reader."
+  },
+  "coreCreationReadExplain": "PASS"
+}

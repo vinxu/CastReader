@@ -9,7 +9,7 @@ final class KindleReadingSettingsScriptTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
+        window = TestRepository.makeWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
         let controller = UIViewController()
         window.rootViewController = controller
         window.makeKeyAndVisible()
@@ -36,11 +36,7 @@ final class KindleReadingSettingsScriptTests: XCTestCase {
         <section id="panel" hidden>\(controls)</section>
         <script>window.fixtureReady=true; window.fixtureToken="\(fixtureToken)"; window.commits=[]; \(setup)</script>
         """, baseURL: URL(string: "https://fixture.invalid"))
-        for _ in 0..<100 {
-            if !web.isLoading, (try? await web.evaluateJavaScript("window.fixtureToken==='\(fixtureToken)'")) as? Bool == true { return }
-            try await Task.sleep(for: .milliseconds(30))
-        }
-        XCTFail("Local WKWebView fixture did not load")
+        try await TestRepository.waitForWebFixture(web, token: fixtureToken)
     }
 
     private func json(_ js: String) async throws -> [String: Any] {

@@ -1,0 +1,9 @@
+{
+  "endedAt": "2026-10-05T06:29:40.386082",
+  "status": "FAIL_FONT_REFLOW_RESTART",
+  "autoPages": 16,
+  "anchorTimeoutCount": 0,
+  "chapterTailReplay": "PASS: 43 -> 45-46/348 at 06:12:42.711",
+  "fontChangeFailure": "06:23:09.877 manual commit restarted page from paragraph 0",
+  "stoppedByTesterForRepair": true
+}

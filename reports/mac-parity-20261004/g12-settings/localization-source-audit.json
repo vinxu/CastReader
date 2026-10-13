@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "keys": [
+    "橙色",
+    "黄色",
+    "绿色",
+    "蓝色",
+    "粉色",
+    "紫色",
+    "正在同步会员状态…"
+  ],
+  "locales": [
+    "de",
+    "en",
+    "es",
+    "fr",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans"
+  ],
+  "count": 63,
+  "compiledVerification": "PASS; see localization-compiled-audit.json"
+}

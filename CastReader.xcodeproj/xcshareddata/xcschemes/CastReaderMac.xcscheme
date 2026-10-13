@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme
+   LastUpgradeVersion = "1600"
+   version = "1.3">
+   <BuildAction
+      parallelizeBuildables = "YES"
+      buildImplicitDependencies = "YES">
+      <BuildActionEntries>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "FC7ED2C7D40A0E0825D524BF"
+               BuildableName = "CastReaderMac.app"
+               BlueprintName = "CastReaderMac"
+               ReferencedContainer = "container:CastReader.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      shouldUseLaunchSchemeArgsEnv = "YES">
+      <MacroExpansion>
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "FC7ED2C7D40A0E0825D524BF"
+            BuildableName = "CastReaderMac.app"
+            BlueprintName = "CastReaderMac"
+            ReferencedContainer = "container:CastReader.xcodeproj">
+         </BuildableReference>
+      </MacroExpansion>
+      <Testables>
+         <TestableReference
+            skipped = "NO"
+            useTestSelectionWhitelist = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B6A69079BBF3D651D327A970"
+               BuildableName = "CastReaderMacTests.xctest"
+               BlueprintName = "CastReaderMacTests"
+               ReferencedContainer = "container:CastReader.xcodeproj">
+            </BuildableReference>
+            <SelectedTests>
+               <Test
+                  Identifier = "MacDistributionTests">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testPersistedProfileRequiresRouteLocalCMSSessionToRestore()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testRejectedSessionCannotSignOutNewerAccountBoundary()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testAppleAuthorizationCodeIsSentOnlyToSelectedGatewaySessionExchange()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testAuthorizationCodeCannotLeakFromNonAppleSessionExchange()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testSessionExchangeRejectsMissingCanonicalUserIdBeforePersistingToken()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testCanonicalUserIdNormalizationRejectsEmptyAndOversizedValues()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testDetachedLogoutRevocationCannotEraseNewAccountSession()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testInFlightAccountARefreshCannotOverwriteAccountBAfterSignOut()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testRejectedAccountATokenCannotRefreshAfterAccountBSwitched()">
+               </Test>
+               <Test
+                  Identifier = "ServiceRoutingTests/testGlobalOwnedRedirectPolicyAllowsOnlyGlobalGateway()">
+               </Test>
+               <Test
+                  Identifier = "CloudImportIntegrationTests">
+               </Test>
+               <Test
+                  Identifier = "DocumentImagePreservationTests">
+               </Test>
+               <Test
+                  Identifier = "ReaderDropImportTests">
+               </Test>
+               <Test
+                  Identifier = "IPadTextGeometryTests">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testNAVWinsPreservesGroupsDepthAndIgnoresPageList()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testNCXUsesNestedDirectLabelsAndDocumentOrderRatherThanPlayOrder()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testExactInlineContainerEmptyAndNamedAnchorsPreserveAllText()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testMissingFragmentAndExternalURLAreDisabledNeverGuessedByTitle()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testUnusableNAVFallsBackToNCXThenHeadings()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testURLResolutionPreservesCaseUnicodePlusAndSingleDecoding()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testAlternativeNamespacePrefixAndBodyAnchors()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testSystematicallyShiftedNCXUsesCorroboratedGuideWithoutGuessingLinks()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testNavigationRespectsHTMLBaseAndNCXXMLBase()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testOldEPUBDirectoryCacheRebuildsAndPreservesPosition()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testDirectoryRepairDoesNotOverrideValidSourceOrVoteWithRepeatedLabels()">
+               </Test>
+               <Test
+                  Identifier = "EpubNavigationTests/testDirectorySurvivesColdCacheAndSelectionPersistsWithoutAudio()">
+               </Test>
+               <Test
+                  Identifier = "PDFImportMemoryTests/testScannedAndNativePagesSurviveMixedPDFImport()">
+               </Test>
+               <Test
+                  Identifier = "PDFImportMemoryTests/testSearchablePDFWithBlankPageKeepsOriginalTextRanges()">
+               </Test>
+               <Test
+                  Identifier = "PDFImportMemoryTests/testCancelledRasterDoesNotAllocateAnImage()">
+               </Test>
+               <Test
+                  Identifier = "PDFImportMemoryTests/testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays()">
+               </Test>
+               <Test
+                  Identifier = "CapturePipelineTests">
+               </Test>
+               <Test
+                  Identifier = "OCRLayoutAnalyzerTests">
+               </Test>
+               <Test
+                  Identifier = "OCRVisionCancellationTests">
+               </Test>
+               <Test
+                  Identifier = "OCRTokenGeometryCoverageTests">
+               </Test>
+               <Test
+                  Identifier = "OCRWordInkBoundsTests">
+               </Test>
+               <Test
+                  Identifier = "SpeechPipelineTests">
+               </Test>
+               <Test
+                  Identifier = "ReadAloudContinuationTests">
+               </Test>
+               <Test
+                  Identifier = "ReadAloudEntitlementPauseTests">
+               </Test>
+               <Test
+                  Identifier = "ExplainSubtitleTests">
+               </Test>
+               <Test
+                  Identifier = "ReaderAppearanceTests">
+               </Test>
+               <Test
+                  Identifier = "PlaybackSleepTimerTests">
+               </Test>
+               <Test
+                  Identifier = "MacWindowRoutingTests">
+               </Test>
+               <Test
+                  Identifier = "ReadingResumeTests/testWindowBrowseCloseAndLiveSessionMigrationKeepAudioIdentity()">
+               </Test>
+               <Test
+                  Identifier = "ReadingResumeTests/testTwoSceneYouTubeExtractionAndPresentationServicesAreIndependent()">
+               </Test>
+               <Test
+                  Identifier = "ReaderWindowBookmarkTests">
+               </Test>
+               <Test
+                  Identifier = "VoiceCatalogTests">
+               </Test>
+               <Test
+                  Identifier = "VoiceDiscoveryTests">
+               </Test>
+               <Test
+                  Identifier = "VoiceCloneTests">
+               </Test>
+               <Test
+                  Identifier = "VoiceCloneReferenceCandidateSelectorTests">
+               </Test>
+               <Test
+                  Identifier = "VoiceCloneReferencePreprocessorIntegrationTests">
+               </Test>
+               <Test
+                  Identifier = "AO3WebReaderTests">
+               </Test>
+               <Test
+                  Identifier = "OReillyContractTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeURLParserTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeTranscriptGroupingTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeTrackTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeStoryboardTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeTranscriptModelTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeParagraphProgressTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubePlaybackAcceptanceTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeReadingDocumentBuilderTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeHistoryPersistenceTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubePlaybackLifecycleTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeTranscriptServiceTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeWebScriptsTests">
+               </Test>
+               <Test
+                  Identifier = "YouTubeCacheStoreTests">
+               </Test>
+               <Test
+                  Identifier = "CloudStorageCoreTests">
+               </Test>
+               <Test
+                  Identifier = "GoogleDriveProviderTests">
+               </Test>
+               <Test
+                  Identifier = "CloudHistoryTests">
+               </Test>
+               <Test
+                  Identifier = "CloudHistoryReopenServiceTests">
+               </Test>
+               <Test
+                  Identifier = "ProStatusSynchronizationTests">
+               </Test>
+               <Test
+                  Identifier = "PaymentTests">
+               </Test>
+               <Test
+                  Identifier = "GrowthLoopProductTests">
+               </Test>
+               <Test
+                  Identifier = "CloneCreditEnvironmentTests">
+               </Test>
+               <Test
+                  Identifier = "QuotaTwoTierTests">
+               </Test>
+               <Test
+                  Identifier = "SystemIntegrationTests">
+               </Test>
+               <Test
+                  Identifier = "HistoryStoreAccountScopeTests">
+               </Test>
+               <Test
+                  Identifier = "ResumeReminderPolicyTests">
+               </Test>
+               <Test
+                  Identifier = "KindleFootnoteSpeechTests">
+               </Test>
+               <Test
+                  Identifier = "KindleInitialStartSyncTests">
+               </Test>
+               <Test
+                  Identifier = "KindleManualPageTurnQueueTests">
+               </Test>
+               <Test
+                  Identifier = "KindleMarkAnimationClockTests">
+               </Test>
+               <Test
+                  Identifier = "KindleNativePageScriptTests">
+               </Test>
+               <Test
+                  Identifier = "KindleNavigationPositionTests">
+               </Test>
+               <Test
+                  Identifier = "KindleOfflineBookStoreTests">
+               </Test>
+               <Test
+                  Identifier = "KindleOfflineBookReaderTests">
+               </Test>
+               <Test
+                  Identifier = "SystemSpeechPlaybackTests">
+               </Test>
+               <Test
+                  Identifier = "KindleOfflinePageStoreTests">
+               </Test>
+               <Test
+                  Identifier = "KindlePageFlipProbeScriptTests">
+               </Test>
+               <Test
+                  Identifier = "KindlePageFlipProbeTests">
+               </Test>
+               <Test
+                  Identifier = "KindlePageTurnEvidenceTests">
+               </Test>
+               <Test
+                  Identifier = "KindlePrefetchHorizonTests">
+               </Test>
+               <Test
+                  Identifier = "KindleReadingSettingsOwnershipTests">
+               </Test>
+               <Test
+                  Identifier = "KindleReadingSettingsScriptTests">
+               </Test>
+               <Test
+                  Identifier = "KindleSentenceBufferTests">
+               </Test>
+               <Test
+                  Identifier = "KindleSpeechProjectionTests">
+               </Test>
+               <Test
+                  Identifier = "KindleContinuousInputTests">
+               </Test>
+               <Test
+                  Identifier = "KindleShelfScanPolicyTests">
+               </Test>
+               <Test
+                  Identifier = "KindleBookValidatorBlocklistTests">
+               </Test>
+               <Test
+                  Identifier = "KindleSpeechTextPlanTests">
+               </Test>
+               <Test
+                  Identifier = "KindleStorefrontTests">
+               </Test>
+               <Test
+                  Identifier = "KindleVisionFootnoteFixtureTests">
+               </Test>
+               <Test
+                  Identifier = "KindleWebViewContainerTests">
+               </Test>
+               <Test
+                  Identifier = "PaginationContinuityTests">
+               </Test>
+               <Test
+                  Identifier = "ReadingResumeTests">
+               </Test>
+               <Test
+                  Identifier = "ReaderPlaybackBarLayoutContractTests">
+               </Test>
+               <Test
+                  Identifier = "AudioPlaybackFailureRecoveryTests">
+               </Test>
+               <Test
+                  Identifier = "KindleOfflineSourceEvidenceTests">
+               </Test>
+               <Test
+                  Identifier = "WeReadPageAvailabilityTests">
+               </Test>
+               <Test
+                  Identifier = "WeReadOpeningPlaybackTests">
+               </Test>
+               <Test
+                  Identifier = "KoboContractTests">
+               </Test>
+               <Test
+                  Identifier = "KoboLibraryScanWebTests">
+               </Test>
+               <Test
+                  Identifier = "KoboShelfScanPolicyTests">
+               </Test>
+               <Test
+                  Identifier = "KoboBindingFlowContractTests">
+               </Test>
+               <Test
+                  Identifier = "KoboBindingPageWebTests">
+               </Test>
+               <Test
+                  Identifier = "GoogleBooksWebBridgeTests">
+               </Test>
+               <Test
+                  Identifier = "GoogleBooksShelfSyncTests">
+               </Test>
+               <Test
+                  Identifier = "GoogleBooksShelfWebTests">
+               </Test>
+               <Test
+                  Identifier = "GoogleBooksBindingRecoveryTests">
+               </Test>
+               <Test
+                  Identifier = "GoogleBooksContractTests">
+               </Test>
+               <Test
+                  Identifier = "LocalizationCatalogTests">
+               </Test>
+               <Test
+                  Identifier = "MultilingualContractTests">
+               </Test>
+               <Test
+                  Identifier = "PhotoLanguageCorrectionTests">
+               </Test>
+               <Test
+                  Identifier = "ReadingLanguageTests">
+               </Test>
+               <Test
+                  Identifier = "CloneCreditBalanceRegressionTests">
+               </Test>
+               <Test
+                  Identifier = "ReaderViewportTests">
+               </Test>
+            </SelectedTests>
+         </TestableReference>
+      </Testables>
+   </TestAction>
+   <LaunchAction
+      buildConfiguration = "Debug"
+      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
+      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      launchStyle = "0"
+      useCustomWorkingDirectory = "NO"
+      ignoresPersistentStateOnLaunch = "NO"
+      debugDocumentVersioning = "YES"
+      debugServiceExtension = "internal"
+      allowLocationSimulation = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "FC7ED2C7D40A0E0825D524BF"
+            BuildableName = "CastReaderMac.app"
+            BlueprintName = "CastReaderMac"
+            ReferencedContainer = "container:CastReader.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </LaunchAction>
+   <ProfileAction
+      buildConfiguration = "Release"
+      shouldUseLaunchSchemeArgsEnv = "YES"
+      savedToolIdentifier = ""
+      useCustomWorkingDirectory = "NO"
+      debugDocumentVersioning = "YES">
+      <BuildableProductRunnable
+         runnableDebuggingMode = "0">
+         <BuildableReference
+            BuildableIdentifier = "primary"
+            BlueprintIdentifier = "FC7ED2C7D40A0E0825D524BF"
+            BuildableName = "CastReaderMac.app"
+            BlueprintName = "CastReaderMac"
+            ReferencedContainer = "container:CastReader.xcodeproj">
+         </BuildableReference>
+      </BuildableProductRunnable>
+   </ProfileAction>
+   <AnalyzeAction
+      buildConfiguration = "Debug">
+   </AnalyzeAction>
+   <ArchiveAction
+      buildConfiguration = "Release"
+      revealArchiveInOrganizer = "YES">
+   </ArchiveAction>
+</Scheme>

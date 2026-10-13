@@ -1,0 +1,9 @@
+{
+  "at": "2026-10-05T07:18:31.889594+08:00",
+  "removedRebuildableIndexes": [
+    "/tmp/CastReaderMacTests.UlWIkh/DerivedData/Index.noindex",
+    "/tmp/CastReaderIsolatedTests.m1lwF2/DerivedData/Index.noindex",
+    "/tmp/CastReaderMacParity/Index.noindex"
+  ],
+  "preserved": "sources, build products, test results, diagnostics and logs"
+}

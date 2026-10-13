@@ -14,6 +14,7 @@ final class WeReadPageAvailabilityTests: XCTestCase {
     private var root: URL!
     private var web: WKWebView!
     private var window: UIWindow!
+    private weak var previousKeyWindow: UIWindow?
     private var bridge: WebReaderBridge!
     private var read: ReadAloudViewModel!
     private var explain: ExplainViewModel!
@@ -24,6 +25,7 @@ final class WeReadPageAvailabilityTests: XCTestCase {
     private let audio = AudioPlayerService.shared
 
     override func setUp() async throws {
+        _ = AuthService.shared // Restore identity before a VM owns audio.
         oldAutoPlay = AppSettings.shared.autoPlay
         oldPro = ProManager.shared.debugForcePro
         AppSettings.shared.autoPlay = false
@@ -38,6 +40,11 @@ final class WeReadPageAvailabilityTests: XCTestCase {
             }
             if text == self.first {
                 return .response(ReadAloudHTTPFixture.body("The first visible page is still here. ", tail: "Delayed tail.", duration: 0.25))
+            }
+            if text.trimmingCharacters(in: .whitespaces) == "The first visible page is still here." {
+                // Mac plans the two sentences separately. Keep the same brief
+                // audible prefix and delayed tail that exercise the page gate.
+                return .response(ReadAloudHTTPFixture.body(text, duration: 0.25))
             }
             return .response(ReadAloudHTTPFixture.body(text, duration: 5))
         }
@@ -63,11 +70,19 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         configuration.websiteDataStore = .nonPersistent()
         configuration.userContentController = content
         web = WKWebView(frame: CGRect(x: 0, y: 0, width: 390, height: 800), configuration: configuration)
+        web.pageZoom = WeReadViewportCrop.pageZoom
         bridge.webView = web
         bridge.configure(expectsDynamicWebContent: true, isWeRead: true, readerURL: url)
         bridge.attach(readVM: read, explainVM: explain)
         web.navigationDelegate = bridge
-        window = UIWindow(frame: web.frame)
+        previousKeyWindow = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows).first(where: \.isKeyWindow)
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+            window.frame = web.frame
+        } else {
+            window = UIWindow(frame: web.frame)
+        }
         window.rootViewController = UIViewController()
         window.rootViewController!.view.addSubview(web)
         window.makeKeyAndVisible()
@@ -86,6 +101,7 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         fixture?.close(); fixture = nil; planFixture?.close(); planFixture = nil
         web?.stopLoading(); web?.configuration.userContentController.removeScriptMessageHandler(forName: "castreader")
         web?.removeFromSuperview(); window?.isHidden = true
+        previousKeyWindow?.makeKey()
         bridge = nil; read = nil; explain = nil; web = nil; window = nil
         audio.clearForAccountBoundary()
         AppSettings.shared.autoPlay = oldAutoPlay
@@ -106,7 +122,7 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         try await js("document.body.innerHTML='<div class=readerError><h2>网络异常</h2><button>重新加载</button></div>'")
     }
 
-    private func reopenWithCheckpoint(_ text: String, html: String) throws {
+    private func reopenWithCheckpoint(_ text: String?, html: String) async throws {
         read.stop(); explain.stop()
         read.stageInactiveLiveWebPage([]); explain.stageInactiveLiveWebPage([])
         web.configuration.userContentController.removeScriptMessageHandler(forName: "castreader")
@@ -114,16 +130,113 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         bridge.webView = web
         bridge.configure(expectsDynamicWebContent: true, isWeRead: true, readerURL: url)
         bridge.attach(readVM: read, explainVM: explain)
-        let checkpoint = try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [ReadingParagraph(id: 0, text: text)])
-            .checkpoint(sourceKind: .weread, paragraphIndex: 0, audio: nil))
+        let checkpoint = try text.map { value in
+            try XCTUnwrap(ReadingResumeDocumentIndex(paragraphs: [ReadingParagraph(id: 0, text: value)])
+                .checkpoint(sourceKind: .weread, paragraphIndex: 0, audio: nil))
+        }
         bridge.prepareWeReadOpeningResume(checkpoint: checkpoint, anchor: nil)
         web.configuration.userContentController.add(bridge, name: "castreader")
         web.navigationDelegate = bridge
-        web.loadHTMLString(html, baseURL: URL(string: url))
+        let token = UUID().uuidString
+        // Keep the replacement document's reading surface as large as the
+        // initial fixture. Catalyst's default one-line body is only 19 px
+        // high, below the production extractor's 20 px layout threshold.
+        let replacement = html
+            .replacingOccurrences(of: "<html>", with: "<html data-load-token='\(token)'>")
+            .replacingOccurrences(of: "<body", with: "<style>body{font:20px/1.6 -apple-system}.wr_readerContent{min-height:160px}</style><body")
+        web.loadHTMLString(replacement, baseURL: URL(string: url))
+        let deadline = Date().addingTimeInterval(20)
+        while Date() < deadline {
+            let ready = try? await web.evaluateJavaScript("document.documentElement.dataset.loadToken === '\(token)' && !!window.CastReaderWeRead")
+            if ready as? Bool == true { return }
+            try await Task.sleep(for: .milliseconds(30))
+        }
+        XCTFail("Replacement WeRead fixture document did not finish loading")
+        throw NSError(domain: "WeReadFixtureLoadTimeout", code: 1)
+    }
+
+    func testReopenedExplanationFindsRetainedPageBeforeOlderReadCheckpointAndRepaintsMarks() async throws {
+        bridge.setActive(readMode: false)
+        explain.status = .completed
+        let mark = ResolvedMark(id: UUID(), paragraphIndex: 0,
+            charRange: 0..<9, action: "underline", n: nil, seed: 1)
+        explain.activeMarks = [mark]
+        web.configuration.userContentController.removeScriptMessageHandler(forName: "castreader")
+        bridge = WebReaderBridge()
+        bridge.webView = web
+        bridge.configure(expectsDynamicWebContent: true, isWeRead: true, readerURL: url)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.setActive(readMode: false)
+        let olderCheckpoint = ReadingResumeDocumentIndex(paragraphs: [ReadingParagraph(id: 0, text: second)])
+            .checkpoint(sourceKind: .weread, paragraphIndex: 0, audio: nil)
+        bridge.prepareWeReadOpeningResume(checkpoint: olderCheckpoint, anchor: nil)
+        web.configuration.userContentController.add(bridge, name: "castreader")
+        web.navigationDelegate = bridge
+        web.loadHTMLString("""
+        <html data-retained-reopen="yes"><meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>body{font:20px/1.6 -apple-system}.wr_readerContent{min-height:160px}</style>
+        <body class="wr_page_reader"><div class="wr_readerContent"><p>\(second)</p></div>
+        <button class="renderTarget_pager_button renderTarget_pager_button_right" onclick="window.turns=(window.turns||0)+1;document.querySelector('p').textContent='\(first)'">下一页</button>
+        </body></html>
+        """, baseURL: URL(string: url))
+        var restored = false
+        for _ in 0..<200 {
+            let state = try? await web.evaluateJavaScript("document.documentElement.dataset.retainedReopen === 'yes' && window.turns === 1 && document.querySelectorAll('#castreader-weread-marks-svg path').length > 0")
+            if state as? Bool == true { restored = true; break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertTrue(restored, "A retained explanation must return to its own page and repaint its annotations")
+        XCTAssertEqual(read.stagedLiveWebParagraphTexts, [first])
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [first])
+        XCTAssertEqual(explain.activeMarks.map(\.id), [mark.id])
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertTrue(fixture.capturedRequests.isEmpty)
+        XCTAssertTrue(planFixture.capturedRequests.isEmpty)
+    }
+
+    func testNativePageButtonNavigatesFreshCoverWithoutStartingAudio() async throws {
+        try await reopenWithCheckpoint(nil, html: """
+        <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
+        <div class="wr_readerContent"><div class="horizontalReaderCoverPage" style="height:160px">Book cover</div></div>
+        <button class="renderTarget_pager_button renderTarget_pager_button_right" onclick="window.turns=(window.turns||0)+1;document.querySelector('.wr_readerContent').innerHTML='<p>\(second)</p>'">下一页</button>
+        </body></html>
+        """)
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        bridge.requestUserPageTurn(.next)
+        try await wait { self.read.stagedLiveWebParagraphTexts == [self.second] }
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [second])
+        let turns = try await web.evaluateJavaScript("window.turns")
+        XCTAssertEqual(turns as? Int, 1)
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertFalse(audio.hasQueuedSegments)
+        XCTAssertTrue(fixture.capturedRequests.isEmpty)
+    }
+
+    func testNativePageButtonRemainsUsableAfterNonTextPage() async throws {
+        try await reopenWithCheckpoint(nil, html: """
+        <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
+        <script>window.nativeTurns=0;window.__castReaderWeReadNative={snapshot(){return{ready:false,items:[]}},turn(){window.nativeTurns++;return false}}</script>
+        <div class="wr_readerContent"></div><div id="info">Book cover</div>
+        <button class="renderTarget_pager_button renderTarget_pager_button_right" onclick="window.turns=(window.turns||0)+1;if(window.turns===1){document.getElementById('info').textContent='Recommendation panel'}else{delete window.__castReaderWeReadNative;document.querySelector('.wr_readerContent').innerHTML='<p>\(second)</p>'}">下一页</button>
+        </body></html>
+        """)
+        bridge.requestUserPageTurn(.next)
+        try await Task.sleep(for: .seconds(2.8))
+        let firstTurn = try await web.evaluateJavaScript("window.turns")
+        XCTAssertEqual(firstTurn as? Int, 1)
+        XCTAssertTrue(read.stagedLiveWebParagraphTexts.isEmpty)
+        bridge.requestUserPageTurn(.next)
+        try await wait { self.read.stagedLiveWebParagraphTexts == [self.second] }
+        let turns = try await web.evaluateJavaScript("window.turns")
+        XCTAssertEqual(turns as? Int, 2)
+        let nativeTurns = try await web.evaluateJavaScript("window.nativeTurns")
+        XCTAssertEqual(nativeTurns as? Int, 0, "An unpainted canvas cannot own a visible flyleaf pager")
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertTrue(fixture.capturedRequests.isEmpty)
     }
 
     func testOpeningWithoutPaintOrControlsRemainsPendingUntilBodyArrives() async throws {
-        try reopenWithCheckpoint(first, html: """
+        try await reopenWithCheckpoint(first, html: """
         <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
         <div class="horizontalReaderCoverPage" style="display:none">Hidden cover template</div>
         <div class="wr_readerContent"></div>
@@ -140,7 +253,7 @@ final class WeReadPageAvailabilityTests: XCTestCase {
     }
 
     func testResumeTimeoutNeverCommitsPageRetiredByUnclassifiedTrialWall() async throws {
-        try reopenWithCheckpoint("A saved passage that is no longer available.", html: """
+        try await reopenWithCheckpoint("A saved passage that is no longer available.", html: """
         <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
         <script>window.paintDiscards=0;window.__castReaderWeReadNative={snapshot(){return null},prepareNavigation(){window.paintDiscards++}}</script>
         <div class="wr_readerContent"><p>\(first)</p></div>
@@ -165,7 +278,7 @@ final class WeReadPageAvailabilityTests: XCTestCase {
     }
 
     func testResumeMatchingNewPageCannotBeReplacedByOldTimeout() async throws {
-        try reopenWithCheckpoint(second, html: """
+        try await reopenWithCheckpoint(second, html: """
         <html><meta name="viewport" content="width=device-width,initial-scale=1"><body class="wr_page_reader">
         <div class="wr_readerContent"><p>\(first)</p></div>
         <button class="renderTarget_pager_button renderTarget_pager_button_right" onclick="window.turns=(window.turns||0)+1;document.querySelector('p').textContent='\(second)'">下一页</button>
@@ -275,9 +388,12 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         document.dispatchEvent(new Event('castreader-wr-native'));
         """)
         try await wait { self.read.stagedLiveWebParagraphTexts == [sentence] }
-        try await js("CR.showMark({id:'column-circle',paragraphIndex:0,charStart:0,charEnd:44,action:'circle',seed:42})")
+        // This assertion owns synthetic mark geometry, not the active VM's
+        // mark lifecycle. Inspect in the same JS transaction so an already
+        // queued native clearMarks cannot remove it between two evaluations.
         let geometry = try await web.evaluateJavaScript("""
-        Array.from(document.querySelectorAll('[data-cr-weread-mark-id="column-circle"] path'),p=>{const b=p.getBBox();return {x:b.x,y:b.y,width:b.width,height:b.height}})
+        (()=>{CR.showMark({id:'column-circle',paragraphIndex:0,charStart:0,charEnd:44,action:'circle',seed:42});
+        return Array.from(document.querySelectorAll('[data-cr-weread-mark-id="column-circle"] path'),p=>{const b=p.getBBox();return {x:b.x,y:b.y,width:b.width,height:b.height}});})()
         """) as? [[String: Double]]
         let rects = try XCTUnwrap(geometry).sorted { ($0["x"] ?? 0) < ($1["x"] ?? 0) }
         XCTAssertEqual(rects.count, 2)
@@ -546,6 +662,41 @@ final class WeReadPageAvailabilityTests: XCTestCase {
         XCTAssertFalse(encoded.contains("A short tail."))
         XCTAssertTrue(encoded.contains(next), "Only the confirmed next page may reach explanation")
         XCTAssertEqual(planFixture.capturedRequests.filter { $0.path == "/api/quickread/compose-block" }.count, 1)
+    }
+
+    func testRejectedShortPreviewDoesNotRetryOnRepeatedPageOrAudioUpdates() async throws {
+        let current = "This current page has sufficient content for an explanation that stays playing while the next page is prepared."
+        planReply = .response(Data("""
+        event: block0
+        data: {"job_id":"fixture-plan","output_language":"en","total_blocks":1,"block_0":{"id":"block-0","text":"An explanation of the new chapter.","style":"explain","cinematic":{"events":[]}}}
+
+        event: done
+        data: {"job_id":"fixture-plan","total_blocks":1}
+
+        """.utf8))
+        try await js("document.querySelector('p').textContent='\(current)'")
+        try await wait { self.read.stagedLiveWebParagraphTexts == [current] }
+        bridge.setActive(readMode: false)
+        explain.start()
+        try await wait { self.audio.hasAudibleProgress }
+        planReply = .response(Data("{\"error\":\"text_too_short\"}".utf8), status: 400)
+        let before = planFixture.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count
+        let preview = """
+        window.webkit.messageHandlers.castreader.postMessage({type:'wereadPagePreview',payload:{
+          sourceFingerprint:window.CastReaderWeRead.snapshot().fingerprint,
+          contentFingerprint:'short-preview',confidence:'native-pages',
+          paragraphs:[{text:'A predicted page passes local validation but the server rejects this amount of meaningful content.'}]
+        }});
+        """
+        try await js(preview)
+        try await wait { self.planFixture.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count > before }
+        for _ in 0..<8 {
+            try await Task.sleep(for: .milliseconds(100))
+            try await js(preview)
+        }
+        XCTAssertEqual(planFixture.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, before + 1,
+                       "Deterministic rejection must remain suppressed for this source, prediction, language and depth")
+        XCTAssertEqual(explain.stagedLiveWebParagraphTexts, [current], "A rejected preview must not turn the visible page")
     }
 
     func testServerShortPageDoesNotRetryAndBookEndCompletes() async throws {

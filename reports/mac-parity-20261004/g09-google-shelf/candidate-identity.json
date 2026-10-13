@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-05T12:00:28.740814+08:00",
+  "status": "AFFECTED_TESTS_PASS_AWAITING_LIVE_REPLAY",
+  "sha256": {
+    "CastReader/Services/GoogleBooksLibraryStore.swift": "acd9f7b83dff87006b92b524aabbcdbd2d66628d18c09724bc511542219c5e78",
+    "CastReader/Views/GoogleBooks/GoogleBooksLibraryViews.swift": "b6ef568a68d25a5b8bf89e05f1e43ef3aa79ddb2e53d949b1062178781af60a1",
+    "CastReaderTests/GoogleBooksShelfSyncTests.swift": "7551ecc56268469a2d95d26aef41a106795d631db2f1339dd139e7a78f2c50c2",
+    "CastReader/WebAssets/bundle.js": "b500f07b2e7586e1161d6a554295dc7e440ccaf47423ecee8931da56484e6cce",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "f6bb3118881f39c321321b447860c1ecbf228a9280e3a87a0be1a827126b7def"
+  }
+}

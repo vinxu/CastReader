@@ -822,7 +822,7 @@ final class CloudImportIntegrationTests: XCTestCase {
             webAuthenticator: CloudNoUploadWebAuthenticator()
         )
         let tts = APIService(session: session)
-        let quickRead = QuickReadService(session: session)
+        let quickRead = QuickReadService(session: session, mobileSessionProvider: CloudNoUploadMobileSession())
         var allRequests: [URLRequest] = []
 
         for (index, fixture) in fixtures.enumerated() {
@@ -1222,6 +1222,14 @@ final class CloudImportIntegrationTests: XCTestCase {
         }
         return try Data(contentsOf: zipURL)
     }
+}
+
+/// The transport spy must provide its own session; it must never rely on a
+/// developer account persisted in the test host or contact the live backend.
+private struct CloudNoUploadMobileSession: MobileSessionProviding {
+    func sessionToken() async -> String? { "cms_cloud_no_upload_test" }
+    func refreshSession() async -> String? { "cms_cloud_no_upload_test" }
+    func invalidateSession() async {}
 }
 
 private struct DownloadFixture: Sendable {

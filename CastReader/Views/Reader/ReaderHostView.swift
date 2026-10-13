@@ -441,9 +441,16 @@ struct ReaderHostView: View {
 
     private var mode: ReaderMode { coordinator.mode }
     private var usesCompactPlaybackBar: Bool {
-        !dynamicTypeSize.isAccessibilitySize && (
+        #if targetEnvironment(macCatalyst)
+        // A short desktop window still needs an unobstructed reading surface.
+        // Keep controls in their reserved row instead of covering the last
+        // lines with the mobile landscape capsules.
+        return false
+        #else
+        return !dynamicTypeSize.isAccessibilitySize && (
             verticalSizeClass == .compact || AdaptiveLayout.usesCompactControls(size: hostSize)
         )
+        #endif
     }
 
     var body: some View {
@@ -653,6 +660,38 @@ struct ReaderHostView: View {
             .onChange(of: surfaceSize) { updateReaderSurfaceSize($0) }
         }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay {
+                if document.sourceKind == .googleBooks,
+                   !liveWebPageTurn.hasPresentedInitialSurface,
+                   googleBooksStore.lastError == nil {
+                    HStack(spacing: 10) {
+                        ProgressView().tint(AppTheme.foreground)
+                        Text(AppLocalized("正在打开图书…"))
+                            .font(.subheadline)
+                            .foregroundStyle(AppTheme.foreground)
+                    }
+                    .padding(14)
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("googleBooksReaderLoading")
+                    .allowsHitTesting(false)
+                }
+            }
+            .overlay(alignment: .top) {
+                if mode == .read, let notice = readVM.resumeNotice {
+                    // A recovery notice must not resize a live page and
+                    // trigger another reflow while its cursor is absent.
+                    Text(notice)
+                        .font(.subheadline)
+                        .foregroundStyle(AppTheme.foreground)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(12)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                        .padding(12)
+                        .accessibilityIdentifier("readerResumeNotice")
+                        .allowsHitTesting(false)
+                }
+            }
             .id(document.contentSessionKey)   // 同一远端文件换 revision 必须重建；切朗读/解读仍不重建
     }
 
@@ -677,10 +716,13 @@ struct ReaderHostView: View {
                     .frame(width: horizontalSizeClass == .regular ? 44 : nil, height: horizontalSizeClass == .regular ? 44 : nil)
                     .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .accessibilityIdentifier("readerMinimizeButton")
             .accessibilityLabel(Text(AppLocalized("返回")))
             Text(document.title)
-                .font(.subheadline.weight(.semibold))
+                .font(AdaptiveLayout.readerTitleFont)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("readerDocumentTitle")
                 .lineLimit(1)
                 .foregroundColor(AppTheme.foreground)
             Spacer(minLength: 8)
@@ -716,7 +758,11 @@ struct ReaderHostView: View {
             }
         }
         .padding(.horizontal, 16)
+        #if targetEnvironment(macCatalyst)
+        .padding(.vertical, 4)
+        #else
         .padding(.vertical, usesCompactPlaybackBar ? 6 : 10)
+        #endif
         .frame(height: usesCompactPlaybackBar ? 44 : nil)
         .readerWindowControlInsets()
         .background(.regularMaterial)
@@ -808,6 +854,7 @@ struct ReaderHostView: View {
                     ReaderPlaybackBarLayoutContract.bottomContentOcclusion(
                         controlsCoverFullWidth: false
                     ),
+                isReaderPresented: coordinator.isReaderPresented,
                 weReadTOC: weReadTOC,
                 pageTurnController: liveWebPageTurn
             )
@@ -902,6 +949,21 @@ struct ReaderHostView: View {
         if weReadTOC.isPresented { return [.dismiss: { weReadTOC.dismiss() }] }
         guard !weReadTOC.isJumping else { return [:] }
         var actions: [ReaderWindowCommand: () -> Void] = [.dismiss: { coordinator.minimize() }]
+        #if targetEnvironment(macCatalyst)
+        if document.sourceKind == .weread {
+            actions[.dismiss] = {
+                let generation = coordinator.presentationGeneration
+                Task { @MainActor in
+                    let handled = await ReaderWebAppearanceCenter.shared.dismissWeReadAppearance(
+                        documentID: document.id, in: readerScene.window
+                    )
+                    guard !handled, coordinator.presentationGeneration == generation,
+                          coordinator.isReaderPresented else { return }
+                    coordinator.minimize()
+                }
+            }
+        }
+        #endif
         actions[.playPause] = {
             if mode == .read {
                 if readVM.isPlaying || readVM.isWaitingForPlayableAudio || readVM.isBuffering { readVM.pausePlayback() }
@@ -1718,9 +1780,7 @@ private struct ReaderLandscapeExplainOverlay: View {
     }
 
     private var shouldShowCaption: Bool {
-        guard !vm.isPreparingNext, !vm.explanationText.isEmpty else { return false }
-        if case .streaming = vm.status { return true }
-        return false
+        vm.shouldDisplayPlaybackCaption
     }
 
     private func controlPill(
@@ -1932,7 +1992,7 @@ struct SpeedMenu: View {
             case .capsule:
                 HStack(spacing: 3) {
                     Image(systemName: "speedometer").font(.caption)
-                    Text(String(format: "%.2gx", Double(displayedSpeed)))
+                    Text(String(format: "%gx", Double(displayedSpeed)))
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
@@ -1946,7 +2006,7 @@ struct SpeedMenu: View {
                     Image(systemName: "speedometer")
                         .font(.system(size: 19, weight: .semibold))
                         .frame(height: 28)
-                    Text(String(format: "%.2gx", Double(displayedSpeed)))
+                    Text(String(format: "%gx", Double(displayedSpeed)))
                         .font(.caption2.weight(.medium))
                 }
                 .foregroundStyle(AppTheme.foreground)
@@ -1954,7 +2014,7 @@ struct SpeedMenu: View {
             case .compact:
                 HStack(spacing: 4) {
                     Image(systemName: "speedometer").font(.system(size: 18))
-                    Text(String(format: "%.2gx", Double(displayedSpeed)))
+                    Text(String(format: "%gx", Double(displayedSpeed)))
                         .font(.caption.weight(.semibold))
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
@@ -1970,7 +2030,7 @@ struct SpeedMenu: View {
         .layoutPriority(style == .console ? 0 : 1)
         .contentShape(Rectangle())
         .accessibilityLabel(Text(AppLocalized("Playback Speed")))
-        .accessibilityValue(Text(String(format: "%.2gx", Double(displayedSpeed))))
+        .accessibilityValue(Text(String(format: "%gx", Double(displayedSpeed))))
         .popover(isPresented: $showSpeedPicker, attachmentAnchor: .rect(.bounds), arrowEdge: .bottom) {
             speedPicker
                 .presentationCompactAdaptation(.popover)
@@ -2018,7 +2078,7 @@ struct SpeedMenu: View {
                         HStack(spacing: 7) {
                             Image(systemName: isSelected(speed) ? "checkmark.circle.fill" : "circle")
                                 .foregroundStyle(isSelected(speed) ? AppTheme.primary : AppTheme.mutedForeground)
-                            Text(String(format: "%.2gx", Double(speed)))
+                            Text(String(format: "%gx", Double(speed)))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundStyle(AppTheme.foreground)
                             Spacer(minLength: 2)
@@ -2047,7 +2107,7 @@ struct SpeedMenu: View {
                     }
                     .buttonStyle(.plain)
         .hoverEffect(.highlight)
-                    .accessibilityLabel(Text(String(format: "%.2gx", Double(speed))))
+                    .accessibilityLabel(Text(String(format: "%gx", Double(speed))))
                 }
             }
         }

@@ -66,7 +66,7 @@ enum PresetTTSTransport {
             request.cachePolicy = .reloadIgnoringLocalCacheData
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue("application/json", forHTTPHeaderField: "Accept")
-            request.setValue("ios", forHTTPHeaderField: "X-CastReader-Platform")
+            request.setValue(Constants.clientPlatform, forHTTPHeaderField: "X-CastReader-Platform")
             request.setValue(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown", forHTTPHeaderField: "X-CastReader-Version")
             request.setValue(String(ServiceRouting.currentBuildNumber), forHTTPHeaderField: "X-CastReader-Build")
             request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")

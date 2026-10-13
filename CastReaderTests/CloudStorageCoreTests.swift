@@ -543,6 +543,36 @@ final class CloudStorageCoreTests: XCTestCase {
         XCTAssertNil(afterRemoval)
     }
 
+    func testSavingEnabledProviderPreservesHiddenProviderAndPendingSwitch() async throws {
+        let suite = "CloudConnectionStoreTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let old = CloudAccount(provider: .dropbox, stableAccountKey: "old")
+        let candidate = CloudAccount(provider: .dropbox, stableAccountKey: "candidate")
+        let drive = CloudAccount(provider: .googleDrive, stableAccountKey: "drive")
+        let store = CloudConnectionStore(defaults: defaults, storageKey: "connections")
+        await store.setActive(old)
+        await store.stageCandidate(candidate)
+        await store.setActive(drive)
+
+        let reloaded = CloudConnectionStore(defaults: defaults, storageKey: "connections")
+        let active = await reloaded.activeAccount(for: .dropbox)
+        let pending = await reloaded.candidateAccount(for: .dropbox)
+        let visible = await reloaded.allActiveAccounts()
+        XCTAssertEqual(active, old)
+        XCTAssertEqual(pending, candidate)
+        XCTAssertEqual(visible, [drive], "Preserving records must not expose disabled providers")
+        await reloaded.removeActive(for: .dropbox)
+
+        let afterRemoval = CloudConnectionStore(defaults: defaults, storageKey: "connections")
+        let removed = await afterRemoval.activeAccount(for: .dropbox)
+        let removedCandidate = await afterRemoval.candidateAccount(for: .dropbox)
+        let survivingDrive = await afterRemoval.activeAccount(for: .googleDrive)
+        XCTAssertNil(removed)
+        XCTAssertNil(removedCandidate)
+        XCTAssertEqual(survivingDrive, drive)
+    }
+
     func testCredentialOwnershipIsProviderScopedPersistentAndFailsClosed()
         throws
     {

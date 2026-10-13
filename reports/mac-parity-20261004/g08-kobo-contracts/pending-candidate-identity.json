@@ -1,0 +1,15 @@
+{
+  "builtAt": "2026-10-05T06:40:27.106563",
+  "appBinary": "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac",
+  "binarySHA256": "574e855dfc059ffff3d09a66331be79896a7af8ee3111d31b9dfd592e1d28296",
+  "sourceHashes": {
+    "CastReader/Services/WebReaderBridge.swift": "1b00d7eb09f93d3e2b375e922ea81b834faff63a8bd81ab46e8a45efddc2e8f2",
+    "CastReader/Services/KoboLibraryStore.swift": "81cf9a7902d33c147cb7481c5fbc4fd3315dd00300071bf2fb9f28acbe0dae33",
+    "CastReader/Models/WeReadModels.swift": "37ce10e95a6c7f36ae619d8080a198a8fd701940fa7300059867fb05e8cb8730",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "666ed868a8d46956da7fc2365c08869f0d056a391720203b38336495641787ab",
+    "CastReader/Views/Kobo/KoboLibraryViews.swift": "12e02e0b5beaeff3f4432e37069e95d7b61c53e8a3e23db281cce727853a9270",
+    "WebReader/src/kobo.ts": "5d01ea8e9baf99aa3de2e8a389867d2db68bac60aa97b1a3e18345b52a4a6c99",
+    "CastReader/WebAssets/bundle.js": "92deba5e2cdb7d1d73eae9d0b246e8c34659935e6a7f4790d307839d92487e0d",
+    "CastReaderTests/Fixtures/google-books-webreader-xctest.js": "5399d7f2bff47a304306218096a32b104bdb6db87d3ab4e0cc2066828396f99f"
+  }
+}

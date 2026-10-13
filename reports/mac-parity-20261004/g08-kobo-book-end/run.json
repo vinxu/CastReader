@@ -1,0 +1,7 @@
+{
+  "startedAt": "2026-10-05T10:49:37.337666+08:00",
+  "logByteOffset": 4248312,
+  "candidate": "../g08-kobo-contracts/paused-producer-candidate-identity.json",
+  "status": "IN_PROGRESS",
+  "uiFinding": "At 800x600 paused native Explain caption overlays bottom Kobo table-of-contents Author row; hit testing passes through but text is obscured."
+}

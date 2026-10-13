@@ -1,0 +1,7 @@
+{
+  "status": "PARTIAL_PASS_WITH_MODE_SWITCH_FAILURE",
+  "explain": "Author chapter 391\u2013393/393 ended at 10:50:50.850 with native-book-end and Explanation complete",
+  "readAfterExplain": "Last page words painted and spoken; at 10:51:49.694 cached turn failure suppressed completion, then 10:51:57.752 anchor_ack_timeout and retry overlay",
+  "evidence": "events.log",
+  "uiFollowup": "Paused subtitle obscures bottom Kobo TOC row at 800x600; still pending"
+}

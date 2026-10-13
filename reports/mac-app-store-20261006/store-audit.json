@@ -1,0 +1,135 @@
+{
+  "version": {
+    "id": "b4c6afe6-bf93-475e-ae52-0af7b5bee9ab",
+    "version": "1.2.47",
+    "state": "PREPARE_FOR_SUBMISSION",
+    "releaseType": "AFTER_APPROVAL"
+  },
+  "build": {
+    "id": "898d3508-7a23-40b0-9718-78f1f6ae8d44",
+    "number": "73",
+    "processingState": "VALID",
+    "buildAudienceType": "APP_STORE_ELIGIBLE",
+    "usesNonExemptEncryption": false
+  },
+  "locales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "titleGuard": {
+    "policy": "preserve",
+    "unchanged": true,
+    "changedLocales": [
+
+    ]
+  },
+  "optionalPromotionalTextAbsentLocales": [
+    "de-DE",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "hi",
+    "it",
+    "ja",
+    "pt-BR",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "screenshots": {
+    "es-MX": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "pt-BR": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "it": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "ja": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "zh-Hant": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "de-DE": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "zh-Hans": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "hi": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "es-ES": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    },
+    "en-US": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 3,
+          "total": 3
+        }
+      ],
+      "complete": 3,
+      "fallbackToPrimary": false
+    },
+    "fr-FR": {
+      "sets": [
+
+      ],
+      "complete": 0,
+      "fallbackToPrimary": true
+    }
+  },
+  "reviewDetailsPresent": true,
+  "errors": [
+
+  ]
+}

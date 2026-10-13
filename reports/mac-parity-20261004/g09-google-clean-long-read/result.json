@@ -1,0 +1,15 @@
+{
+  "status": "FAIL",
+  "startedAt": "2026-10-05T13:23:54.865026+08:00",
+  "logByteOffset": 4812440,
+  "book": "WaOcDwAAQBAJ",
+  "initialFontPercent": 113,
+  "initialDarkTheme": true,
+  "initialWindow": [
+    1024,
+    768
+  ],
+  "note": "Normal candidate; diagnostics removed. UI reflow and resizing included, no manual page jump until continuous run completes.",
+  "endedAt": "2026-10-05T13:31:21.327411+08:00",
+  "failure": "Resize 1024x768 to 800x600 in double-page layout returns older spread; native full-source reveal misses, then clears queue and stops without displaying resumeNotice."
+}

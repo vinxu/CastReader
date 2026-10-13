@@ -1,0 +1,7 @@
+{
+  "CastReader/Services/ReaderSceneContext.swift": "f095ff2bacfea9c981d918c091d52b90328629406bdeb802198333234e837be7",
+  "CastReader/Views/MainTabView.swift": "9998b416ef70464457b550ba46628730b8993e7e346d4830fb6094cdc42df69a",
+  "CastReader/Services/ShareInbox.swift": "fd22c7649ec91cb247ed14612a5acb58e61001f70fc8df9ca82b359a3f9b381f",
+  "CastReaderTests/SystemIntegrationTests.swift": "e3a5013835ffb73a9334bb7ee4c95abb0b9e326ced8a050cf3a80f5cd4b9b304",
+  "CastReaderMacTests/MacWindowRoutingTests.swift": "7a9a481e69d031963724034cca6a3f03fd59418a66b8e88c12304f7bcff1542d"
+}

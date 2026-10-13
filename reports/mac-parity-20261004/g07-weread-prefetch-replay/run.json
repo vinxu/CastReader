@@ -1,0 +1,7 @@
+{
+  "startedAt": "2026-10-05T05:20:16.907072",
+  "logByteOffset": 1642528,
+  "pid": 22167,
+  "candidateIdentity": "../g07-weread-native-pager/prefetch-candidate-identity.json",
+  "scenario": "Exact failure page 7bea48c2 and next short-preview 5703b1cb; chapter 1, font level 3, 1024x578, Xiaoxuan 1x"
+}

@@ -1,0 +1,6 @@
+{
+  "status": "FAILED",
+  "reason": "Repeated font changes during pending restored TTS replaced the original seek position with zero. This was a short failure reproduction, not a qualified long reading run.",
+  "regression": "ReadingResumeTests/testPausedLiveReflowRestoresWordAndClockWithoutStartingAudio",
+  "observedAt": "2026-10-05T07:22:00+08:00"
+}

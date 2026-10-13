@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## Mac / iOS 主线增量整合（2026-10-13）
+
+- 主线保留 iOS 1.2.49（84）Duo、普通设备底部导航、锁屏翻页和暂停所有权；其工程基线为 `a95540d4`。合入 Mac 1.2.48（76）分支 `b0fbc157`，包含 Mac 原生侧栏、窗口/文件路由、28 语及额度购买界面。Mac 发布记录见 `docs/Mac-AppStore-Release-1.2.48.md`。
+- 两个平台分别维护版本号；不得用旧 Mac 分支的 iOS 1.2.48（75）设置覆盖 iOS 1.2.49（84）。`scripts/sync-mac-project.rb` 从当前 iOS 图同步共享源码，Mac 版本仍由 `scripts/mac-release-version.json` 决定；`scripts/verify-mac-project.rb` 固定校验上述 iOS 基线及原有扩展。
+- 保持两端已验收的 TTS 策略：Mac 逐句请求；iOS 普通/克隆音色分段、Kindle 完整跨页单元和短开场预缓冲。不要把 Mac 的语音规划器无条件覆盖到 iOS。整合过程与回归见 `docs/Mac-iOS-main-integration-2026-10-13.md`。
+- 后续增量从最新远端 main 开始，合并后执行两端工程、阅读器及翻页回归。OCR 按需下载 WIP 和主目录旧开发分支保持独立；代码合并本身不等于新包已验收或已发布。
+
 ## iOS 1.2.49 Duo 与锁屏翻页修复已送审（2026-10-12）
 
 - 最新验收并送审的应用源码为 main 合并 `6e200ad7f109a750579a2be3e242478e01546ab9`（PR #9；含 PR #7 / #8 的 Duo、导航与 Kindle 回归修复）。工作树 `/Users/xuxuheng/.codex/worktrees/ios-28-languages/CastReader`；App/Share/Widget/Safari 均为 **1.2.49（84）**，356 个应用/配置文件摘要 `5ccb668e3352175c05c46e4ac71e28697b89746b852283a0d779f30837868bc3`。不得从主目录旧分支覆盖真机。
@@ -8,6 +15,15 @@
 - 28 语本地截图，ASC 29 个条目；**464 张 COMPLETE**：iPhone/iPad 每条 5 张、Duo 每条 6 张（含合屏＋展开）。已准备的 1.2.49 ASO 文案保留，严格核对当前目标与原 pending 快照；不要用已发布 1.2.48 的旧标题覆盖。
 - Build `52b4fe60-e03c-4fe6-97fa-94cbec9e51b5` 为 VALID / APP_STORE_ELIGIBLE；审核单 `7516b784-66d1-4f0b-b04f-b3604c0d67b7` 于北京时间 **15:09:30** 提交，版本/审核单均 WAITING_FOR_REVIEW，审核后自动发布。手机保留同源码 Release 开发签名包 84；原 ASO 自动提交保持暂停。完整记录：`docs/iOS-1.2.49-Release-Report.md`。
 - 后续从最新远端 main 增量迭代，继续执行 `bash scripts/build-voice-toc-integration.sh --check`、`ruby scripts/verify_safari_extension.rb`，保护上述已验收管线；下方仅为历史记录。
+
+## Mac 1.2.47 首版已送审（2026-10-06）
+
+- Mac 桌面版工作树：`/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader`，分支 `codex/mac-parity`；基于 iOS 1.2.47 Build 72 的 `09456f1` 增量适配。
+- Mac App / Share / Widget 为 **1.2.47（73）**，国际产品配置，支持 macOS 14.6+、arm64 / x86_64。iOS 保持 Build 72。Mac 版本号由 `scripts/mac-release-version.json` 经 `scripts/sync-mac-project.rb` 维护。
+- 原生 Mac 与 CastReader for Safari（`com.castreader.CastReader`）是独立应用；原生 Mac 在现有 `com.same.castreader` App Store 记录上新增 MAC_OS 平台，复用内购，不覆盖 Safari 产品。
+- Build `898d3508-7a23-40b0-9718-78f1f6ae8d44` 为 VALID / APP_STORE_ELIGIBLE；审核单 `8288c105-fcc3-48c9-a573-33ae8ba760fc` 于 **2026-10-06 22:12:18 +08:00** 提交，版本与审核单均 WAITING_FOR_REVIEW，审核通过自动发布。此为提交时状态，不冒称已上线。
+- 用户要求收敛测试并优先完成首版提交。不得把历史未闭环的 YouTube 提供方限流、WeRead 付费登录态重测及真实 Mac 购买记为通过。精确范围、327 文件冻结摘要、签名、11 语商店文案、三张 Mac 截图与提交回读见 `reports/mac-app-store-20261006/README.md`。
+
 
 
 ## iOS 1.2.48 28 语适配已送审（2026-10-10）

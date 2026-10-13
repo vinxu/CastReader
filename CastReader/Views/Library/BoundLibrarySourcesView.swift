@@ -21,7 +21,7 @@ struct LibrarySourcesSheet: View {
             LibrarySourcesView()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(AppLocalized("关闭")) { dismiss() }
+                        AdaptiveSheetDismissButton(title: AppLocalized("关闭")) { dismiss() }
                     }
                 }
         }

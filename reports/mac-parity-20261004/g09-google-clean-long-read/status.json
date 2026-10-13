@@ -1,0 +1,20 @@
+{
+  "status": "OBSERVING",
+  "observedAt": "2026-10-05T13:26:38.781235+08:00",
+  "firstWordAt": "13:24:14.131",
+  "latestWordAt": "13:26:22.791",
+  "wordSpanSeconds": 128.66,
+  "automaticCommits": 1,
+  "uniqueAutoSignatures": 1,
+  "wordPaints": 372,
+  "missingWordOverlays": 6,
+  "carryCommits": 1,
+  "acknowledgedEndpointContinues": 0,
+  "refreshCommits": 2,
+  "manualCommits": 0,
+  "issues": [],
+  "visualHoldsCompleted": 1,
+  "visualHoldMedianMs": 82.56,
+  "visualHoldMaxMs": 82.56,
+  "pendingVisualHolds": 0
+}

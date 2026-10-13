@@ -1,0 +1,12 @@
+{
+  "createdAt": "2026-10-05T09:43:21.498849+08:00",
+  "sha256": {
+    "CastReader/Services/AudioPlayerService.swift": "2ee3e9cf56fe14d87c6e6e1b0de98ec41017e9e15cfb821189d729702077e179",
+    "CastReaderTests/PaginationContinuityTests.swift": "a0c67953d24b3248be305461aa5bffccbd05b1e85bb4d02597cf8e2a19e3e529",
+    "WebReader/src/kobo.ts": "4f2872107aef5cb0ab622a1404962c890dc33e428fc1fa6d07ac208b72f757de",
+    "CastReader/WebAssets/bundle.js": "362f9f061753b8f40108dc02b443d1fc015c880e491a0fa336a62d3e35bd4855",
+    "CastReaderTests/Fixtures/google-books-webreader-xctest.js": "680fc40a2785679b82af9a125a00230cc2e5bf7bdb62305a8216f38438a5b8b3",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac.debug.dylib": "6da97156951aa37a3a57ff868e88e9ff05beb14581175b4cc5221e558478620e",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/Resources/WebAssets/bundle.js": "362f9f061753b8f40108dc02b443d1fc015c880e491a0fa336a62d3e35bd4855"
+  }
+}

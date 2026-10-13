@@ -46,7 +46,11 @@ struct GoogleBooksHomeSection: View {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(AppTheme.primary)
+                                #if targetEnvironment(macCatalyst)
+                                .frame(minHeight: HomeLayout.shelfLinkMinimumHeight)
+                                #else
                                 .frame(minHeight: horizontalSizeClass == .regular ? 44 : nil)
+                                #endif
                         }
                         .accessibilityIdentifier("homeShelfViewAll.google_books")
                     }
@@ -201,6 +205,9 @@ struct GoogleBooksLibraryConnectView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppLocalized("关闭")) { dismiss() }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                        .accessibilityIdentifier("googleBooksCloseConnectionButton")
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     if model.popupWebView != nil {

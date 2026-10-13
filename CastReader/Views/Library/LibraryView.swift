@@ -28,10 +28,15 @@ struct LibraryView: View {
     @State private var selectedProgress: ContentListeningState? = nil
     @State private var selectedKind: ReadingSourceKind? = nil   // nil = 全部
     private let onResumePresented: () -> Void
+    private let isSurfaceActive: Bool
+    private let onImport: (() -> Void)?
 
-    init(history: HistoryStore = .shared, onResumePresented: @escaping () -> Void = {}) {
+    init(history: HistoryStore = .shared, isSurfaceActive: Bool = true,
+         onImport: (() -> Void)? = nil, onResumePresented: @escaping () -> Void = {}) {
         _history = ObservedObject(wrappedValue: history)
         self.onResumePresented = onResumePresented
+        self.isSurfaceActive = isSurfaceActive
+        self.onImport = onImport
     }
 
     // 类型筛选固定展示顺序（只展示实际出现过的类型）。
@@ -62,8 +67,16 @@ struct LibraryView: View {
         content
             .navigationTitle("文库")
             .navigationBarTitleDisplayMode(.inline)
+            #if targetEnvironment(macCatalyst)
+            .toolbar(showsMacToolbar ? .automatic : .hidden, for: .navigationBar)
+            #endif
             .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索标题或网址")
             .toolbar {
+                #if targetEnvironment(macCatalyst)
+                if showsMacToolbar {
+                    HomeToolbarItems { macToolbarButtons }
+                }
+                #else
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink { KindleOfflineLibraryView() } label: {
                         Label("已下载", systemImage: "checkmark.circle.fill")
@@ -77,6 +90,7 @@ struct LibraryView: View {
                     .accessibilityLabel(AppLocalized("管理书架来源"))
                     .accessibilityIdentifier("librarySourcesToolbarButton")
                 }
+                #endif
             }
             .alert(
                 CloudLocalized("提示"),
@@ -139,6 +153,50 @@ struct LibraryView: View {
                 cancelOpening()
             }
     }
+
+    #if targetEnvironment(macCatalyst)
+    // Remove the promoted items themselves while a retained reader overlays
+    // this page. Hiding only UINavigationBar can leave its NSToolbar items alive.
+    private var showsMacToolbar: Bool { isSurfaceActive && !importRouter.hideMainChrome }
+
+    private var macToolbarButtons: some View {
+        Group {
+            NavigationLink { KindleOfflineLibraryView() } label: {
+                Label("已下载", systemImage: "checkmark.circle.fill")
+                    .labelStyle(.titleAndIcon)
+                    .font(.system(size: 13))
+                    .frame(height: HomeToolbarLayout.buttonSize)
+                    .padding(.horizontal, 6)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityIdentifier("libraryOfflineBooks")
+
+            if let onImport {
+                Button(action: onImport) {
+                    macToolbarIcon("plus")
+                }
+                .accessibilityLabel(AppLocalized("导入内容"))
+                .accessibilityIdentifier("libraryImportButton")
+            }
+
+            NavigationLink(destination: LibrarySourcesView()) {
+                macToolbarIcon("books.vertical")
+            }
+            .accessibilityLabel(AppLocalized("管理书架来源"))
+            .accessibilityIdentifier("librarySourcesToolbarButton")
+        }
+        .foregroundStyle(AppTheme.foreground)
+    }
+
+    private func macToolbarIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 18, height: 18)
+            .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
+            .contentShape(Rectangle())
+    }
+    #endif
 
     @ViewBuilder
     private var content: some View {

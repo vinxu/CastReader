@@ -174,7 +174,7 @@ final class OwnedAPIRedirectDelegate: NSObject, URLSessionTaskDelegate, @uncheck
         #if DEBUG
         guard let request = task.originalRequest,
               request.url?.path == "/api/captioned_speech_partly",
-              request.value(forHTTPHeaderField: "X-CastReader-Platform") == "ios",
+              request.value(forHTTPHeaderField: "X-CastReader-Platform") == Constants.clientPlatform,
               let requestID = request.value(forHTTPHeaderField: "X-Request-ID") else { return }
         func milliseconds(_ start: Date?, _ end: Date?) -> Int {
             guard let start, let end else { return -1 }

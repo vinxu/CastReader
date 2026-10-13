@@ -1,0 +1,10 @@
+{
+  "startedAt": "2026-10-05T16:35:50.770756+08:00",
+  "logByteOffset": 6088770,
+  "video": "NHHPNMIK-fY",
+  "candidate": "candidate-identity.json",
+  "status": "BLOCKED_PROVIDER_VERIFICATION",
+  "endLogByteOffset": 6093476,
+  "finishedAt": "2026-10-05T16:37:41.505178+08:00",
+  "ui": "Correct caption access limitation; all Open/Cancel/Retry controls visible at 1024x768 and 800x600; Cancel returns to existing history."
+}

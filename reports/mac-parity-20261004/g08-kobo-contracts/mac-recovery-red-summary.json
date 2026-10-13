@@ -1,0 +1,66 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 2,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 2,
+  "finishTime" : 1791150805.382,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791150765.407,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertNil failed: \"Synthetic presentation timeout\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testKoboNewVerifiedPageRecoversBothBlockedModesWithoutAutoplay()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/GoogleBooksWebBridgeTests/testKoboNewVerifiedPageRecoversBothBlockedModesWithoutAutoplay",
+      "testName" : "testKoboNewVerifiedPageRecoversBothBlockedModesWithoutAutoplay()"
+    },
+    {
+      "failureText" : "XCTAssertNil failed: \"Synthetic presentation timeout\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 2,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testKoboSamePageRefreshRecoversBlockedContentWithoutAutoplay()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/GoogleBooksWebBridgeTests/testKoboSamePageRefreshRecoversBlockedContentWithoutAutoplay",
+      "testName" : "testKoboSamePageRefreshRecoversBlockedContentWithoutAutoplay()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "100% of failures",
+      "text" : "4 runs of 2 tests failed with XCTAssertNil failed: \"Synthetic presentation timeout\""
+    },
+    {
+      "category" : "Common Failures",
+      "impact" : "50% of failures",
+      "text" : "2 runs of 1 test failed with XCTAssertEqual failed: (\"[]\") is not equal to (\"[\"Verified source on the current Kobo page.\"]\")"
+    }
+  ],
+  "totalTestCount" : 2
+}

@@ -36,7 +36,11 @@ struct WeReadHomeSection: View {
                         if !typeSize.isAccessibilitySize { Spacer() }
                         NavigationLink(destination: WeReadLibraryView()) {
                             Text(AppLocalized("查看全部")).font(.subheadline.weight(.semibold)).foregroundColor(AppTheme.primary)
+                                #if targetEnvironment(macCatalyst)
+                                .frame(minHeight: HomeLayout.shelfLinkMinimumHeight)
+                                #else
                                 .frame(minHeight: horizontalSizeClass == .regular ? 44 : nil)
+                                #endif
                         }
                         .accessibilityIdentifier("homeShelfViewAll.weread")
                     }
@@ -127,7 +131,11 @@ struct WeReadLibraryConnectView: View {
             }
             .navigationTitle(AppLocalized("绑定微信读书")).navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button(AppLocalized("关闭")) { dismiss() } }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(AppLocalized("关闭")) { dismiss() }
+                        .buttonStyle(.plain)
+                        .fixedSize()
+                }
             }
             .onAppear {
                 model.recordConnectionPresented()
@@ -158,10 +166,10 @@ struct WeReadLibraryConnectView: View {
                 .foregroundColor(AppTheme.primary)
                 .frame(width: 30, height: 30)
             VStack(alignment: .leading, spacing: 4) {
-                Text(AppLocalized("截图二维码，用微信扫码登录"))
+                Text(loginGuideTitle)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(AppTheme.foreground)
-                Text(AppLocalized("截图后打开微信扫一扫，从相册识别二维码。登录后会自动进入书架，供你同步到 CastReader。"))
+                Text(loginGuideDetail)
                     .font(.caption)
                     .foregroundColor(AppTheme.mutedForeground)
                     .fixedSize(horizontal: false, vertical: true)
@@ -173,6 +181,22 @@ struct WeReadLibraryConnectView: View {
         .padding(.horizontal, 14)
         .padding(.bottom, 12)
         .accessibilityIdentifier("weReadLoginGuide")
+    }
+
+    private var loginGuideTitle: String {
+        #if targetEnvironment(macCatalyst)
+        return AppLocalized("用手机微信扫码登录")
+        #else
+        return AppLocalized("截图二维码，用微信扫码登录")
+        #endif
+    }
+
+    private var loginGuideDetail: String {
+        #if targetEnvironment(macCatalyst)
+        return AppLocalized("用手机微信扫一扫扫描此二维码并确认登录，随后在 Mac 上同步书架。")
+        #else
+        return AppLocalized("截图后打开微信扫一扫，从相册识别二维码。登录后会自动进入书架，供你同步到 CastReader。")
+        #endif
     }
 
     private var syncBar: some View {
@@ -273,6 +297,9 @@ struct WeReadLibraryView: View {
         }
         .reservesMiniPlayerSpace()
         .background(AppTheme.background.ignoresSafeArea()).navigationTitle(AppLocalized("微信读书书架")).navigationBarTitleDisplayMode(.inline)
+        #if targetEnvironment(macCatalyst)
+        .toolbar(coordinator.isReaderPresented ? .hidden : .automatic, for: .navigationBar)
+        #endif
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: AppLocalized("搜索微信读书书籍"))
         .onChange(of: query) { _, _ in page = 1 }.onChange(of: sort) { _, _ in page = 1 }
         .sheet(isPresented: $showConnect) { WeReadLibraryConnectView() }

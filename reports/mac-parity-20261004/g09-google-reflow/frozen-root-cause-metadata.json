@@ -1,0 +1,36 @@
+[
+  {
+    "diagnosticFile": "google-reflow-debug-75AB133E-A178-4882-A3F3-2FAA5CF9B743.json",
+    "carried": true,
+    "oldSourceID": 3946819661,
+    "oldLength": 800,
+    "oldSHA256": "f8d275ae77d4533a3b40c0f36978734b4cd4cecc5e8c41e6498599af994981a6",
+    "exactMatches": [
+      {
+        "sourceID": 1432140834,
+        "visibleLength": 1199,
+        "oldSuffixOffset": 207,
+        "exactOverlapCharacters": 593,
+        "virtualOrigin": -207,
+        "visibleSHA256": "03d79d9ed0736a93e1e2ae06180c54f2c4518c0812b7e4c6e1ae6f0f2b6d5294"
+      }
+    ]
+  },
+  {
+    "diagnosticFile": "google-reflow-debug-F163BD87-7FA8-42D9-A62E-A8995FCD7784.json",
+    "carried": true,
+    "oldSourceID": 3946819661,
+    "oldLength": 800,
+    "oldSHA256": "f8d275ae77d4533a3b40c0f36978734b4cd4cecc5e8c41e6498599af994981a6",
+    "exactMatches": [
+      {
+        "sourceID": 1432140834,
+        "visibleLength": 1199,
+        "oldSuffixOffset": 207,
+        "exactOverlapCharacters": 593,
+        "virtualOrigin": -207,
+        "visibleSHA256": "03d79d9ed0736a93e1e2ae06180c54f2c4518c0812b7e4c6e1ae6f0f2b6d5294"
+      }
+    ]
+  }
+]

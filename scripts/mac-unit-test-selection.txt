@@ -1,0 +1,157 @@
+# G01: Mac-only international distribution contracts.
+MacDistributionTests
+# G02: unchanged iOS session/account contracts, executed in the isolated Mac host.
+ServiceRoutingTests/testPersistedProfileRequiresRouteLocalCMSSessionToRestore()
+ServiceRoutingTests/testRejectedSessionCannotSignOutNewerAccountBoundary()
+ServiceRoutingTests/testAppleAuthorizationCodeIsSentOnlyToSelectedGatewaySessionExchange()
+ServiceRoutingTests/testAuthorizationCodeCannotLeakFromNonAppleSessionExchange()
+ServiceRoutingTests/testSessionExchangeRejectsMissingCanonicalUserIdBeforePersistingToken()
+ServiceRoutingTests/testCanonicalUserIdNormalizationRejectsEmptyAndOversizedValues()
+ServiceRoutingTests/testDetachedLogoutRevocationCannotEraseNewAccountSession()
+ServiceRoutingTests/testInFlightAccountARefreshCannotOverwriteAccountBAfterSignOut()
+ServiceRoutingTests/testRejectedAccountATokenCannotRefreshAfterAccountBSwitched()
+ServiceRoutingTests/testGlobalOwnedRedirectPolicyAllowsOnlyGlobalGateway()
+
+# G03: existing iOS local parsing, images, navigation and drop contracts.
+CloudImportIntegrationTests
+DocumentImagePreservationTests
+ReaderDropImportTests
+IPadTextGeometryTests
+EpubNavigationTests/testNAVWinsPreservesGroupsDepthAndIgnoresPageList()
+EpubNavigationTests/testNCXUsesNestedDirectLabelsAndDocumentOrderRatherThanPlayOrder()
+EpubNavigationTests/testExactInlineContainerEmptyAndNamedAnchorsPreserveAllText()
+EpubNavigationTests/testMissingFragmentAndExternalURLAreDisabledNeverGuessedByTitle()
+EpubNavigationTests/testUnusableNAVFallsBackToNCXThenHeadings()
+EpubNavigationTests/testURLResolutionPreservesCaseUnicodePlusAndSingleDecoding()
+EpubNavigationTests/testAlternativeNamespacePrefixAndBodyAnchors()
+EpubNavigationTests/testSystematicallyShiftedNCXUsesCorroboratedGuideWithoutGuessingLinks()
+EpubNavigationTests/testNavigationRespectsHTMLBaseAndNCXXMLBase()
+EpubNavigationTests/testConvertedNCXUsesExactGuideAnchorsWithoutSemanticHeadingTags()
+EpubNavigationTests/testOldEPUBDirectoryCacheRebuildsAndPreservesPosition()
+EpubNavigationTests/testDirectoryRepairDoesNotOverrideValidSourceOrVoteWithRepeatedLabels()
+EpubNavigationTests/testDirectorySurvivesColdCacheAndSelectionPersistsWithoutAudio()
+PDFImportMemoryTests/testScannedAndNativePagesSurviveMixedPDFImport()
+PDFImportMemoryTests/testSearchablePDFWithBlankPageKeepsOriginalTextRanges()
+PDFImportMemoryTests/testCancelledRasterDoesNotAllocateAnImage()
+PDFImportMemoryTests/testPDFOCRRasterIsBoundedInPixelsOnRetinaDisplays()
+
+# G03 camera/OCR shared contracts; no device permission or live account access.
+CapturePipelineTests
+OCRLayoutAnalyzerTests
+OCRVisionCancellationTests
+OCRTokenGeometryCoverageTests
+OCRWordInkBoundsTests
+
+# G04: shared reading, audio ownership, captions, appearance and timer contracts.
+SpeechPipelineTests
+ReadAloudContinuationTests
+ReadAloudEntitlementPauseTests
+ExplainSubtitleTests
+ReaderAppearanceTests
+PlaybackSleepTimerTests
+
+# G13: focus routing, live audio migration and window restoration.
+MacWindowRoutingTests
+ReadingResumeTests/testWindowBrowseCloseAndLiveSessionMigrationKeepAudioIdentity()
+ReadingResumeTests/testTwoSceneYouTubeExtractionAndPresentationServicesAreIndependent()
+ReaderWindowBookmarkTests
+
+# G05: voice catalog, discovery, account ownership and local audio import.
+VoiceCatalogTests
+VoiceDiscoveryTests
+VoiceCloneTests
+VoiceCloneReferenceCandidateSelectorTests
+VoiceCloneReferencePreprocessorIntegrationTests
+
+# G10–G13: web, cloud, entitlements and extension-safe system contracts.
+AO3WebReaderTests
+OReillyContractTests
+YouTubeURLParserTests
+YouTubeTranscriptGroupingTests
+YouTubeTrackTests
+YouTubeStoryboardTests
+YouTubeTranscriptModelTests
+YouTubeParagraphProgressTests
+YouTubePlaybackAcceptanceTests
+YouTubeReadingDocumentBuilderTests
+YouTubeHistoryPersistenceTests
+YouTubePlaybackLifecycleTests
+YouTubeTranscriptServiceTests
+YouTubeWebScriptsTests
+YouTubeCacheStoreTests
+CloudStorageCoreTests
+GoogleDriveProviderTests
+# Dropbox/OneDrive implementations are excluded from the verified iOS target;
+# their historical tests do not compile against the released application.
+CloudHistoryTests
+CloudHistoryReopenServiceTests
+ProStatusSynchronizationTests
+PaymentTests
+GrowthLoopProductTests
+CloneCreditEnvironmentTests
+# CloneCreditPurchaseTests requires its disposable PostgreSQL/StoreKit harness
+# and unavailable Catalyst purchase/error-injection APIs; it is a separate gate.
+QuotaTwoTierTests
+SystemIntegrationTests
+HistoryStoreAccountScopeTests
+ResumeReminderPolicyTests
+
+# G06: Kindle pagination, native pages, settings, recovery and offline contracts.
+KindleFootnoteSpeechTests
+KindleInitialStartSyncTests
+KindleManualPageTurnQueueTests
+KindleMarkAnimationClockTests
+KindleNativePageScriptTests
+KindleNavigationPositionTests
+KindleOfflineBookStoreTests
+KindleOfflineBookReaderTests
+SystemSpeechPlaybackTests
+KindleOfflinePageStoreTests
+KindlePageFlipProbeScriptTests
+KindlePageFlipProbeTests
+KindlePageTurnEvidenceTests
+KindlePrefetchHorizonTests
+KindleReadingSettingsOwnershipTests
+KindleReadingSettingsScriptTests
+KindleSentenceBufferTests
+KindleSpeechProjectionTests
+KindleContinuousInputTests
+KindleShelfScanPolicyTests
+KindleBookValidatorBlocklistTests
+KindleSpeechTextPlanTests
+KindleStorefrontTests
+KindleVisionFootnoteFixtureTests
+KindleWebViewContainerTests
+PaginationContinuityTests
+ReadingResumeTests
+ReaderPlaybackBarLayoutContractTests
+AudioPlaybackFailureRecoveryTests
+
+KindleOfflineSourceEvidenceTests
+
+# Shared Explain minimum-content consumers: real bridge short-page/error contracts.
+WeReadPageAvailabilityTests
+WeReadOpeningPlaybackTests
+
+# G08: Kobo reader, binding, cached library and complete shelf traversal contracts.
+KoboContractTests
+KoboLibraryScanWebTests
+KoboShelfScanPolicyTests
+KoboBindingFlowContractTests
+KoboBindingPageWebTests
+# Shared live reader pipe includes Kobo clipping, reflow, marks and recovery.
+GoogleBooksWebBridgeTests
+
+# G09: Google Books shelf sync, authentication recovery and account boundaries.
+GoogleBooksShelfSyncTests
+GoogleBooksShelfWebTests
+GoogleBooksBindingRecoveryTests
+GoogleBooksContractTests
+
+# Mac 28-language integration: shared language, direction and balance contracts.
+LocalizationCatalogTests
+MultilingualContractTests
+PhotoLanguageCorrectionTests
+ReadingLanguageTests
+CloneCreditBalanceRegressionTests
+ReaderViewportTests

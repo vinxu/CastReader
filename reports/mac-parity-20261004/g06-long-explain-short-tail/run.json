@@ -1,0 +1,10 @@
+{
+  "setupAt": "2026-10-05T03:29:59.691907+08:00",
+  "logOffset": 1410817,
+  "candidate": "g06-short-remainder-candidate/identity.json",
+  "book": "B002RKRMSY",
+  "mode": "explain",
+  "voice": "Bella",
+  "rate": 1,
+  "playbackStart": "Use first explicit explain start after latest launch; setup time is not audio elapsed."
+}

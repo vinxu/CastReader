@@ -1,0 +1,8 @@
+{
+  "app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "backup": "/tmp/CastReader-before-offline-20261006.app",
+  "sha256": {
+    "Contents/MacOS/CastReaderMac": "7677ef93b3efd7ec6351fb64799e02cbea260887f306bc82ab594e59414e3d49",
+    "Contents/MacOS/CastReaderMac.debug.dylib": "d4851140f7dd5a2f51c34765b6c7f2746b16476ad8f7e78e92191b31c80bd6be"
+  }
+}

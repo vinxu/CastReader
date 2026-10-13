@@ -1406,7 +1406,7 @@ private struct VoiceCloneCreationView: View {
             audioUpload.cleanup()
         }
         .onAppear(perform: activateStartModeIfNeeded)
-        .fileImporter(
+        .castReaderFileImporter(
             isPresented: $showAudioImporter,
             allowedContentTypes: supportedAudioTypes,
             allowsMultipleSelection: false,

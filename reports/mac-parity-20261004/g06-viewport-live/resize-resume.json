@@ -1,0 +1,28 @@
+{
+  "observedAt": "2026-10-05T02:42:00.741147+08:00",
+  "candidate": "g06-viewport-candidate/identity.json",
+  "sourceBookID": "B000JQUU00",
+  "status": "paused",
+  "pages": 138,
+  "originalPosition": {
+    "captureViewport": [
+      1280,
+      740
+    ],
+    "end": 106466,
+    "fingerprint": "source-104851-106465",
+    "layoutID": "5882aa2627558435322077ea21c5f65081bb082017b055ad7999917a4dffcbdc",
+    "maximum": 319510,
+    "minimum": 0,
+    "start": 104851
+  },
+  "originalPositionRestored": true,
+  "layoutIDs": [
+    "5882aa2627558435322077ea21c5f65081bb082017b055ad7999917a4dffcbdc"
+  ],
+  "viewports": [
+    "[1280, 740]"
+  ],
+  "continuous": true,
+  "lastError": "Download cancelled. Saved pages have been kept."
+}

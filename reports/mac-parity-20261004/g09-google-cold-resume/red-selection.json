@@ -1,0 +1,4 @@
+[
+  "ReadingResumeTests/testGoogleColdResumeRelocatesOnlyUniqueUnchangedWordContext",
+  "ReadingResumeTests/testGooglePlaybackSavesContextForColdResumeIntoExpandedParagraph"
+]

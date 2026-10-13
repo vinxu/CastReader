@@ -1,0 +1,415 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 45,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 45,
+  "finishTime" : 1791135388.738,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791135203.267,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 18,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testAmbiguousNewEmptyMenusCannotBeClosedOrRetoggleAa()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testAmbiguousNewEmptyMenusCannotBeClosedOrRetoggleAa",
+      "testName" : "testAmbiguousNewEmptyMenusCannotBeClosedOrRetoggleAa()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 19,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testAmbiguousOrDisabledNativeButtonsCannotFallBackToSyntheticMutation()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testAmbiguousOrDisabledNativeButtonsCannotFallBackToSyntheticMutation",
+      "testName" : "testAmbiguousOrDisabledNativeButtonsCannotFallBackToSyntheticMutation()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 20,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testCloseCannotReopenAnAlreadyClosedAmazonPanel()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testCloseCannotReopenAnAlreadyClosedAmazonPanel",
+      "testName" : "testCloseCannotReopenAnAlreadyClosedAmazonPanel()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "KindleNativePageScriptTests/testDecodedImageSurvivesRevokedBlobURL()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testDecodedImageSurvivesRevokedBlobURL",
+      "testName" : "testDecodedImageSurvivesRevokedBlobURL()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 21,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testDefaultNativeRangeBoundsRetainOneStepSemantics()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testDefaultNativeRangeBoundsRetainOneStepSemantics",
+      "testName" : "testDefaultNativeRangeBoundsRetainOneStepSemantics()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 22,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testDisabledSplitPaneKeepsItsEnabledSettingsButtonOperable()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testDisabledSplitPaneKeepsItsEnabledSettingsButtonOperable",
+      "testName" : "testDisabledSplitPaneKeepsItsEnabledSettingsButtonOperable()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 2,
+      "testIdentifierString" : "KindleNativePageScriptTests/testDuplicateNativeSourceRangeDoesNotPrefetchOrDispatchAnotherPage()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testDuplicateNativeSourceRangeDoesNotPrefetchOrDispatchAnotherPage",
+      "testName" : "testDuplicateNativeSourceRangeDoesNotPrefetchOrDispatchAnotherPage()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 23,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testDuplicateTranslatedNativeHeadersCannotDispatchEitherAa()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testDuplicateTranslatedNativeHeadersCannotDispatchEitherAa",
+      "testName" : "testDuplicateTranslatedNativeHeadersCannotDispatchEitherAa()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 24,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testEmptyMenuPublicCloseWaitsForPromiseNativeStateAndAnimationWithoutRedispatch()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testEmptyMenuPublicCloseWaitsForPromiseNativeStateAndAnimationWithoutRedispatch",
+      "testName" : "testEmptyMenuPublicCloseWaitsForPromiseNativeStateAndAnimationWithoutRedispatch()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 25,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testEmptyMenuRecoveryNeverAcquiresPreexistingMenuAndPrefersExplicitTarget()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testEmptyMenuRecoveryNeverAcquiresPreexistingMenuAndPrefersExplicitTarget",
+      "testName" : "testEmptyMenuRecoveryNeverAcquiresPreexistingMenuAndPrefersExplicitTarget()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 26,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testEmptyOpenedMenuRetainsOwnershipAfterAaReplacementAndClosesOnce()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testEmptyOpenedMenuRetainsOwnershipAfterAaReplacementAndClosesOnce",
+      "testName" : "testEmptyOpenedMenuRetainsOwnershipAfterAaReplacementAndClosesOnce()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 27,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testEnabledIonicHostCannotBypassItsDisabledNativeShadowButton()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testEnabledIonicHostCannotBypassItsDisabledNativeShadowButton",
+      "testName" : "testEnabledIonicHostCannotBypassItsDisabledNativeShadowButton()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 28,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testFractionalStepClampsAtBoundsAndDoesNotRedispatchNoOp()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testFractionalStepClampsAtBoundsAndDoesNotRedispatchNoOp",
+      "testName" : "testFractionalStepClampsAtBoundsAndDoesNotRedispatchNoOp()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 3,
+      "testIdentifierString" : "KindleNativePageScriptTests/testIdenticalPixelsWithDifferentNativeSourcePositionsStillAdvance()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testIdenticalPixelsWithDifferentNativeSourcePositionsStillAdvance",
+      "testName" : "testIdenticalPixelsWithDifferentNativeSourcePositionsStillAdvance()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 29,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testIonicFontUsesOneNativeButtonCommitThatSurvivesControlRecreation()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testIonicFontUsesOneNativeButtonCommitThatSurvivesControlRecreation",
+      "testName" : "testIonicFontUsesOneNativeButtonCommitThatSurvivesControlRecreation()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 30,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testIonicOuterAriaHiddenDoesNotRejectOpenMenuButInnerHiddenDoes()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testIonicOuterAriaHiddenDoesNotRejectOpenMenuButInnerHiddenDoes",
+      "testName" : "testIonicOuterAriaHiddenDoesNotRejectOpenMenuButInnerHiddenDoes()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 31,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testIonicRangeWithoutNativeFontButtonIsNotMutated()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testIonicRangeWithoutNativeFontButtonIsNotMutated",
+      "testName" : "testIonicRangeWithoutNativeFontButtonIsNotMutated()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 4,
+      "testIdentifierString" : "KindleNativePageScriptTests/testLateNativeDuplicateCannotConfirmByIndexAlone()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testLateNativeDuplicateCannotConfirmByIndexAlone",
+      "testName" : "testLateNativeDuplicateCannotConfirmByIndexAlone()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 32,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testLiveNativeRangeWinsOverStaleStorageAndCommitsOneStep()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testLiveNativeRangeWinsOverStaleStorageAndCommitsOneStep",
+      "testName" : "testLiveNativeRangeWinsOverStaleStorageAndCommitsOneStep()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 33,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testLocalizedNativeFontButtonCommitsExactlyOneStep()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testLocalizedNativeFontButtonCommitsExactlyOneStep",
+      "testName" : "testLocalizedNativeFontButtonCommitsExactlyOneStep()"
+    },
+    {
+      "failureText" : "failed: caught error: \"Error Domain=PageFlipFixture Code=1 \"(null)\"\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 13,
+      "testIdentifierString" : "KindlePageFlipProbeScriptTests/testManualProbeHasNoClicksOrScrollsAndRestoresItsHooks()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindlePageFlipProbeScriptTests/testManualProbeHasNoClicksOrScrollsAndRestoresItsHooks",
+      "testName" : "testManualProbeHasNoClicksOrScrollsAndRestoresItsHooks()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 5,
+      "testIdentifierString" : "KindleNativePageScriptTests/testModeSwitchRejectsUnrelatedPageWithoutNavigating()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testModeSwitchRejectsUnrelatedPageWithoutNavigating",
+      "testName" : "testModeSwitchRejectsUnrelatedPageWithoutNavigating()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 6,
+      "testIdentifierString" : "KindleNativePageScriptTests/testModeSwitchRestoresPresentedPageBeforeReplacingSource()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testModeSwitchRestoresPresentedPageBeforeReplacingSource",
+      "testName" : "testModeSwitchRestoresPresentedPageBeforeReplacingSource()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 34,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testNativeDisabledFieldsetHonorsOnlyItsFirstLegendException()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testNativeDisabledFieldsetHonorsOnlyItsFirstLegendException",
+      "testName" : "testNativeDisabledFieldsetHonorsOnlyItsFirstLegendException()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 35,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testNativePanelOwnsCloseAcrossInnerSectionAndShadowAnimation()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testNativePanelOwnsCloseAcrossInnerSectionAndShadowAnimation",
+      "testName" : "testNativePanelOwnsCloseAcrossInnerSectionAndShadowAnimation()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 36,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testNativeSettingsCloseUsesPanelControlWithoutRetogglingAa()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testNativeSettingsCloseUsesPanelControlWithoutRetogglingAa",
+      "testName" : "testNativeSettingsCloseUsesPanelControlWithoutRetogglingAa()"
+    },
+    {
+      "failureText" : "failed: caught error: \"Error Domain=PageFlipFixture Code=1 \"(null)\"\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 14,
+      "testIdentifierString" : "KindlePageFlipProbeScriptTests/testOfflineEventWaitUsesRealWebKitAndCapturesTheConfirmedImage()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindlePageFlipProbeScriptTests/testOfflineEventWaitUsesRealWebKitAndCapturesTheConfirmedImage",
+      "testName" : "testOfflineEventWaitUsesRealWebKitAndCapturesTheConfirmedImage()"
+    },
+    {
+      "failureText" : "failed: caught error: \"Error Domain=PageFlipFixture Code=1 \"(null)\"\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 15,
+      "testIdentifierString" : "KindlePageFlipProbeScriptTests/testOfflineWebKitCancellationDoesNotCancelTheNextRequest()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindlePageFlipProbeScriptTests/testOfflineWebKitCancellationDoesNotCancelTheNextRequest",
+      "testName" : "testOfflineWebKitCancellationDoesNotCancelTheNextRequest()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 7,
+      "testIdentifierString" : "KindleNativePageScriptTests/testPrefetchUsesExactNativeNeighborAndKeepsCurrentOverlayOwner()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testPrefetchUsesExactNativeNeighborAndKeepsCurrentOverlayOwner",
+      "testName" : "testPrefetchUsesExactNativeNeighborAndKeepsCurrentOverlayOwner()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 8,
+      "testIdentifierString" : "KindleNativePageScriptTests/testPreparedOverlayRejectsPageLayoutAnchorAndSessionChanges()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testPreparedOverlayRejectsPageLayoutAnchorAndSessionChanges",
+      "testName" : "testPreparedOverlayRejectsPageLayoutAnchorAndSessionChanges()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 9,
+      "testIdentifierString" : "KindleNativePageScriptTests/testPreparedOverlayRequiresExactReceiptAndCanOnlyBeConsumedOnce()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testPreparedOverlayRequiresExactReceiptAndCanOnlyBeConsumedOnce",
+      "testName" : "testPreparedOverlayRequiresExactReceiptAndCanOnlyBeConsumedOnce()"
+    },
+    {
+      "failureText" : "failed: caught error: \"Error Domain=PageFlipFixture Code=1 \"(null)\"\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 16,
+      "testIdentifierString" : "KindlePageFlipProbeScriptTests/testProbeDoesNotInstallOnUnknownOrigin()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindlePageFlipProbeScriptTests/testProbeDoesNotInstallOnUnknownOrigin",
+      "testName" : "testProbeDoesNotInstallOnUnknownOrigin()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 37,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testPublicCloseFailureStaysUnclosedAndOldReplyCannotCompleteReplacementOwner()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testPublicCloseFailureStaysUnclosedAndOldReplyCannotCompleteReplacementOwner",
+      "testName" : "testPublicCloseFailureStaysUnclosedAndOldReplyCannotCompleteReplacementOwner()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 38,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testPublicMenuCloseCannotBypassLabelledControlsOrAcquireUnrelatedMenu()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testPublicMenuCloseCannotBypassLabelledControlsOrAcquireUnrelatedMenu",
+      "testName" : "testPublicMenuCloseCannotBypassLabelledControlsOrAcquireUnrelatedMenu()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 10,
+      "testIdentifierString" : "KindleNativePageScriptTests/testReinstallingSamePageInvalidatesPreviousOverlayReceipt()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testReinstallingSamePageInvalidatesPreviousOverlayReceipt",
+      "testName" : "testReinstallingSamePageInvalidatesPreviousOverlayReceipt()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 11,
+      "testIdentifierString" : "KindleNativePageScriptTests/testReplacementAndReflowInvalidateInFlightCaptureIdentity()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testReplacementAndReflowInvalidateInFlightCaptureIdentity",
+      "testName" : "testReplacementAndReflowInvalidateInFlightCaptureIdentity()"
+    },
+    {
+      "failureText" : "failed: caught error: \"Error Domain=PageFlipFixture Code=1 \"(null)\"\"",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 17,
+      "testIdentifierString" : "KindlePageFlipProbeScriptTests/testRingOverflowIsVisibleAndPositionChangeFailsClosed()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindlePageFlipProbeScriptTests/testRingOverflowIsVisibleAndPositionChangeFailsClosed",
+      "testName" : "testRingOverflowIsVisibleAndPositionChangeFailsClosed()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 39,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testSettingsButtonRejectsDisabledInertHiddenAndBroadFontMatches()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testSettingsButtonRejectsDisabledInertHiddenAndBroadFontMatches",
+      "testName" : "testSettingsButtonRejectsDisabledInertHiddenAndBroadFontMatches()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 40,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testSettingsButtonSelectionIgnoresOffscreenDuplicateButRejectsVisibleAmbiguity()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testSettingsButtonSelectionIgnoresOffscreenDuplicateButRejectsVisibleAmbiguity",
+      "testName" : "testSettingsButtonSelectionIgnoresOffscreenDuplicateButRejectsVisibleAmbiguity()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 41,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testSettingsButtonUsesExactLocalizedLabels()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testSettingsButtonUsesExactLocalizedLabels",
+      "testName" : "testSettingsButtonUsesExactLocalizedLabels()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 42,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testSingleNonFontRangeIsNeverMistakenForFontSize()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testSingleNonFontRangeIsNeverMistakenForFontSize",
+      "testName" : "testSingleNonFontRangeIsNeverMistakenForFontSize()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 43,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testSuccessProbeReportsShadowStructureWithoutContentOrStorage()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testSuccessProbeReportsShadowStructureWithoutContentOrStorage",
+      "testName" : "testSuccessProbeReportsShadowStructureWithoutContentOrStorage()"
+    },
+    {
+      "failureText" : "failed - Native renderer fixture did not become ready",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 12,
+      "testIdentifierString" : "KindleNativePageScriptTests/testTurnNeedsMountedPageObjectAndDeduplicatesRequest()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleNativePageScriptTests/testTurnNeedsMountedPageObjectAndDeduplicatesRequest",
+      "testName" : "testTurnNeedsMountedPageObjectAndDeduplicatesRequest()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 44,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testUniqueTranslatedNativeHeaderCanOpenButCannotBypassHiddenOrDisabledState()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testUniqueTranslatedNativeHeaderCanOpenButCannotBypassHiddenOrDisabledState",
+      "testName" : "testUniqueTranslatedNativeHeaderCanOpenButCannotBypassHiddenOrDisabledState()"
+    },
+    {
+      "failureText" : "failed - Local WKWebView fixture did not load",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 45,
+      "testIdentifierString" : "KindleReadingSettingsScriptTests/testUnlabelledAmbiguousRangesAreNotChanged()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/KindleReadingSettingsScriptTests/testUnlabelledAmbiguousRangesAreNotChanged",
+      "testName" : "testUnlabelledAmbiguousRangesAreNotChanged()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+    {
+      "category" : "Common Failures",
+      "impact" : "62% of failures",
+      "text" : "28 runs of 28 tests failed with failed - Local WKWebView fixture did not load"
+    },
+    {
+      "category" : "Common Failures",
+      "impact" : "26% of failures",
+      "text" : "12 runs of 12 tests failed with failed - Native renderer fixture did not become ready"
+    },
+    {
+      "category" : "Common Failures",
+      "impact" : "15% of failures",
+      "text" : "7 runs of 7 tests failed with failed: caught error: \"Error Domain=WKErrorDomain Code=4 \"A JavaScript exception occurred\" UserInfo={WKJavaScriptExceptionLineNumber=1, WKJavaScriptExceptionMessage=ReferenceError: Can't find variable: __crKindleNativePages, WKJavaScriptExceptionColumnNumber=37, WKJavaScriptExceptionSourceURL=https://fixture.invalid/, NSLocalizedDescription=A JavaScript exception occurred}\""
+    }
+  ],
+  "totalTestCount" : 45
+}

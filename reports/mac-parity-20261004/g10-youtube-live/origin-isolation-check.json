@@ -1,0 +1,19 @@
+{
+  "status": "PASS",
+  "scope": "Storage identity remains private; literal and URL-encoded public Embed origin unchanged. Runtime model/scripts/tests byte-equal to source on both hosts.",
+  "classes": [
+    "YouTubeCacheStoreTests",
+    "YouTubeTranscriptServiceTests",
+    "YouTubeURLParserTests",
+    "YouTubeTranscriptGroupingTests",
+    "YouTubeTrackTests",
+    "YouTubeStoryboardTests",
+    "YouTubeTranscriptModelTests",
+    "YouTubeParagraphProgressTests",
+    "YouTubePlaybackAcceptanceTests",
+    "YouTubeReadingDocumentBuilderTests",
+    "YouTubeHistoryPersistenceTests",
+    "YouTubePlaybackLifecycleTests",
+    "YouTubeWebScriptsTests"
+  ]
+}

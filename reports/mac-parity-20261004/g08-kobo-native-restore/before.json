@@ -1,0 +1,28 @@
+{
+  "sourceKind": "kobo",
+  "koboLocation": {
+    "bookUUID": "b849f0ce-d6b3-42f6-bcb6-e6774d00d132",
+    "percentage": 0.2672413793103448
+  },
+  "structureFingerprint": "1f7e9cab3617103d770f247b0665a7c43cdd66123e801f14dfd834109ae05049",
+  "paragraphIndex": 1,
+  "audio": {
+    "segmentTime": 7.427550125,
+    "semanticWordFingerprint": "c578821bd43b37cd54d17d5152777809232ea0600338cc7dfbdcbd8843e7339f",
+    "outputPrefixFingerprint": "b3d7f58fbf129b310ad5851b1d92961e2e7fdfca4df9d1a27cb7a26663e3888e",
+    "segmentTextFingerprint": "9f1db99126b92eb6181b66fb4dc2bbf148882dbee8f8e83b3263b8184ebfaa31",
+    "semanticOffset": 88,
+    "audioFingerprint": "ceff2c8ff79e97b470145b48470717e5fa334fdaa6f37acf0bc5188da6cf5234",
+    "wordFingerprint": "c578821bd43b37cd54d17d5152777809232ea0600338cc7dfbdcbd8843e7339f",
+    "outputUTF16Length": 8,
+    "semanticPrefixFingerprint": "aadb71fd5ff9be576fb7c88e04cf777a389b44396fa3a0360bcd3b38836ce562",
+    "segmentIndex": 0,
+    "segmentDuration": 25.080000000000002,
+    "outputUTF16Offset": 113,
+    "wordFraction": 0.24855930107526872,
+    "semanticWordUTF16Length": 8
+  },
+  "recordedAt": "2026-10-05T06:38:20.911813",
+  "visiblePages": "93-94/348",
+  "logByteOffset": 2520401
+}

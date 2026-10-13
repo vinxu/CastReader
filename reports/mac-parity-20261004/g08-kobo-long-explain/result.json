@@ -1,0 +1,32 @@
+{
+  "observedAt": "2026-10-05T10:46:48.767415+08:00",
+  "firstPlayback": "10:30:46.260",
+  "lastPlaybackSubtitle": "10:46:15.945",
+  "conservativeSpanSeconds": 929.685,
+  "automaticCommits": 35,
+  "uniqueAutoTargets": 35,
+  "subtitleCues": 162,
+  "refreshCommits": 0,
+  "manualCommits": 0,
+  "issues": [],
+  "status": "PASS_LONG_EXPLAIN_CROSS_CHAPTER",
+  "candidateIdentity": "../g08-kobo-contracts/paused-producer-candidate-identity.json",
+  "userPause": true,
+  "observedChapters": [
+    5,
+    6,
+    7
+  ],
+  "visualChecks": [
+    "white, black, gray, sepia themes: visible underline, circle and highlight annotations",
+    "800x600 and 1024x768 during playback; reserved controls did not cover text",
+    "font 7 to 8 to 7; controls caused no paragraph selection/manual turn",
+    "small settings dialog scrolls to all background choices; white/font 7 restored"
+  ],
+  "limitations": [
+    "Duration is measured from actual playing to last timed subtitle cue, not an acoustic dropout measurement.",
+    "No per-mark count is inferred from subtitle logs.",
+    "Main-process resource samples exclude WebContent and energy.",
+    "Book-end and other-book checks are separate."
+  ]
+}

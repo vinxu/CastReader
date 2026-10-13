@@ -1,0 +1,51 @@
+{
+  "date": "2026-10-06",
+  "scope": "Mac sidebar selection only; international; no full cross-platform acceptance claim",
+  "implementation": [
+    "Keep native sidebarAdaptable TabView and existing page ownership",
+    "Mac-only animation-free selection transaction with duplicate-value guard",
+    "Prevent tab surface from inheriting player-presentation spring transactions"
+  ],
+  "source_sha256": {
+    "CastReader/Views/MainTabView.swift": "ff116321f82396e55154befaa9d96492807564be32ff2d285c9792b648926d2d"
+  },
+  "debug": {
+    "build": "PASS",
+    "log": "/tmp/mac-sidebar-transaction-debug.log",
+    "manual_checks": {
+      "four_tabs_mouse_selection_and_repeat_current": "PASS",
+      "library_Kindle_filter_survives_settings_roundtrip": "PASS",
+      "Kindle_reading_mouse_back_to_mini": "PASS",
+      "mini_continues_reading_across_all_four_tabs": "PASS",
+      "mini_expand_keeps_playing": "PASS",
+      "pause_and_mouse_back_keeps_paused_mini": "PASS"
+    }
+  },
+  "release": {
+    "status": "PASS",
+    "log": "/tmp/mac-sidebar-transaction-release.log",
+    "configuration": "Release arm64",
+    "version": "1.2.47",
+    "build": "72",
+    "installed_app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+    "executable_sha256": "56ec31f52c9c217b774804c0660f91592cd8cff1d34fffcb1a899298ed640144",
+    "strict_deep_signature_and_app_groups": "PASS",
+    "signing_report": "/tmp/mac-sidebar-transaction-signing.json",
+    "manual_checks": {
+      "four_tabs_actual_mouse_selection": "PASS",
+      "repeat_current_item_accessibility_selection": "PASS",
+      "Kindle_actual_mouse_back_to_paused_mini": "PASS",
+      "switch_home_keeps_paused_mini": "PASS"
+    },
+    "not_repeated": [
+      "Full Read/Explain service matrix",
+      "Full playback in Release: focused Debug playback and prior Release acceptance retained"
+    ]
+  },
+  "limitations": [
+    "Only focused Mac arm64 UI regression is in scope",
+    "iPhone/iPad behavior remains behind existing non-Catalyst binding; no new device acceptance in this change"
+  ],
+  "superseded_by": "tab-flicker-20261006.json",
+  "followup": "User reported recurrent Tab highlight flicker; earlier checks verified settled selection only. Animation disabling was insufficient."
+}

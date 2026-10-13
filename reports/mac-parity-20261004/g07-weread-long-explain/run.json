@@ -1,0 +1,11 @@
+{
+  "startedAt": "2026-10-05T05:07:59.322316",
+  "logByteOffset": 1579366,
+  "pid": 20494,
+  "book": "老人与海",
+  "source": "WeRead",
+  "voice": "晓萱",
+  "speed": "1x",
+  "initialState": "Chapter 1 via native TOC; public readable content; user Play follows",
+  "candidateIdentity": "../g07-weread-native-pager/outer-mask-identity.json"
+}

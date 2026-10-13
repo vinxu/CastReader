@@ -1,0 +1,8 @@
+{
+  "startedAt": "2026-10-05T05:46:08.214913",
+  "logByteOffset": 1876097,
+  "pid": 22167,
+  "source": "Kobo",
+  "book": "Two Tickets",
+  "scenario": "Restarted reader; Play then minimize only; no menu or tab navigation"
+}

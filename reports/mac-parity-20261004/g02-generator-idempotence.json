@@ -1,0 +1,7 @@
+{
+  "status": "PASS",
+  "hashes": {
+    "CastReader.xcodeproj/project.pbxproj": "8e20f67da1459f5b4c3d7cf66c27c199c03d3fa055aaf3bb17c58c6aa2f37db8",
+    "CastReader.xcodeproj/xcshareddata/xcschemes/CastReaderMac.xcscheme": "9c5ae4d94ef7243b8cbda07255fdfe908147162d9f9fa1077963f855e6c82f5d"
+  }
+}

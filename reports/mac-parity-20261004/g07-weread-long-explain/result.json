@@ -1,0 +1,6 @@
+{
+  "endedAt": "2026-10-05T05:13:30.044623",
+  "status": "FAIL_PREFETCH_RETRY_AND_BLOCKED_NEXT_CHAPTER",
+  "longRunPassed": false,
+  "finding": "Repeated deterministic text_too_short prefetch; subsequent 23-character chapter tail has no readable successor preview. Manual next navigates to chapter 2 title-only. Current embedded provider signed out."
+}

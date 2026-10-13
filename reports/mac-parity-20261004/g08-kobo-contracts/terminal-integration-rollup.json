@@ -1,0 +1,19 @@
+{
+  "status": "PASS_WITH_ONE_PREEXISTING_OPTIONAL_NETWORK_SKIP",
+  "uniqueSelection": 187,
+  "eachPlatform": {
+    "validatedPass": 186,
+    "skipped": 1,
+    "unresolvedFailure": 0
+  },
+  "evidence": [
+    "mac-terminal-integration.xcresult",
+    "ios-terminal-integration.xcresult",
+    "mac-panel-green2.xcresult",
+    "ios-panel-green2.xcresult"
+  ],
+  "notes": [
+    "Initial integration result remains Failed: native-dialog fixture was corrected to await page readiness and return a supported boolean. Only the affected two tests were rerun; production source was unchanged.",
+    "testRealPlayBooksShellInstallsRelayOnly is opt-in network coverage; actual Google Play Books acceptance remains pending."
+  ]
+}

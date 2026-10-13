@@ -1,0 +1,24 @@
+{
+  "environmentDescription": "CastReaderMac \u00b7 Built with macOS 26.2",
+  "expectedFailures": 0,
+  "failedTests": 1,
+  "finishTime": 1791202863.591,
+  "passedTests": 0,
+  "result": "Failed",
+  "skippedTests": 0,
+  "startTime": 1791202824.625,
+  "statistics": [],
+  "testFailures": [
+    {
+      "failureText": "Crash: CastReaderMac at SpeechPipelineTests.verifyExplainStartAfterReadPause(explicitStart:pauseDuringPlan:lateModePresentation:). libdispatch.dylib: BUG IN CLIENT OF LIBDISPATCH: trying to lock recursively",
+      "targetName": "CastReaderMacTests",
+      "testIdentifier": 1,
+      "testIdentifierString": "SpeechPipelineTests/testLateModePresentationPreservesExplicitShareExplanationPlan()",
+      "testIdentifierURL": "test://com.apple.xcode/CastReader/CastReaderMacTests/SpeechPipelineTests/testLateModePresentationPreservesExplicitShareExplanationPlan",
+      "testName": "testLateModePresentationPreservesExplicitShareExplanationPlan()"
+    }
+  ],
+  "title": "Test - CastReaderMac",
+  "topInsights": [],
+  "totalTestCount": 1
+}

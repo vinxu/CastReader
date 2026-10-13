@@ -20,6 +20,51 @@ final class OCRTokenGeometryCoverageTests: XCTestCase {
         XCTAssertNil(KindleViewportTextAlignment.remainingParagraphs(original, afterParagraph: 1, afterWord: 50))
     }
 
+    func testShrinkingOnePageIntoSixKeepsLateExplanationAnchorReachable() throws {
+        let original = (0..<300).map { "word\($0)" }
+        let offsets = KindleViewportTextAlignment.reflowSearchOffsets(originalWordCount: original.count, capturedWordCount: 50)
+        let anchor = 247
+        var matchedOffset: Int?
+        for offset in offsets where (0..<6).contains(offset) {
+            let captured = Array(original[(offset * 50)..<((offset + 1) * 50)])
+            if let pairs = KindleViewportTextAlignment.match(original: original, captured: captured, anchor: anchor) {
+                XCTAssertTrue(pairs.contains { $0.original == anchor })
+                matchedOffset = offset
+                break
+            }
+        }
+        XCTAssertEqual(matchedOffset, 4, "The previous two-page search cannot reach this real reflow span")
+        XCTAssertTrue(offsets.contains(-4), "A retained next-page renderer must also be recoverable")
+    }
+
+    func testReflowTailCannotRestartAnExplanationBelowTheRealLanguageThreshold() throws {
+        let text = "The explained sentence is complete. I smilingly pointed it out to my"
+        let paragraph = ReadingParagraph(id: 0, text: text, words: text.split(separator: " ").enumerated().map {
+            OCRWord(id: $0.offset, text: String($0.element), bboxNorm: line)
+        })
+        let tail = try XCTUnwrap(KindleViewportTextAlignment.remainingParagraphs([paragraph], afterParagraph: 0, afterWord: 4))
+        XCTAssertEqual(tail.map(\.text), ["I smilingly pointed it out to my"])
+        XCTAssertFalse(ExplainViewModel.hasMinimumExplainContent(paragraphs: tail, language: "en"))
+        XCTAssertTrue(ExplainViewModel.hasMinimumExplainContent(paragraphs: [paragraph], language: "en"))
+        for (language, minimum) in [("en", 50), ("zh-Hans", 20)] {
+            XCTAssertFalse(ExplainViewModel.hasMinimumExplainContent(
+                paragraphs: [ReadingParagraph(id: 0, text: String(repeating: "文", count: minimum - 1))], language: language))
+            XCTAssertTrue(ExplainViewModel.hasMinimumExplainContent(
+                paragraphs: [ReadingParagraph(id: 0, text: "  " + String(repeating: "文", count: minimum) + "\n")], language: language))
+        }
+    }
+
+    func testReflowSearchStaysBoundedForEmptyAndExtremePageSamples() {
+        for (old, new) in [(300, 0), (Int.max, 1), (0, 0), (50, 300)] {
+            let offsets = KindleViewportTextAlignment.reflowSearchOffsets(originalWordCount: old, capturedWordCount: new)
+            XCTAssertEqual(offsets.first, 0)
+            XCTAssertEqual(Set(offsets).count, offsets.count)
+            XCTAssertLessThanOrEqual(offsets.count, 25)
+            XCTAssertTrue(offsets.allSatisfy { abs($0) <= 12 })
+            XCTAssertTrue(offsets.contains(2) && offsets.contains(-2))
+        }
+    }
+
     func testKindleViewportAlignmentSurvivesJoinedHyphenAndMissingOCRWord() throws {
         let original = "the waves appear to be fire eating monsters beneath which seethes intense fire".components(separatedBy: " ")
         let captured = "other page the waves appear to be fireeating monsters beneath seethes intense fire remaining".components(separatedBy: " ")

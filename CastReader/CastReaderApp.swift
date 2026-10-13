@@ -9,13 +9,53 @@ import SwiftUI
 import UIKit
 
 @MainActor
-final class CastReaderAppDelegate: NSObject, UIApplicationDelegate {
+final class CastReaderAppDelegate: UIResponder, UIApplicationDelegate {
+    #if targetEnvironment(macCatalyst)
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions options: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        if #available(iOS 26.0, *) {
+            UIMainMenuSystem.shared.setBuildConfiguration(.init()) { builder in
+                Self.buildReaderMenu(with: builder)
+            }
+        }
+        return true
+    }
+
+    override func buildMenu(with builder: UIMenuBuilder) {
+        super.buildMenu(with: builder)
+        guard builder.system == .main else { return }
+        Self.buildReaderMenu(with: builder)
+    }
+
+    private static func buildReaderMenu(with builder: UIMenuBuilder) {
+        func key(_ command: ReaderWindowCommand) -> UIKeyCommand {
+            UIKeyCommand(title: command.title, action: command.macSelector,
+                         input: command.input, modifierFlags: command.modifiers,
+                         propertyList: command.rawValue, discoverabilityTitle: command.title)
+        }
+        // The default document Open already owns Command-O. Inserting another
+        // command with that shortcut rejects the entire enclosing menu.
+        builder.replace(menu: .open, with: UIMenu(title: "", identifier: .open,
+                                                 options: .displayInline, children: [key(.importContent)]))
+        builder.remove(menu: .document)
+        let commands = ReaderWindowCommand.allCases.filter { $0 != .newWindow && $0 != .importContent }.map(key)
+        builder.insertSibling(UIMenu(title: AppLocalized("朗读"), identifier: .init("ai.castreader.reader"),
+                                     children: commands), afterMenu: .view)
+    }
+
+    #endif
     func application(
         _ app: UIApplication,
         open url: URL,
         options: [UIApplication.OpenURLOptionsKey: Any] = [:]
     ) -> Bool {
-        CloudStorageCenter.handleOAuthRedirect(
+        #if targetEnvironment(macCatalyst)
+        if url.isFileURL {
+            ReaderRunLog.write("MAC application file route")
+            ReaderSceneRegistry.shared.openFile(url)
+            return true
+        }
+        #endif
+        return CloudStorageCenter.handleOAuthRedirect(
             url,
             sourceApplication: options[.sourceApplication] as? String
         )
@@ -54,7 +94,7 @@ enum AppOrientationLock {
     private static var applicationRevision: UInt64 = 0
 
     static var supportedOrientations: UIInterfaceOrientationMask {
-        if UIDevice.current.userInterfaceIdiom == .pad { return .all }
+        if AdaptiveLayout.isPad { return .all }
         return requests.values.max(by: { $0.order < $1.order })?.orientations
             ?? defaultOrientations
     }
@@ -76,7 +116,7 @@ enum AppOrientationLock {
     }
 
     private static var defaultOrientations: UIInterfaceOrientationMask {
-        UIDevice.current.userInterfaceIdiom == .pad ? .all : .allButUpsideDown
+        AdaptiveLayout.isPad ? .all : .allButUpsideDown
     }
 
     private static func lock(
@@ -84,9 +124,9 @@ enum AppOrientationLock {
         owner: String,
         reason: String
     ) {
-        // iPad windows always accept rotation, including while a hidden
+        // iPad and Mac windows remain resizable, including while a hidden
         // commercial surface captures pages. Its layout identity gates writes.
-        guard UIDevice.current.userInterfaceIdiom != .pad else { return }
+        guard !AdaptiveLayout.isPad else { return }
         requestOrder &+= 1
         requests[owner] = Request(orientations: orientations, order: requestOrder)
         applyCurrentPolicy(reason: reason, owner: owner)
@@ -398,7 +438,10 @@ private struct CastReaderWindowRoot: View {
             }
         }
         .task { await startup.start() }
-        .onOpenURL { pendingURLs.append($0) }
+        .onOpenURL {
+            ReaderRunLog.write("WINDOW open URL file=\($0.isFileURL)")
+            pendingURLs.append($0)
+        }
     }
 }
 
@@ -464,6 +507,8 @@ struct CastReaderApp: App {
         WindowGroup(id: "main") {
             CastReaderWindowRoot(startup: startup, appLanguage: appLanguage)
         }
+        #if !targetEnvironment(macCatalyst)
         .commands { ReaderAppKeyboardCommands() }
+        #endif
     }
 }

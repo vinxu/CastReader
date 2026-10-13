@@ -42,7 +42,8 @@ def inspect(root):
         for marker in MARKERS:
             if any(marker.encode(encoding) in payload for encoding in ("utf-8", "utf-16-le", "utf-16-be")):
                 hits.append({"file": str(path.relative_to(root)), "marker": marker})
-        if "fixture" in path.name.lower() or path.suffix in (".xctest", ".xctestrun"):
+        if ("fixture" in path.name.lower() or path.suffix == ".xctestrun"
+                or any(part.endswith(".xctest") for part in path.relative_to(root).parts)):
             hits.append({"file": str(path.relative_to(root)), "marker": "fixture/test resource filename"})
     return files, hits
 
@@ -52,7 +53,10 @@ def main():
     parser.add_argument("--debug-control", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    info = plistlib.loads((args.app / "Info.plist").read_bytes())
+    info_path = args.app / "Info.plist"
+    if not info_path.is_file():
+        info_path = args.app / "Contents" / "Info.plist"
+    info = plistlib.loads(info_path.read_bytes())
     _, controls = inspect(args.debug_control)
     assert any(h["marker"] == "GBFIX" for h in controls), "Debug positive control must contain Google fake books"
     assert any(h["marker"] == "Synthetic Book " for h in controls), "Debug positive control must contain Kobo fake books"

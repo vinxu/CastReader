@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25C56",
+        "osVersion" : "26.2",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 0,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1791154801.305,
+  "passedTests" : 0,
+  "result" : "Failed",
+  "skippedTests" : 0,
+  "startTime" : 1791154791.134,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"Optional(15)\") is not equal to (\"Optional(69)\") - Keeping the full old audio source must also retain its absolute source end",
+      "targetName" : "CastReaderMacTests",
+      "testIdentifier" : 1,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderMacTests/GoogleBooksWebBridgeTests/testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource",
+      "testName" : "testKoboReflowRetainsSpeechBoundaryCoordinatesWithTheOriginalAudioSource()"
+    }
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+
+  ],
+  "totalTestCount" : 1
+}

@@ -1,0 +1,113 @@
+{
+  "date": "2026-10-13",
+  "mainBaseline": "a95540d4b74e1c62cc9afcc8683752a97f0e2172",
+  "iosHead": "6d42fa01368b448df494db26fdd3be7102048305",
+  "macHead": "b0fbc1570841960786435c270f9ecebe959deea8",
+  "versions": {
+    "ios": "1.2.49 (84)",
+    "mac": "1.2.48 (76)"
+  },
+  "tests": {
+    "ios": {
+      "firstRun": {
+        "totalTestCount": 492,
+        "passedTests": 479,
+        "failedTests": 10,
+        "skippedTests": 3
+      },
+      "affectedSuiteRetest": {
+        "totalTestCount": 251,
+        "passedTests": 251,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "resolvedFirstRunFailures": [
+        "KindleInitialStartSyncTests/testCallerCancellationAndDestroyEachRevokeDeferredInitialPlay",
+        "KindleInitialStartSyncTests/testInitialPlaySurvivesLateSyncAndOldPreparationCannotCommit",
+        "KindleInitialStartSyncTests/testPauseDuringInitialPreparationClearsLoadingAndRejectsLateResult",
+        "KindleInitialStartSyncTests/testSettingsRevokesDeferredInitialPlay",
+        "PaginationContinuityTests/testChangedPausedReflowAudioRequiresChoiceBeforeLoadingEarlierPrefix",
+        "PaginationContinuityTests/testChangedReflowAudioCannotAutoplayEarlierParagraphPrefix",
+        "PaginationContinuityTests/testColdShortOpeningFollowsPlatformPolicyWithoutRepeatingPrefix",
+        "PaginationContinuityTests/testPausedReflowCanReachLaterPartWithoutResumingOrGeneratingPastCursor",
+        "PaginationContinuityTests/testPauseWinsOverLateShortOpeningPreparation",
+        "PaginationContinuityTests/testShortDialogueFollowsPlatformStartupPolicyAndPromotesParagraphsOnce"
+      ],
+      "latestObservedUniqueCases": {
+        "passed": 551,
+        "skipped": 3,
+        "failed": 0
+      },
+      "testedSourceManifestSHA256": "071a5e93c2ed83919f45bdcb03c7bb14723eb02d83f0299b3dec311cf357c269",
+      "finalBuild": "PASS",
+      "sourceSnapshotMatchesFinalFiles": true
+    },
+    "mac": {
+      "firstRun": {
+        "totalTestCount": 504,
+        "passedTests": 500,
+        "failedTests": 1,
+        "skippedTests": 3
+      },
+      "affectedSuiteRetest": {
+        "totalTestCount": 250,
+        "passedTests": 250,
+        "failedTests": 0,
+        "skippedTests": 0
+      },
+      "resolvedFirstRunFailures": [
+        "KindleReadingSettingsOwnershipTests/testHighlightRecoveryPublishesLoadingAndPreservesUserPause"
+      ],
+      "latestObservedUniqueCases": {
+        "passed": 563,
+        "skipped": 3,
+        "failed": 0
+      },
+      "testedSourceManifestSHA256": "071a5e93c2ed83919f45bdcb03c7bb14723eb02d83f0299b3dec311cf357c269",
+      "finalBuild": "PASS",
+      "sourceSnapshotMatchesFinalFiles": true
+    }
+  },
+  "limits": [
+    "No device install or App Store release performed.",
+    "The live Google Books shell and two opt-in PDF fixtures were skipped on each platform.",
+    "OCR-on-demand WIP remains on its separate branch."
+  ],
+  "macProject": {
+    "status": "PASS",
+    "shared_sources": 244,
+    "shared_resources": 15,
+    "ios_baseline": "a95540d4b74e1c62cc9afcc8683752a97f0e2172",
+    "original_ios_settings_and_extensions": "unchanged",
+    "shared_platform_adapters": [
+      "PlatformFileImporter.swift",
+      "MacDocumentCameraViewController.swift"
+    ]
+  },
+  "safariExtension": {
+    "version": "1.2.49",
+    "build": "84",
+    "manifestVersion": "1.2.55",
+    "localizedLanguages": 28,
+    "deviceFamilies": [
+      1,
+      2
+    ],
+    "extensionPoint": "com.apple.Safari.web-extension",
+    "contentSHA256": "646101eb388680da1fdcb80dd56c124c8217a3f2bcaf8bd575335ae8cf08093f",
+    "status": "PASS"
+  },
+  "icon": {
+    "path": "CastReader/Assets.xcassets/AppIcon.appiconset/icon-1024.png",
+    "width": 1024,
+    "height": 1024,
+    "sha256": "147e5b9532b28e353f5cb13ff8c6fc7ce4d03d84a2e42d72c71c2377b4cc5aa0",
+    "alreadyTrackedOnOriginalMain": true
+  },
+  "webReader": {
+    "playBooksSourceReflowCases": 6,
+    "koboChromeFixture": "PASS",
+    "productionAndTestBundlesRebuiltWithoutDifferences": true,
+    "extensionSourceDependency": "d1a5eca8"
+  }
+}

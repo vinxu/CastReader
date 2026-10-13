@@ -1,0 +1,11 @@
+{
+  "status": "BUILT_FOR_LIVE_REPLAY",
+  "utc": "2026-10-05T02:04:19.545416Z",
+  "sha256": {
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "cb07354f9e9ef87f75821d8cabf732f9bb2c181603701aba94d7a2966fdeb446",
+    "CastReader/Services/AudioPlayerService.swift": "2ee3e9cf56fe14d87c6e6e1b0de98ec41017e9e15cfb821189d729702077e179",
+    "CastReaderTests/ReadingResumeTests.swift": "0981ac61939a6de355de460897397470a7166aabac0c1f613d9fbfbc867f8a7a",
+    "CastReader/WebAssets/bundle.js": "362f9f061753b8f40108dc02b443d1fc015c880e491a0fa336a62d3e35bd4855",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "423908095f559155611970db45271afdb1634bb55f3ec2acd2e758217c7be1b1"
+  }
+}

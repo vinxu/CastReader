@@ -1,0 +1,18 @@
+[
+  {
+    "path": "CastReader/Services/KindleOfflineBookStore.swift",
+    "sourceSHA256": "b142a34cfbd143c2d3768071af216055cefb0fa838554e629017b9d757885d57"
+  },
+  {
+    "path": "CastReader/Services/KindleOfflineDownloadCoordinator.swift",
+    "sourceSHA256": "ab57cb101f61504b92edcbb274d1a2469b623fe9e815fe99fd767f86fc83a7d6"
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleBookView.swift",
+    "sourceSHA256": "180696415de6a343460b2d1f5e31545f7bbd143b4d7411997a547f936351d68c"
+  },
+  {
+    "path": "CastReaderTests/KindleOfflineBookStoreTests.swift",
+    "sourceSHA256": "0f5a423ce0367e9f1a1c4c71fa3ce67151c590df2ecaff99897e94d7f7368fe3"
+  }
+]

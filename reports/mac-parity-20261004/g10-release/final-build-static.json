@@ -1,0 +1,47 @@
+{
+  "status": "BUILD_AND_STATIC_PASS",
+  "recordedAt": "2026-10-05T14:17:29.094421+08:00",
+  "application": "/tmp/CastReaderMacReleaseParity/Build/Products/Release-maccatalyst/CastReaderMac.app",
+  "version": "1.2.47",
+  "build": "72",
+  "bundleID": "com.same.castreader",
+  "architectures": [
+    "x86_64",
+    "arm64"
+  ],
+  "minimumMacOS": "14.6",
+  "binarySHA256": "45ff73ea060ae0c798a3d3a2651b02f1bbad4a4c72795d6686d9fa48ed4fc5fe",
+  "webBundleSHA256": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758",
+  "strictDeepSignatureValid": true,
+  "entitlements": {
+    "application-identifier": "KQW6UNZE8J.com.same.castreader",
+    "com.apple.application-identifier": "KQW6UNZE8J.com.same.castreader",
+    "com.apple.developer.applesignin": [
+      "Default"
+    ],
+    "com.apple.developer.team-identifier": "KQW6UNZE8J",
+    "com.apple.security.app-sandbox": true,
+    "com.apple.security.application-groups": [
+      "group.com.same.castreader"
+    ],
+    "com.apple.security.device.audio-input": true,
+    "com.apple.security.device.camera": true,
+    "com.apple.security.files.user-selected.read-only": true,
+    "com.apple.security.get-task-allow": true,
+    "com.apple.security.network.client": true,
+    "get-task-allow": true,
+    "keychain-access-groups": [
+      "KQW6UNZE8J.com.same.castreader"
+    ]
+  },
+  "scanCategories": [
+    "private_key",
+    "aws_access_key",
+    "stripe_secret",
+    "github_token",
+    "temporary_reflow_diagnostic"
+  ],
+  "positiveControlsPassed": true,
+  "scanFindings": [],
+  "scope": "Local development-signed universal candidate. No notarization, store upload, Intel runtime, or minimum-macOS runtime acceptance claimed."
+}

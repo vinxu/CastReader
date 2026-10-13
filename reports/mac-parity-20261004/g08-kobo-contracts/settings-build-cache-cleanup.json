@@ -1,0 +1,29 @@
+{
+  "at": "2026-10-05T07:53:44.994581+08:00",
+  "paths": [
+    {
+      "path": "/tmp/CastReaderMacParity/Index.noindex",
+      "reason": "Regenerable compiler cache; no build active; products and test evidence preserved"
+    },
+    {
+      "path": "/tmp/CastReaderMacParity/ModuleCache.noindex",
+      "reason": "Regenerable compiler cache; no build active; products and test evidence preserved"
+    },
+    {
+      "path": "/tmp/CastReaderMacTests.UlWIkh/DerivedData/Index.noindex",
+      "reason": "Regenerable compiler cache; no build active; products and test evidence preserved"
+    },
+    {
+      "path": "/tmp/CastReaderMacTests.UlWIkh/DerivedData/ModuleCache.noindex",
+      "reason": "Regenerable compiler cache; no build active; products and test evidence preserved"
+    },
+    {
+      "path": "/tmp/CastReaderIsolatedTests.m1lwF2/DerivedData/Index.noindex",
+      "reason": "Regenerable compiler cache; no build active; products and test evidence preserved"
+    },
+    {
+      "path": "/tmp/CastReaderIsolatedTests.m1lwF2/DerivedData/ModuleCache.noindex",
+      "reason": "Regenerable compiler cache; no build active; products and test evidence preserved"
+    }
+  ]
+}

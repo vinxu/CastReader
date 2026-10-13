@@ -1,0 +1,9 @@
+{
+  "builtAt": "2026-10-05T07:02:43.650956+08:00",
+  "binarySHA256": "f9e1b05985b4ffb8a26124f9c55051b2c1787de5f5cdd681f886a9559c7d2fa5",
+  "sources": {
+    "CastReader/Services/WebReaderBridge.swift": "38088c95baace05a5464b02a3318d87b418d78f14cb9fcfef37c958027727796",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "fea37766495fb36bb5327703a782c93f11dabc34c3e7a896510509b62fa8061b",
+    "CastReader/WebAssets/bundle.js": "92deba5e2cdb7d1d73eae9d0b246e8c34659935e6a7f4790d307839d92487e0d"
+  }
+}

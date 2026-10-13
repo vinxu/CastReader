@@ -108,6 +108,8 @@ final class PlaybackVoicePanelCenter: ObservableObject {
 @MainActor
 struct VoiceBrowserView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    @EnvironmentObject private var readerScene: ReaderSceneContext
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var settings: AppSettings
     private let pro: ProManager
@@ -153,6 +155,15 @@ struct VoiceBrowserView: View {
     @ObservedObject private var auth = AuthService.shared
 
     private var adaptive: Bool { VoiceBrowsePresentation.isAdaptive() }
+    private var contentWidth: CGFloat {
+        #if targetEnvironment(macCatalyst)
+        // Use the same readable column as the iPad/player voice panel. A
+        // sparse language must not stretch a single voice across a Mac window.
+        return 720
+        #else
+        return horizontalSizeClass == .regular ? AdaptiveLayout.pageWidth : .infinity
+        #endif
+    }
     private var browseLanguage: String { readerLanguage ?? initialLanguage ?? library.browserLanguage }
     private var selectedVoiceID: String { settings.voice(for: browseLanguage) }
     private var isUnfiltered: Bool {
@@ -275,7 +286,7 @@ struct VoiceBrowserView: View {
                         if !adaptive { categoryTabs }
                     }
                 }
-                .frame(maxWidth: horizontalSizeClass == .regular ? AdaptiveLayout.pageWidth : .infinity)
+                .frame(maxWidth: contentWidth)
                 .frame(maxWidth: .infinity)
             }
             .modifier(VoiceBrowseContentMargins())
@@ -317,7 +328,11 @@ struct VoiceBrowserView: View {
                     }
                 }
             }
+            #if targetEnvironment(macCatalyst)
+            .navigationBarTitleDisplayMode(.inline)
+            #else
             .navigationBarTitleDisplayMode(!adaptive && presentation == .tab ? .large : .inline)
+            #endif
             .toolbar {
                 if presentation != .tab {
                     ToolbarItem(placement: .confirmationAction) {
@@ -328,12 +343,13 @@ struct VoiceBrowserView: View {
                     }
                 } else {
                     // 与首页右上角保持同一组入口：切 Tab 时书架按钮不再消失。
-                    ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    HomeToolbarItems {
                         ShelfSourcesToolbarButton(
+                            scene: readerScene,
                             accessibilityID: "voiceShelfSourcesButton"
                         )
-                        SettingsToolbarButton()
-                            .frame(width: 30, height: 30)
+                        SettingsToolbarButton(scene: readerScene)
+                            .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
                     }
                 }
             }

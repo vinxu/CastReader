@@ -1,0 +1,17 @@
+{
+  "status": "PASS",
+  "passed": 7,
+  "failed": 0,
+  "skipped": 0,
+  "resultBundle": "/tmp/mac-core-synced.xcresult",
+  "testHost": "com.same.castreader.releasechecksmaccredit20261005",
+  "scope": [
+    "3 Mac window routing / minimized WeRead viewport tests",
+    "4 StoreKit local products / verified purchase / restore-account boundary / expiry tests"
+  ],
+  "notes": [
+    "Mac purchases use Product.purchase; receipts assert environment=xcode. No real charge.",
+    "StoreKit test ledger reset alone left a cached receipt; AppStore.sync now clears that test cache. Both prior failing runs remain in /tmp/mac-core-payment-final.xcresult and /tmp/mac-core-final-rerun.xcresult.",
+    "No production StoreKit transaction or server credit posting is claimed."
+  ]
+}

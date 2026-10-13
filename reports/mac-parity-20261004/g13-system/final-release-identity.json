@@ -1,0 +1,8 @@
+{
+  "installedPath": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+  "binarySHA256": "4ccb41be75e3e1f2b6923aa0ed8c70004df2ff422ae0430a1a028a265b4cc112",
+  "architectures": "x86_64 arm64",
+  "strictSignatures": "PASS",
+  "sourceManifest": "final-source-hashes.json",
+  "configuration": "Release"
+}

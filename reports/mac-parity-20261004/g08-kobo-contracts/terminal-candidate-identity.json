@@ -1,0 +1,14 @@
+{
+  "status": "BUILT_FOR_LIVE_REPLAY",
+  "at": "2026-10-05T11:21:27.944625+08:00",
+  "sha256": {
+    "CastReader/Services/WebReaderBridge.swift": "edeb6583786f24b4782c6ba67755253c60ac370c7ab6cf317c239663275d0b6b",
+    "CastReader/Services/LiveWebPlatform.swift": "af7ea2d1083d9a532f75dfa9212f63adf1bb0a97b60b313c8876e80c894e7377",
+    "CastReader/ViewModels/ExplainViewModel.swift": "91d7a541a5b33b1e954aa12c7f6002253b510ea2a53df910b8954718d6b172fd",
+    "CastReader/Views/Reader/ReaderHostView.swift": "242d40498f8392c1b6c4c5c777a783a966cd90c3dc8569f4118e62072ffba6d9",
+    "CastReader/Views/Explain/ExplainControlBar.swift": "3ceb3ce668583417eaf54772d10aeb19afd161a5bde0dc990fea82f777094fd7",
+    "CastReader/WebAssets/bundle.js": "b7fa9cd33ae35f18d00abb0927ae2fe6bc8602a682b05c5104549d7f014f3ba6",
+    "WebReader/src/kobo.ts": "75d7664e6f33c3d661e151bcc57ac0a5776bf836b12ee1462b7d902f8882d458",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "dd188117eaf061b3d87ff36dcff62d4df1e49c5ebd99bcf664052a64a9a36c44"
+  }
+}

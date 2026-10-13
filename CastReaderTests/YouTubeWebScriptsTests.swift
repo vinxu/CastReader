@@ -1259,6 +1259,55 @@ final class YouTubeWebScriptsTests: XCTestCase {
         XCTAssertLessThan(bootstrap.lowerBound, snapshot.lowerBound)
     }
 
+    func testEmbedBootstrapWaitsForDelayedOfficialControl() throws {
+        let context = try makeDelayedEmbedControlContext()
+        context.evaluateScript("maybeBootstrapOfficialEmbedPreview('fixture'); now = 250; maybeBootstrapOfficialEmbedPreview('fixture');")
+        XCTAssertEqual(context.objectForKeyedSubscript("apiPlays")?.toInt32(), 0,
+                       "cueing can expose playVideo before the real overlay has mounted")
+        context.evaluateScript("now = 750; buttonReady = true; maybeBootstrapOfficialEmbedPreview('fixture'); now = 1800; maybeBootstrapOfficialEmbedPreview('fixture');")
+        XCTAssertEqual(context.objectForKeyedSubscript("buttonClicks")?.toInt32(), 1)
+        XCTAssertEqual(context.objectForKeyedSubscript("apiPlays")?.toInt32(), 0)
+        XCTAssertEqual(context.objectForKeyedSubscript("cueCalls")?.toInt32(), 1)
+        XCTAssertNil(context.exception)
+    }
+
+    func testEmbedBootstrapRetainsBoundedSingleAPIFallbackWhenNoControlAppears() throws {
+        let context = try makeDelayedEmbedControlContext()
+        context.evaluateScript("maybeBootstrapOfficialEmbedPreview('fixture'); now = 250; maybeBootstrapOfficialEmbedPreview('fixture');")
+        XCTAssertEqual(context.objectForKeyedSubscript("apiPlays")?.toInt32(), 0)
+        context.evaluateScript("now = 2000; maybeBootstrapOfficialEmbedPreview('fixture'); now = 2300; maybeBootstrapOfficialEmbedPreview('fixture');")
+        XCTAssertEqual(context.objectForKeyedSubscript("apiPlays")?.toInt32(), 1)
+        XCTAssertEqual(context.objectForKeyedSubscript("buttonClicks")?.toInt32(), 0)
+        XCTAssertEqual(context.objectForKeyedSubscript("mutes")?.toInt32(), 1)
+        XCTAssertNil(context.exception)
+    }
+
+    private func makeDelayedEmbedControlContext() throws -> JSContext {
+        let source = YouTubeWebScripts.extractionAdapter(expectedVideoID: "fixture")
+        let start = try XCTUnwrap(source.range(of: "function maybeBootstrapOfficialEmbedPreview("))
+        let end = try XCTUnwrap(source.range(of: "function embedBootstrapDiagnostic()", range: start.upperBound..<source.endIndex))
+        let context = try XCTUnwrap(JSContext())
+        context.evaluateScript(#"""
+        var now = 0, buttonReady = false, cueCalls = 0, apiPlays = 0, buttonClicks = 0, mutes = 0;
+        Date.now = function () { return now; };
+        var embedBootstrapAttempted = false, embedPreviewDetected = false;
+        var embedCueAttempted = false, embedCueAttemptedAt = 0, embedBootstrapMethod = '';
+        var capturedPlayerResponse = null;
+        function isOfficialEmbedSurface() { return true; }
+        function castReaderOfficialEmbedPreviewVideoID(vars, expected) { return expected; }
+        function officialEmbedPlayerVars() { return {}; }
+        function note() {}
+        function readPlayerResponse() { return null; }
+        function resolvedPlayerVideoID() { return null; }
+        var player = {cueVideoById:function(){cueCalls++}, mute:function(){mutes++}, playVideo:function(){apiPlays++}};
+        var document = {querySelector:function(){return player}};
+        function exactOfficialEmbedPlayButton() { return buttonReady ? {click:function(){buttonClicks++}} : null; }
+        """#)
+        context.evaluateScript(String(source[start.lowerBound..<end.lowerBound]))
+        XCTAssertNil(context.exception)
+        return context
+    }
+
     func testPlayingEmbedBootstrapIsMutedAndPausedAfterExactResponseCapture() throws {
         let source = YouTubeWebScripts.extractionAdapter(
             expectedVideoID: "NHHPNMIK-fY"

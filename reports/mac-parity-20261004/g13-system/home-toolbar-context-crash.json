@@ -1,0 +1,114 @@
+[
+  {
+    "file": "CastReaderMac-2026-10-05-212356.ips",
+    "time": "2026-10-05 21:23:43.3345 +0800",
+    "exception": "EXC_BREAKPOINT",
+    "frames": [
+      {
+        "symbol": "_assertionFailure(_:_:file:line:flags:)"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.error()"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "LibrarySourcesSheet.body.getter",
+        "sourceFile": "BoundLibrarySourcesView.swift",
+        "sourceLine": 27
+      },
+      {
+        "symbol": "protocol witness for View.body.getter in conformance LibrarySourcesSheet",
+        "sourceFile": "/<compiler-generated>"
+      }
+    ]
+  },
+  {
+    "file": "CastReaderMac-2026-10-05-212357.ips",
+    "time": "2026-10-05 21:23:56.5217 +0800",
+    "exception": "EXC_BREAKPOINT",
+    "frames": [
+      {
+        "symbol": "_assertionFailure(_:_:file:line:flags:)"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.error()"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "LibrarySourcesSheet.body.getter",
+        "sourceFile": "BoundLibrarySourcesView.swift",
+        "sourceLine": 27
+      },
+      {
+        "symbol": "protocol witness for View.body.getter in conformance LibrarySourcesSheet",
+        "sourceFile": "/<compiler-generated>"
+      }
+    ]
+  },
+  {
+    "file": "CastReaderMac-2026-10-05-212448.ips",
+    "time": "2026-10-05 21:24:42.8335 +0800",
+    "exception": "EXC_BREAKPOINT",
+    "frames": [
+      {
+        "symbol": "_assertionFailure(_:_:file:line:flags:)"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.error()"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "LibrarySourcesSheet.body.getter",
+        "sourceFile": "BoundLibrarySourcesView.swift",
+        "sourceLine": 27
+      },
+      {
+        "symbol": "protocol witness for View.body.getter in conformance LibrarySourcesSheet",
+        "sourceFile": "/<compiler-generated>"
+      }
+    ]
+  },
+  {
+    "file": "CastReaderMac-2026-10-05-212513.ips",
+    "time": "2026-10-05 21:25:05.1662 +0800",
+    "exception": "EXC_BREAKPOINT",
+    "frames": [
+      {
+        "symbol": "_assertionFailure(_:_:file:line:flags:)"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.error()"
+      },
+      {
+        "symbol": "specialized EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "EnvironmentObject.wrappedValue.getter"
+      },
+      {
+        "symbol": "LibrarySourcesSheet.body.getter",
+        "sourceFile": "BoundLibrarySourcesView.swift",
+        "sourceLine": 27
+      },
+      {
+        "symbol": "protocol witness for View.body.getter in conformance LibrarySourcesSheet",
+        "sourceFile": "/<compiler-generated>"
+      }
+    ]
+  }
+]

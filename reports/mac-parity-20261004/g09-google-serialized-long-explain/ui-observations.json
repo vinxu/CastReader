@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-10-05T16:05:21.570347+08:00",
+  "observations": [
+    {
+      "event": "1024x768 to 800x600 double-page shrink",
+      "at": "15:55",
+      "result": "Playback retained; native source reveal; new page narration continued."
+    },
+    {
+      "event": "Light to Dark theme",
+      "at": "15:56",
+      "result": "Source highlights and underlines visible in both columns; captions readable."
+    },
+    {
+      "event": "Minimize reader and expand",
+      "at": "15:57–15:58",
+      "result": "Mini player remained Explaining/Pause; auto commit advanced to GBS.PA27.w.3.0.76_314 while minimized; expanded at page 37 with current caption and marks."
+    },
+    {
+      "event": "Dark to Light; 800x600 to 1024x768; Double to Auto",
+      "at": "16:03–16:04",
+      "result": "Playback and subtitles continued; underline/circle/highlight repainted against current source. No manual page navigation."
+    }
+  ]
+}

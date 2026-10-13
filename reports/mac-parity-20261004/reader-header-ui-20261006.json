@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-06",
+  "scope": "Mac reader header and Kindle mouse Back to Mini Player",
+  "status": "PASS — focused header and Kindle mouse-return acceptance on installed arm64 Release",
+  "change": [
+    "Keep all reader controls inside the Mac content safe area; remove the experimental ignoresSafeArea top placement",
+    "Hide underlying Home and Library navigation chrome while the retained reader is presented",
+    "Remove redundant CastReader title and use 20 pt semibold book/document titles on Mac",
+    "Retain the same reader and playback model while minimizing and expanding; no provider or TTS changes"
+  ],
+  "debugVisualChecks": [
+    "Mouse click at Back [70,116] while loading/paused: Home and Kindle Mini Player visibly displayed",
+    "Mouse click on Mini Player title: reader displayed again",
+    "From Library while Reading Aloud: mouse click at Back [70,156] showed Reading Aloud Mini Player with Pause control and the same page identity 8a01981f4aa1b2bf1f9c0ba98541776d8103d037760dbb26b182a41e11958dd2",
+    "Observed Library toolbar persisted over reader; additional Library navigation visibility fix included in final build",
+    "Ordinary text reader: mouse Back [76,156] returned to paused text Mini Player"
+  ],
+  "sourceSHA256": {
+    "CastReader/Utils/AdaptiveLayout.swift": "55eccde462ab52d061147df550f45ebd0a03dbef3a3bd06e318203b91b7a973e",
+    "CastReader/Views/MainTabView.swift": "4b727cf82770e4cb3157e7407cdbb4bb62c86f9bd60593f2a3b92e5b7eceb8d3",
+    "CastReader/Views/Home/HomeView.swift": "a9d69af56ad7dbbd22eb76ff9e077c918ff3b41b50460ad602e6fb4336a41415",
+    "CastReader/Views/Reader/ReaderHostView.swift": "42d2ce486b351c5b41427ad7f3b00d5d03079f3487958e6e0b605cf4808a7cbf",
+    "CastReader/Views/Kindle/KindleBookView.swift": "633956ec07f360dcad6ca84a909e50f3b7eec519a2797403a10fab13802be339",
+    "CastReader/Views/Library/LibraryView.swift": "00970532e6f4248d378e09e648800414a22a2cdfce2620303dc547d6fafd3429"
+  },
+  "supersedesInstalledSHA": "511c78de8c364590a86d926c2dbab82e2ca9d10494bfd4d6bcd8a7279d3d32d2",
+  "releaseBuildLog": "/tmp/mac-reader-return-final-release.log",
+  "previousReleaseBackup": "/tmp/CastReaderBeforeHeaderFix.app",
+  "limits": "Focused mouse hit-testing, retained Mini Player and header verification only. Does not supersede pending provider/StoreKit acceptance items or claim an Intel Release rebuild.",
+  "rejectedCandidate": {
+    "finding": "Mouse click at the displayed Back button did not minimize the reader when the custom header occupied the native titlebar. Accessibility activation alone did minimize, so earlier AX-only checks were insufficient.",
+    "unsafeReleaseBackup": "/tmp/CastReaderHeaderUnsafeRelease.app"
+  },
+  "releaseBuildConfiguration": "Release, Mac Catalyst arm64, ONLY_ACTIVE_ARCH=YES; normal product identity, no test launch arguments",
+  "installed": {
+    "path": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+    "version": "1.2.47",
+    "build": "72",
+    "executableSHA256": "542789a06e42b9d69eaec96c61cb6af1bdcbaa668ee5fb93634848dc96923feb",
+    "architectures": "arm64"
+  },
+  "signatureVerification": {
+    "status": "PASS",
+    "app": "/private/tmp/CastReaderMacCoreConvergence/Build/Products/Release-maccatalyst/CastReaderMac.app",
+    "strictDeepSignature": "PASS",
+    "bundles": [
+      {
+        "bundle": "com.same.castreader",
+        "sandbox": true,
+        "provisionedAppGroups": [
+          "group.com.same.castreader"
+        ]
+      },
+      {
+        "bundle": "com.same.castreader.CastReaderMacShare",
+        "sandbox": true,
+        "provisionedAppGroups": [
+          "group.com.same.castreader"
+        ]
+      },
+      {
+        "bundle": "com.same.castreader.CastReaderMacWidget",
+        "sandbox": true,
+        "provisionedAppGroups": [
+          "group.com.same.castreader"
+        ]
+      }
+    ]
+  },
+  "releaseVisualChecks": [
+    "Library entry: no Downloaded/Import/Library toolbar over reader; title 20 pt; custom controls below 32 pt native titlebar",
+    "Library entry: authenticated Kindle book restored, body visible and native Library toolbar absent",
+    "Mouse Play [520,1464]: transitioned from Paused to Reading Aloud / Playing",
+    "Mouse Back [70,116] during playback: Library visibly restored, Kindle Mini Player Reading Aloud and Pause control visible",
+    "Mouse Mini Player title [450,1438]: reader reopened; Playing and live word highlight visible; no underlying Library toolbar",
+    "Mouse Pause then Back: paused Kindle Mini Player remains, listening progress retained"
+  ],
+  "buildResult": "BUILD SUCCEEDED",
+  "finalAppState": "Library visible with Kindle Mini Player paused; speed 1.5x unchanged"
+}

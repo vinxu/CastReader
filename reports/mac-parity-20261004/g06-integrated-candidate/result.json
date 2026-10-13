@@ -1,0 +1,19 @@
+{
+  "recordedAt": "2026-10-05T03:58:30.586179",
+  "result": "PASS_SCOPED",
+  "build": "Debug arm64 Catalyst",
+  "signatureVerified": true,
+  "checks": [
+    "Fresh launch",
+    "Kindle recent-position dialog accessible and No accepted",
+    "Loading cover released real web surface",
+    "Read playback Playing Bella 1x and visible word highlight",
+    "Explicit pause and return home"
+  ],
+  "sha256": {
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "dde7cf306fe93131e61c0f83dc0568b7a5ca151d019748c586c7490e5dc074c0",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Views/Kindle/KindleBookView.swift": "f827a6ad762dd7745b1e7ff2c2b9cd8d23d2236f93d25381e94bbc251de45757",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/Views/Kindle/KindleLibraryConnectView.swift": "d437f79685cb74393524df039331fb09b015252636463f120ec7517c8dee02cf",
+    "/Users/xuxuheng/.codex/worktrees/castreader-mac-parity/CastReader/CastReader/ViewModels/ExplainViewModel.swift": "63b505f57508067996266cf1ec3b24a67e9f064005d24f1e68de5d26aa221e83"
+  }
+}

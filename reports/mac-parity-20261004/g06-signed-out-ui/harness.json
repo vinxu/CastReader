@@ -1,0 +1,17 @@
+{
+  "createdAt": "2026-10-05T03:10:44.207643+08:00",
+  "workspace": "/tmp/CastReaderMacTests.UlWIkh",
+  "bundleID": "com.same.castreader.releasechecksmac",
+  "readerWebsiteDataStore": "nonPersistent",
+  "startup": "isolated-no-auth-no-pro-network",
+  "productionSourceModified": false,
+  "sourceSHA256": "c68f47f92a5005739b1a4a447cd5d670f951c912fd19dde377b43bf660f47ef7",
+  "harnessRepair": "Added the ImportRouter environment object provided by MainTabView in production, and presented the isolated playback center.",
+  "initialHarnessOnlyFailure": "Missing environment object at KindleBookView.onAppear; production candidate unaffected",
+  "ownership": "StateObject model and router; root re-render cannot create a new WebView",
+  "latestSourceHashes": {
+    "CastReader/Views/Kindle/KindleBookView.swift": "f827a6ad762dd7745b1e7ff2c2b9cd8d23d2236f93d25381e94bbc251de45757",
+    "CastReader/Views/Kindle/KindleLibraryConnectView.swift": "d437f79685cb74393524df039331fb09b015252636463f120ec7517c8dee02cf"
+  },
+  "nativeAccessibilityRepair": "UIView container and WKWebView accessibilityElementsHidden; SwiftUI accessibilityHidden alone did not remove Amazon form"
+}

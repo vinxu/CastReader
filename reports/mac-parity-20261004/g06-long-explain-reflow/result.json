@@ -1,0 +1,7 @@
+{
+  "status": "FAILED",
+  "candidate": "g06-reflow-candidate/identity.json",
+  "observedAt": "2026-10-05T03:24:49.508420+08:00",
+  "failure": "Mac reflow anchor recovered at +4 and -1/+1 offsets, but the last-page remainder was shorter than the Explain minimum and exposed only Retry Explanation. No claim of 15-minute continuous pass.",
+  "remediation": "Continue the bounded native page turn for a reflow fragment below the unchanged language threshold; show actual Explain errors in the caption area."
+}

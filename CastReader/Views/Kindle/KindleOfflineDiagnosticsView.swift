@@ -255,7 +255,7 @@ private final class OfflineDownloadUIFixtureSource: KindleOfflineBookSource {
         .init(start: ordinal * 10, end: ordinal * 10 + 9, minimum: 0, maximum: 2399,
             layoutID: "fixture", fingerprint: "fixture-\(ordinal)")
     }
-    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
+    func beginOfflineBookCapture(restoring interruptedPosition: KindleOfflineSourcePosition?, resuming firstSavedPosition: KindleOfflineSourcePosition?) async throws -> KindleOfflineSourcePosition {
         try await Task.sleep(for: .milliseconds(800))
         return interruptedPosition ?? position(100)
     }

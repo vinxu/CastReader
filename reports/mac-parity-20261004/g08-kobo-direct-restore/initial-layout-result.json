@@ -1,0 +1,21 @@
+{
+  "status": "PASS_DIRECT_RESTORE_STANDARD_WINDOW",
+  "saved": {
+    "chapter": "Five",
+    "range": "109\u2013110/348",
+    "paragraph": 1,
+    "segmentTime": 7.096730083,
+    "wordHash": "d1905cf90af2"
+  },
+  "restored": {
+    "chapter": "Five",
+    "range": "109\u2013110/348",
+    "paragraph": 1,
+    "firstPlaySampleTime": 7.151180125,
+    "wordHash": "d1905cf90af2"
+  },
+  "autoplay": false,
+  "nativeLocationRequests": 1,
+  "initialLayoutNotifications": 1,
+  "limitation": "Changed-window cold restore and entire G08 remain pending"
+}

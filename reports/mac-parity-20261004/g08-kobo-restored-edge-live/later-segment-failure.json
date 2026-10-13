@@ -1,0 +1,14 @@
+{
+  "status": "FAIL_LATER_SEGMENT_REFLOW_BOUNDARY",
+  "window": [
+    800,
+    600
+  ],
+  "providerPage": "121/393",
+  "restoredSegment": "1-1",
+  "restoredProgress": 0.459,
+  "armedSegment": "1-0",
+  "armedBoundarySeconds": 2.7635416667,
+  "actual": "Explicit Play started the restored second segment without turning to its visible words; word events had ov=0. Paused by tester.",
+  "priorSharedAudioRegression": "Same-segment restored seek endpoint fix passed 136 Mac and 136 iPad tests; this separate multi-segment VM issue remains."
+}

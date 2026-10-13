@@ -1,0 +1,35 @@
+{
+  "time": "2026-10-05T03:09:05.723018+08:00",
+  "candidate": "g06-reflow-candidate",
+  "status": "complete",
+  "pages": 221,
+  "originalOnlinePosition": {
+    "captureViewport": [
+      766.25,
+      543.3376623376623
+    ],
+    "end": 105345,
+    "fingerprint": "source-104776-105344",
+    "layoutID": "f17d1b8b1560cf19c5538446195df4e6622e1316cd7a7cf2eb9c7d7fc2a57ca7",
+    "maximum": 319510,
+    "minimum": 0,
+    "start": 104776
+  },
+  "originalPosition": {
+    "captureViewport": [
+      1280,
+      740
+    ],
+    "end": 104851,
+    "fingerprint": "source-103292-104850",
+    "layoutID": "5882aa2627558435322077ea21c5f65081bb082017b055ad7999917a4dffcbdc",
+    "maximum": 319510,
+    "minimum": 0,
+    "start": 103292
+  },
+  "restored": true,
+  "layoutCount": 1,
+  "continuous": true,
+  "fullRange": true,
+  "lastError": null
+}

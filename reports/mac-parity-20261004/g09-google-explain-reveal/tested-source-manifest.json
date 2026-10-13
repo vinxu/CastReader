@@ -1,0 +1,20 @@
+[
+  {
+    "file": "CastReader/Services/WebReaderBridge.swift",
+    "sameSource": true,
+    "digests": {
+      ".": "037f8cf84a68b08506d2bf99858d7c87afbf4aacd568a5eba76924cadefa93e3",
+      "/tmp/CastReaderMacTests.UlWIkh": "037f8cf84a68b08506d2bf99858d7c87afbf4aacd568a5eba76924cadefa93e3",
+      "/tmp/CastReaderIsolatedTests.m1lwF2": "037f8cf84a68b08506d2bf99858d7c87afbf4aacd568a5eba76924cadefa93e3"
+    }
+  },
+  {
+    "file": "CastReaderTests/GoogleBooksWebBridgeTests.swift",
+    "sameSource": true,
+    "digests": {
+      ".": "f685e0ff691e82f3858b3f54a8ec8e169ae1b9119de3eab7b4257b46c0081d9b",
+      "/tmp/CastReaderMacTests.UlWIkh": "f685e0ff691e82f3858b3f54a8ec8e169ae1b9119de3eab7b4257b46c0081d9b",
+      "/tmp/CastReaderIsolatedTests.m1lwF2": "f685e0ff691e82f3858b3f54a8ec8e169ae1b9119de3eab7b4257b46c0081d9b"
+    }
+  }
+]

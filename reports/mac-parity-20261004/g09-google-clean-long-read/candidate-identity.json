@@ -1,0 +1,26 @@
+{
+  "status": "RUN_NOT_STARTED",
+  "capturedAt": "2026-10-05T13:23:20.540519+08:00",
+  "appBundleID": "com.same.castreader",
+  "binarySHA256": "99028faa176b07d849850f9a0ef5c8a6cc859f122a1c9f1892389928006f0611",
+  "bundleSHA256": "13d29d02d440ecfd95cd7948ab16934b30e826a81a5bcdaf8f53e149e0dd50b1",
+  "sourceSHA256": {
+    "CastReader/Services/WebReaderBridge.swift": "31ec1f584761d6d83569ffb2acddc00cffce28266a27cd71efb0f36bdfaa8619",
+    "CastReader/Services/AudioPlayerService.swift": "ba2639ab3f7317249ed047db1a02be19970da40429698c5912ecfd0fcb055b8a",
+    "CastReader/ViewModels/ReadAloudViewModel.swift": "d7772b135cbdd41dae9484640f01b871a5c791032f8f54a521902ad606f3e8fc",
+    "CastReader/Models/GoogleBooksModels.swift": "1d626aa2b5bcc53f1dc5800e3fe9a69f1b9a30511645064683c018bd5e432cd5"
+  },
+  "temporaryDiagnosticsAbsent": true,
+  "testResults": {
+    "Mac": {
+      "pass": 321,
+      "fail": 0,
+      "skip": 1
+    },
+    "iPad": {
+      "pass": 321,
+      "fail": 0,
+      "skip": 1
+    }
+  }
+}

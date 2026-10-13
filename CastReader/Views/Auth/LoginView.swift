@@ -99,6 +99,11 @@ struct LoginView: View {
             .frame(maxWidth: .infinity)
             .padding(24)
             .background(AppTheme.background.ignoresSafeArea())
+            #if targetEnvironment(macCatalyst)
+            // These controls already draw their iOS appearance. Catalyst's
+            // automatic style otherwise adds a second gray button behind them.
+            .buttonStyle(.plain)
+            #endif
         .overlay {
             if auth.isWorking && !isSendingEmailCode {
                 ProgressView().scaleEffect(1.2)

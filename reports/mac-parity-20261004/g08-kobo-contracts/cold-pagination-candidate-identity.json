@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-05T11:36:01.458497+08:00",
+  "status": "BUILT_FOR_LIVE_REPLAY",
+  "sha256": {
+    "CastReader/Services/WebReaderBridge.swift": "31ec1f584761d6d83569ffb2acddc00cffce28266a27cd71efb0f36bdfaa8619",
+    "CastReader/Services/ReaderWebAppearanceCenter.swift": "54c169eb4b0c0dbf4688b37607c3e8c9ec53c131eeb6ebeb1397e34854dcfc6a",
+    "CastReader/WebAssets/bundle.js": "b500f07b2e7586e1161d6a554295dc7e440ccaf47423ecee8931da56484e6cce",
+    "WebReader/src/kobo.ts": "d39ef6b5260d5d73cb31e4d1112dbff074136f1ab0584bd2ed8f3093306fd74e",
+    "CastReaderTests/ReaderAppearanceTests.swift": "41879106e84c4f0a5abbe128343bb34e63bf25dab0efae3a3ed6a55ba96fe72a",
+    "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "4e2d08e7ef032890f505cd6b6247b375acd09f69089389855cd2203f19cd2379"
+  }
+}

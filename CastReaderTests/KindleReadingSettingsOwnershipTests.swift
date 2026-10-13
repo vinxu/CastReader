@@ -77,6 +77,11 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         try await assertVoicePanelKeepsViewport(mode: .read)
     }
 
+    #if targetEnvironment(macCatalyst)
+    func testMacResizeRetainsPlaybackWithoutSystemVerticalNavigation() async throws {
+        try await assertPhoneResizePolicy(hasVerticalNavigation: false)
+    }
+    #else
     func testOrdinaryPhoneResizeDoesNotEnterFoldSentenceRecovery() async throws {
         try await assertPhoneResizePolicy(hasVerticalNavigation: false)
     }
@@ -88,6 +93,7 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
     func testDuoUnfoldTransientPlacementRetainsPlaybackPolicy() async throws {
         try await assertPhoneResizePolicy(hasVerticalNavigation: true, transientlyHidden: true)
     }
+    #endif
 
     private func assertPhoneResizePolicy(hasVerticalNavigation: Bool, transientlyHidden: Bool = false) async throws {
         try await loadFixture()
@@ -106,10 +112,15 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         model.setReaderPresented(true)
         _ = makeRefocusOwner()
         model.updateReaderSurfaceSize(CGSize(width: 430, height: 714))
-        XCTAssertEqual(model.needsIPadViewportProjection, hasVerticalNavigation)
+        #if targetEnvironment(macCatalyst)
+        let preservesPlayback = true
+        #else
+        let preservesPlayback = hasVerticalNavigation
+        #endif
+        XCTAssertEqual(model.needsIPadViewportProjection, preservesPlayback)
         model.noteReaderLayoutChange(reason: "reader-size")
-        XCTAssertEqual(model.isRecoveringIPadViewport, hasVerticalNavigation,
-            "An ordinary phone must not seal its sentence input through the fold recovery path")
+        XCTAssertEqual(model.isRecoveringIPadViewport, preservesPlayback,
+            "Mac and Duo preserve playback through resizing; an ordinary phone keeps its existing recovery policy")
     }
 
     func testAutomaticSentencePageAfterExpandUsesNewSourceWordRoutes() async throws {

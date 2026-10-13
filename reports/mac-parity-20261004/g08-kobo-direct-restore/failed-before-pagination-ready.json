@@ -1,0 +1,7 @@
+{
+  "status": "FAIL",
+  "reason": "Native navigation dispatched while pagesOfBook was NaN (logged null), before whole-book pagination was ready. Stayed on Chapter Two instead of saved Chapter Five.",
+  "expectedPercentage": 0.3132183908045977,
+  "observedAfterTimeout": 0.08333333333333333,
+  "audioWasNotStarted": true
+}

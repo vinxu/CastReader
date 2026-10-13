@@ -4,6 +4,12 @@ import WebKit
 
 @MainActor
 final class ReaderAppearanceTests: XCTestCase {
+    override func setUp() async throws {
+        // Match app startup ordering: identity restoration precedes any audio
+        // owner, including when this suite runs alone in an isolated host.
+        _ = AuthService.shared
+    }
+
     func testReaderMoreStringsExistInEverySupportedLanguageBundle() throws {
         let keys = [
             "定时停止", "阅读设置", "更多", "未开启", "阅读设置暂不可用", "完成",
@@ -73,6 +79,38 @@ final class ReaderAppearanceTests: XCTestCase {
         }
     }
 
+    func testKoboRecommendationDialogKeepsCloseInsideShortWindows() async throws {
+        let view = try await fixture(html: """
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <p id="source" style="font-size:24px">The book keeps its original typography.</p>
+        <div class="RXNextReadRecommendationDialog_container" role="dialog"
+          style="position:absolute;left:-50px;top:17px;width:740px;height:544px;display:grid">
+          <button aria-label="Close dialog" style="position:absolute;top:12px;left:12px;width:40px;height:40px">Close</button>
+          <div style="width:720px;height:700px">Provider recommendation contents</div>
+        </div>
+        """, baseURL: URL(string: "https://readnow.kobo.com/f0000001-1111-4111-8111-000000000001"))
+        let installed = try await view.evaluateJavaScript(ReaderWebAppearanceCenter.constrainKoboPanelsScript)
+        XCTAssertEqual(installed as? Bool, true)
+        for size in [CGSize(width: 390, height: 410), CGSize(width: 800, height: 410), CGSize(width: 1024, height: 579)] {
+            view.frame.size = size
+            try await Task.sleep(for: .milliseconds(100))
+            let bounds = try await json("""
+            (()=>{const panel=document.querySelector('[role=dialog]'),r=panel.getBoundingClientRect(),
+              close=panel.querySelector('button').getBoundingClientRect();
+              return JSON.stringify({left:r.left,top:r.top,right:r.right,bottom:r.bottom,
+                width:innerWidth,height:innerHeight,closeLeft:close.left,closeTop:close.top,
+                closeRight:close.right,closeBottom:close.bottom,scrollable:panel.scrollHeight>panel.clientHeight,
+                font:getComputedStyle(document.getElementById('source')).fontSize})})()
+            """, view)
+            let width = try XCTUnwrap(bounds["width"] as? Double), height = try XCTUnwrap(bounds["height"] as? Double)
+            for key in ["left", "top", "closeLeft", "closeTop"] { XCTAssertGreaterThanOrEqual(bounds[key] as? Double ?? -1, 0) }
+            for key in ["right", "closeRight"] { XCTAssertLessThanOrEqual(bounds[key] as? Double ?? .infinity, width) }
+            for key in ["bottom", "closeBottom"] { XCTAssertLessThanOrEqual(bounds[key] as? Double ?? .infinity, height) }
+            XCTAssertEqual(bounds["scrollable"] as? Bool, true)
+            XCTAssertEqual(bounds["font"] as? String, "24px")
+        }
+    }
+
     func testWeReadIconOnlyNativeAaButton() async throws {
         let webView = try await fixture(html: """
         <button class="readerControls_item fontSizeButton" style="width:40px;height:40px" onclick="window.aaTaps++;document.querySelector('.font-panel-content').style.display='block'"><span class="icon"></span></button>
@@ -87,6 +125,61 @@ final class ReaderAppearanceTests: XCTestCase {
         _ = try await webView.evaluateJavaScript("window.__crWeReadAppearance.close()")
         let restored = try await webView.evaluateJavaScript("document.querySelector('.fontSizeButton').parentElement === document.body && !document.querySelector('#castreader-weread-aa')")
         XCTAssertEqual(restored as? Bool, true)
+    }
+
+    func testWeReadEscapeDismissesControlledDesktopPanelThroughOuterMask() async throws {
+        let view = try await fixture(html: """
+        <button class="readerControls_item fontSizeButton">Aa</button>
+        <div class="reader_float_font_panel"><div class="wr_mask"></div>
+        <div class="reader-font-control-panel-wrapper"><div class="font-panel-content" style="width:300px;height:300px">Settings</div></div>
+        </div>
+        <script>
+        window.dismissals=0;
+        document.querySelector('.reader_float_font_panel > .wr_mask').addEventListener('click',()=>{
+          window.dismissals++;document.querySelector('.font-panel-content').style.display='none';
+        });
+        </script>
+        """, baseURL: URL(string: "https://weread.qq.com/web/reader/test"))
+        let handled = try await view.evaluateJavaScript(ReaderWebAppearanceCenter.dismissWeReadAppearanceScript)
+        XCTAssertEqual(handled as? Bool, true)
+        let dismissals = try await view.evaluateJavaScript("window.dismissals")
+        XCTAssertEqual(dismissals as? Int, 1)
+        let again = try await view.evaluateJavaScript(ReaderWebAppearanceCenter.dismissWeReadAppearanceScript)
+        XCTAssertEqual(again as? Bool, false, "Only an open provider panel consumes Escape")
+    }
+
+    func testWeReadEscapeTargetsOnlyTheRequestingWindow() async throws {
+        let center = ReaderWebAppearanceCenter.shared
+        let id = UUID().uuidString
+        var windows: [UIWindow] = []
+        var views: [WKWebView] = []
+        defer { windows.forEach { $0.isHidden = true }; views.forEach { $0.stopLoading() } }
+        for _ in 0..<2 {
+            let view = try await fixture(html: "<button class='readerControls_item fontSizeButton'>Aa</button>",
+                baseURL: URL(string: "https://weread.qq.com/web/reader/test"))
+            let window: UIWindow
+            if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+                window = UIWindow(windowScene: scene)
+            } else { window = UIWindow(frame: view.frame) }
+            window.rootViewController = UIViewController()
+            window.rootViewController!.view.addSubview(view)
+            window.isHidden = false
+            windows.append(window); views.append(view)
+            center.register(view, documentID: id)
+            let opened = await center.open(webView: view)
+            XCTAssertTrue(opened)
+        }
+        let withoutWindow = await center.dismissWeReadAppearance(documentID: id, in: nil)
+        XCTAssertFalse(withoutWindow)
+        let wrongBook = await center.dismissWeReadAppearance(documentID: "other", in: windows[0])
+        XCTAssertFalse(wrongBook)
+        let handled = await center.dismissWeReadAppearance(documentID: id, in: windows[0])
+        XCTAssertTrue(handled)
+        let first = try await views[0].evaluateJavaScript("!!window.__crWeReadAppearance")
+        let second = try await views[1].evaluateJavaScript("!!window.__crWeReadAppearance")
+        XCTAssertEqual(first as? Bool, false)
+        XCTAssertEqual(second as? Bool, true, "The same book in another window keeps its panel")
+        _ = await center.dismissWeReadAppearance(documentID: id, in: windows[1])
     }
 
     func testWeReadNativePanelFitsViewportAndRestoresAfterDismissal() async throws {
@@ -267,6 +360,155 @@ final class ReaderAppearanceTests: XCTestCase {
         XCTAssertTrue(audio.pause(session: token))
         XCTAssertFalse(audio.resumePlaybackAfterVoicePreview(handle))
         XCTAssertFalse(audio.isPlaying)
+    }
+
+    func testRecreatedPausedWebExplanationRestoresMarksAndViewport() async throws {
+        try await assertRecreatedWebVisuals(readMode: false, autoScroll: true)
+    }
+
+    func testRecreatedPausedWebExplanationRespectsDisabledFollow() async throws {
+        try await assertRecreatedWebVisuals(readMode: false, autoScroll: false)
+    }
+
+    func testRecreatedPausedWebReadRestoresCurrentWord() async throws {
+        try await assertRecreatedWebVisuals(readMode: true, autoScroll: true)
+    }
+
+    func testRecreatedChangedWebContentDoesNotReplayOldMarks() async throws {
+        try await assertRecreatedWebVisuals(readMode: false, autoScroll: true, changedSource: true)
+    }
+
+    func testRecreatedPausedWebExplanationSurvivesChangedSurroundingParagraphs() async throws {
+        try await assertRecreatedWebVisuals(readMode: false, autoScroll: true, shiftedSource: true)
+    }
+
+    func testRecreatedPausedWebReadSurvivesChangedSurroundingParagraphs() async throws {
+        try await assertRecreatedWebVisuals(readMode: true, autoScroll: true, shiftedSource: true)
+    }
+
+    func testRecreatedWebExplanationDoesNotGuessBetweenDuplicateParagraphs() async throws {
+        try await assertRecreatedWebVisuals(readMode: false, autoScroll: true,
+                                           shiftedSource: true, duplicateTarget: true)
+    }
+
+    /// A replacement WKWebView subscribes before its extractor has committed
+    /// paragraphs. Paused VMs do not emit another word/mark to repair that gap.
+    private func assertRecreatedWebVisuals(readMode: Bool, autoScroll: Bool,
+                                           changedSource: Bool = false,
+                                           shiftedSource: Bool = false,
+                                           duplicateTarget: Bool = false) async throws {
+        let originalAutoPlay = AppSettings.shared.autoPlay
+        AppSettings.shared.autoPlay = false
+        let audio = AudioPlayerService.shared
+        audio.clearForAccountBoundary()
+        defer { AppSettings.shared.autoPlay = originalAutoPlay; audio.clearForAccountBoundary() }
+        let url = "https://castreader.local/visual-restoration"
+        let document = try XCTUnwrap(DocumentBuilder.fromWebURL(url))
+        let read = ReadAloudViewModel(document: document)
+        let explain = ExplainViewModel(document: document)
+        let lines = (0..<12).map {
+            "Section \($0) describes a distinct reading position. A paused reader must keep its original words, visible annotations, and current location when the window opens again."
+        }
+        let paragraphs = lines.enumerated().map { ReadingParagraph(id: $0.offset, text: $0.element, type: .paragraph) }
+        read.loadWebParagraphs(paragraphs, language: "en")
+        explain.loadWebParagraphs(paragraphs, language: "en")
+        read.autoScrollEnabled = autoScroll
+        read.currentParagraphIndex = 8
+        read.webHighlight = WebHighlightCmd(paragraphIndex: 8, charStart: 0, charEnd: 9)
+        explain.activeMarks = [ResolvedMark(id: UUID(), paragraphIndex: 8,
+            charRange: 0..<9, action: "underline", n: nil, seed: 42)]
+        explain.scrollTarget = 8
+
+        let bridge = WebReaderBridge()
+        let controller = WKUserContentController()
+        controller.add(bridge, name: "castreader")
+        controller.addUserScript(WKUserScript(source: try XCTUnwrap(WebReaderView.loadBundleJS()),
+            injectionTime: .atDocumentEnd, forMainFrameOnly: true))
+        let configuration = WKWebViewConfiguration()
+        configuration.userContentController = controller
+        configuration.websiteDataStore = .nonPersistent()
+        let web = WKWebView(frame: CGRect(x: 0, y: 0, width: 600, height: 500), configuration: configuration)
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first {
+            window = UIWindow(windowScene: scene)
+            window.frame = web.frame
+        } else { window = UIWindow(frame: web.frame) }
+        window.rootViewController = UIViewController()
+        window.isHidden = false
+        window.rootViewController!.view.addSubview(web)
+        defer {
+            read.deactivate(); explain.deactivate()
+            web.stopLoading(); web.removeFromSuperview(); window.isHidden = true
+            controller.removeScriptMessageHandler(forName: "castreader")
+        }
+        bridge.webView = web
+        bridge.configure(expectsDynamicWebContent: true, readerURL: url)
+        bridge.attach(readVM: read, explainVM: explain)
+        bridge.setActive(readMode: readMode)
+        web.navigationDelegate = bridge
+        // Deliver the initial Published values while the new DOM is absent.
+        try await Task.sleep(for: .milliseconds(50))
+        var presentedLines = changedSource ? lines.map { "Changed source. " + $0 } : lines
+        if shiftedSource {
+            presentedLines = ["A newly rendered page header has different content."] + Array(lines.dropFirst(2))
+                + ["The related reading footer has changed independently from the article."]
+        }
+        if duplicateTarget { presentedLines.append(lines[8]) }
+        let targetDOMIndex = presentedLines.firstIndex(of: lines[8]) ?? 8
+        let restoresTarget = !changedSource && !duplicateTarget
+        let html = """
+        <!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+        <style>body{font:20px/1.6 -apple-system;margin:20px}article{max-width:560px}p{margin:24px 0}</style>
+        </head><body><article>\(presentedLines.map { "<p>\($0)</p>" }.joined())</article></body></html>
+        """
+        web.loadHTMLString(html, baseURL: URL(string: url))
+        var extracted = false
+        for _ in 0..<100 {
+            let value = try? await web.evaluateJavaScript("window.__crLastRendered?.map(p=>p.text)")
+            if value as? [String] == presentedLines { extracted = true; break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        XCTAssertTrue(extracted, "The real extractor must retain this fixture's paragraph identity")
+        // Allow CR.init, queued bridge calls and smooth scrolling to settle.
+        try await Task.sleep(for: .milliseconds(800))
+        let snapshot = try await json("""
+        JSON.stringify({marks:document.querySelectorAll('svg[data-cr-marks] path').length,
+          highlights:document.querySelectorAll('.cr-hl-ov').length,y:window.scrollY,
+          targetTop:document.querySelector('[data-cr-para="\(targetDOMIndex)"]')?.getBoundingClientRect().top,
+          markTop:document.querySelector('svg[data-cr-marks] path')?.getBoundingClientRect().top,
+          height:window.innerHeight})
+        """, web)
+        let marks = try XCTUnwrap(snapshot["marks"] as? Int)
+        let highlights = try XCTUnwrap(snapshot["highlights"] as? Int)
+        if !restoresTarget {
+            XCTAssertEqual(marks, 0, "Old offsets must not be painted on revised or ambiguously repeated prose")
+        } else if readMode {
+            XCTAssertGreaterThan(highlights, 0, "Restore the retained paused word without a new audio tick")
+            XCTAssertEqual(marks, 0, "The inactive mode's marks must stay hidden")
+        } else {
+            XCTAssertGreaterThan(marks, 0, "Restore retained explanation marks without resuming audio")
+            XCTAssertEqual(highlights, 0, "The inactive mode's word must stay hidden")
+        }
+        let y = try XCTUnwrap(snapshot["y"] as? Double)
+        if shiftedSource && restoresTarget {
+            XCTAssertEqual(read.stagedLiveWebParagraphTexts, lines, "Prepared audio retains its source paragraph IDs")
+            XCTAssertEqual(explain.stagedLiveWebParagraphTexts, lines, "Prepared explanation retains its source paragraph IDs")
+        }
+        if autoScroll && restoresTarget {
+            XCTAssertGreaterThan(y, 0, "Return to the retained reading location")
+            let top = try XCTUnwrap(snapshot["targetTop"] as? Double)
+            XCTAssertLessThan(top, try XCTUnwrap(snapshot["height"] as? Double))
+            XCTAssertGreaterThan(top, -100)
+            if !readMode {
+                let markTop = try XCTUnwrap(snapshot["markTop"] as? Double)
+                XCTAssertGreaterThanOrEqual(markTop, top - 2, "Restored ink belongs to the same paragraph")
+                XCTAssertLessThan(markTop, top + 60, "Underline must remain on the first line of the exact target")
+            }
+        } else if !autoScroll {
+            XCTAssertEqual(y, 0, accuracy: 1, "Disabled follow must not be overridden")
+        }
+        XCTAssertFalse(read.isPlaying)
+        XCTAssertFalse(explain.isPlaying)
     }
 
     private func json(_ script: String, _ webView: WKWebView) async throws -> [String: Any] {

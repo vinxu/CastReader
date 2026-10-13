@@ -453,7 +453,8 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
 
     private func installPresentationObserver() {
-        guard presentationObserver == nil, let edge = presentationBoundary,
+        guard !isSeekingInitialPosition,
+              presentationObserver == nil, let edge = presentationBoundary,
               edge.segmentID == currentSegment?.id,
               playbackOwnership.permitsPlayback(requestedBy: edge.session), let player else { return }
         if edge.atItemEnd {
@@ -2004,6 +2005,11 @@ class AudioPlayerService: NSObject, ObservableObject {
         playbackRequested = true
         progressEvidence = AudioPlaybackProgressEvidence()
         hasAudibleProgress = false
+        // A paused restore can already be past the old visible-page edge.
+        // Resolve its presentation hold before allowing this item to speak.
+        removePresentationObserver()
+        installPresentationObserver()
+        guard presentationHold == nil, player === self.player else { return true }
         do {
             try activateAudioSessionIfNeeded()
         } catch {
@@ -2531,6 +2537,11 @@ class AudioPlayerService: NSObject, ObservableObject {
                                 self.hasAudibleProgress = false
                                 self.isSeekingInitialPosition = false
                                 self.currentTime = targetSeconds
+                                // Arm against the accepted seek position, not
+                                // the new item's temporary zero clock. An old
+                                // forward endpoint behind the seek otherwise
+                                // emits a false full-item completion on Play.
+                                self.installPresentationObserver()
                                 if self.playbackRequested && !self.playbackSuspendedByInterruption && self.permitsAutomaticPlayback() {
                                     self.player?.playImmediately(atRate: self.playbackRate)
                                     self.isPlaying = true
@@ -2774,6 +2785,19 @@ class AudioPlayerService: NSObject, ObservableObject {
             }
             if let edge = presentationHold, edge.id == limit.edgeID, let player {
                 suspendForPresentationIfNeeded(edge, player: player)
+            } else if presentationBoundary == nil, hasPlaybackRequest,
+                      permitsAutomaticPlayback(),
+                      playbackOwnership.permitsPlayback(requestedBy: playerItemSession),
+                      let player {
+                // The page can acknowledge its paint before AVPlayer delivers
+                // the artificial endpoint notification. That late didEnd still
+                // stops the decoder; the confirmed page owns its continuation.
+                // Keep the same item and clock, and respect intervening Pause,
+                // interruption, sleep timer, appearance preview or owner change.
+                player.playImmediately(atRate: playbackRate)
+                isPlaying = player.timeControlStatus == .playing
+                updateNowPlayingInfo()
+                ReaderRunLog.write("PAGINATION acknowledged_endpoint_continued time=\(playbackPosition)")
             }
             if acknowledgedPresentationMediaLimit?.edgeID == limit.edgeID {
                 resumeAfterPagePresentation(itemID: itemID, session: limit.session)

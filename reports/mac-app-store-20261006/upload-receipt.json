@@ -1,0 +1,10 @@
+{
+  "officialXcodeExport": "SUCCEEDED",
+  "archive": "CastReaderMac-1.2.47-73.xcarchive",
+  "buildUploadReceipts": [
+    "898d3508-7a23-40b0-9718-78f1f6ae8d44"
+  ],
+  "signing": "Xcode automatic App Store distribution signing",
+  "noCertificateRevocation": true,
+  "appleReceiptState": "COMPLETE"
+}

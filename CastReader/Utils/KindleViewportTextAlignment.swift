@@ -9,6 +9,17 @@ enum KindleViewportTextAlignment {
         let captured: Int
     }
 
+    /// A desktop window can shrink one spoken page into many new pages.
+    /// Search the original passage's estimated span, with a small boundary
+    /// allowance, rather than assuming every reflow stays within two pages.
+    static func reflowSearchOffsets(originalWordCount: Int, capturedWordCount: Int) -> [Int] {
+        let ratio = Double(max(0, originalWordCount)) / Double(max(1, capturedWordCount))
+        let distance = min(12, max(2, Int(ceil(min(10, ratio))) + 2))
+        // Forward first follows the usual page-start anchor after shrinking.
+        // The reverse sweep still finds a renderer that retained the next page.
+        return Array(0...distance) + (1...distance).map { -$0 }
+    }
+
     static func remainingParagraphs(_ paragraphs: [ReadingParagraph], afterParagraph: Int, afterWord: Int) -> [ReadingParagraph]? {
         guard let boundary = paragraphs.first(where: { $0.id == afterParagraph }),
               boundary.words.indices.contains(afterWord) else { return nil }

@@ -1,0 +1,7 @@
+{
+  "CastReader/Views/Reader/WebReaderView.swift": "a66dc0f97eebf3ff39f0ce9261bf050212711b483400ab94223de40520864395",
+  "CastReader/Views/Reader/ReaderHostView.swift": "bcbb125d656a7b93d53bd84ca59c9b085688efca84e3b794bea6ba215fd781a8",
+  "CastReader/Services/WebReaderBridge.swift": "f411ac14bc4536b482f465c14c9be5895e06ba5f04edcfb1a25fb17b9691154b",
+  "CastReaderMacTests/MacWindowRoutingTests.swift": "6bc2e151c4121b8bfeb1bfe47fbcf8961e27415fc904254bc16406d10d09f1fd",
+  "CastReaderTests/PaymentTests.swift": "0d55e3bc1301e367f0691c2ef915a3486aa0fe9338bf773c721d2c33e6b3d52e"
+}

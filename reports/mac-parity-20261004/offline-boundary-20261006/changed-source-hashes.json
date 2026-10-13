@@ -1,0 +1,9 @@
+{
+  "CastReader/Views/Kindle/KindleOfflinePlaybackCenter.swift": "210719d7e4fc06234b7c2a708595f1c86553356a39ce0a5f403db61a69aef1c6",
+  "CastReader/Views/Kindle/KindleOfflineReaderView.swift": "ee49c9ac015da60c9e5af22cc476231c1e72ad3008a2aabe0e6a4c7e640ea624",
+  "CastReader/Views/Kindle/KindleOfflineLibraryScreen.swift": "5f437a1e38853d7c3f4bdf792740ab7e5e942fc7d1cff21c2fa4ecd1fef4680c",
+  "CastReader/Views/MainTabView.swift": "bca164212b2138c66056549c63df462f93e3fea2b514ccb1329e373ad4ad1dcf",
+  "CastReaderTests/ReadingResumeTests.swift": "85485b88b9bcc5382c0dd299f3c2a317f48f3db049afed5b1ddc617b1508d437",
+  "CastReaderTests/KindleOfflineBookStoreTests.swift": "5e23fb98301cd228e5b9794943fc7e61f161a37b9a3dc6a10ecfb0a70f4b6c46",
+  "scripts/mac-unit-test-selection.txt": "bd6bb4ee9714374a48fbf88eea44ff1e3c4497ab651c334315424a57df954069"
+}

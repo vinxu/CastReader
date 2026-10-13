@@ -1,0 +1,60 @@
+[
+  {
+    "bundle": "com.same.castreader",
+    "version": "1.2.47",
+    "build": "73",
+    "architectures": "x86_64 arm64",
+    "sha256": "bbaf3619a296fdad140e971d9977c7827dda5fcec15a0d809cb136d527310ffd",
+    "localizations": [
+      "de.lproj",
+      "en.lproj",
+      "es.lproj",
+      "fr.lproj",
+      "hi.lproj",
+      "it.lproj",
+      "ja.lproj",
+      "pt-BR.lproj",
+      "pt.lproj",
+      "zh-Hans.lproj"
+    ]
+  },
+  {
+    "bundle": "com.same.castreader.CastReaderMacShare",
+    "version": "1.2.47",
+    "build": "73",
+    "architectures": "x86_64 arm64",
+    "sha256": "f389d91c85cdf7d226bee2ffabddfe01567d29e0b8a5818a1f5cc1653d67d249",
+    "localizations": [
+      "de.lproj",
+      "en.lproj",
+      "es.lproj",
+      "fr.lproj",
+      "hi.lproj",
+      "it.lproj",
+      "ja.lproj",
+      "ko.lproj",
+      "pt-BR.lproj",
+      "pt.lproj",
+      "zh-Hans.lproj",
+      "zh-Hant.lproj"
+    ]
+  },
+  {
+    "bundle": "com.same.castreader.CastReaderMacWidget",
+    "version": "1.2.47",
+    "build": "73",
+    "architectures": "x86_64 arm64",
+    "sha256": "d0f0e0961f9bc550077f81e75a61837455b0af39680c98a282fcdbc6d637b134",
+    "localizations": [
+      "de.lproj",
+      "en.lproj",
+      "es.lproj",
+      "fr.lproj",
+      "hi.lproj",
+      "it.lproj",
+      "ja.lproj",
+      "pt-BR.lproj",
+      "zh-Hans.lproj"
+    ]
+  }
+]

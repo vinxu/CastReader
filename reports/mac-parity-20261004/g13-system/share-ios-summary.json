@@ -1,0 +1,15 @@
+{
+  "environmentDescription": "CastReader \u00b7 Built with macOS 26.2",
+  "expectedFailures": 0,
+  "failedTests": 0,
+  "finishTime": 1791201307.024,
+  "passedTests": 25,
+  "result": "Passed",
+  "skippedTests": 0,
+  "startTime": 1791201258.064,
+  "statistics": [],
+  "testFailures": [],
+  "title": "Test - CastReader",
+  "topInsights": [],
+  "totalTestCount": 25
+}

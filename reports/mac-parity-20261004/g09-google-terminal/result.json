@@ -1,0 +1,15 @@
+{
+  "status": "PASS_TERMINAL_READ_EXPLAIN",
+  "book": "WaOcDwAAQBAJ",
+  "readCompletion": "15:09:28.193",
+  "readNaturalStop": true,
+  "modeSwitchAtEndCompletedWithoutAnotherTurn": true,
+  "visibleLastPageExplainMarks": [
+    "paperback ISBN underline",
+    "ebook ISBN underline",
+    "print-run number circle"
+  ],
+  "explainNaturalStop": true,
+  "sourceRecommendationsExcluded": true,
+  "longExplainCovered": false
+}

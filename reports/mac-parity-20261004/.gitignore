@@ -1,0 +1,12 @@
+# Keep full local logs/results out of commits. Retain sanitized summaries.
+*.log
+*.xcresult/
+workspace.txt
+# Rebuildable/raw diagnostic archives stay local; summaries remain versioned.
+*.xcresult.tar.gz
+*.sample.txt
+*.jsonl
+process-samples.txt
+playback-log-excerpt.txt
+change.patch
+isolated-app-*.swift

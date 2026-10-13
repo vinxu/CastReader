@@ -1,0 +1,12 @@
+{
+  "CastReader/Models/ReadingResumeCheckpoint.swift": "8671d23e7b16407eb158644960888c80766388ae2f4205a0363c72290a4e2094",
+  "CastReader/ViewModels/ReadAloudViewModel.swift": "05271b82ce682acc098182b3617c7faa3c4807f75c580e8fca2cbaeba81a1a19",
+  "CastReader/Services/WebReaderBridge.swift": "30d88687c7e7e2c653058c5ab8c780fb320e72aac65f804257aea3e258709e9e",
+  "CastReader/Views/Reader/WebReaderView.swift": "8cc787f7fb9df9aabbaf51f680f756bf053c6d3cc35e14eb0add14755468edf2",
+  "CastReader/Views/Reader/ReaderHostView.swift": "8d9fa85453e0606fccd489458644d72c7e3b2e19cd1de4f91a6f7e4d34db3f4f",
+  "CastReader/Localizable.xcstrings": "aa86e685473b9abbd5291b28109b7baf0c169824f10bc6fd8c6b33898437aae9",
+  "CastReaderTests/ReadingResumeTests.swift": "7040ed2a2d65c822373a6e9e10171129ce7eb8431cb6c578750bbff61f2232c7",
+  "CastReaderTests/GoogleBooksWebBridgeTests.swift": "918b6e098ed7bc69b7f9ef4d609b4ca4e26f49b4ca316cba24ee1ef78d1ca327",
+  "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/MacOS/CastReaderMac": "f2c158667bc5b24f0d1c9f6b5cd8684ebcfcea525612b30a41c77e4c2c30e58e",
+  "/tmp/CastReaderMacParity/Build/Products/Debug-maccatalyst/CastReaderMac.app/Contents/Resources/WebAssets/bundle.js": "7337afbc9e6fb0562c609a0c5afa0d6f811509dc6f0b12a785db0ef58c4b6758"
+}

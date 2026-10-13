@@ -6,6 +6,11 @@ import Combine
 
 @MainActor
 final class PaginationContinuityTests: XCTestCase {
+    override func setUp() async throws {
+        try await super.setUp()
+        _ = AuthService.shared
+    }
+
     private func segment(_ text: String, _ cues: [(String, Double, Double)], index: Int = 0) -> AudioSegment {
         AudioSegment(paragraphIndex: 0, segmentIndex: index, audioData: Data(),
             timestamps: cues.map { TTSTimestamp(word: $0.0, startTime: $0.1, endTime: $0.2) },
@@ -89,11 +94,16 @@ final class PaginationContinuityTests: XCTestCase {
                 sourceKind: .weread, language: "zh", paragraphs: []), audioService: audio, ttsService: fixture.service())
             defer { read.stop(); read.deactivate(); audio.stop() }
             read.loadWebParagraphs([ReadingParagraph(id: 0, text: source)], language: "zh")
-            // Live-page prefetch preserves one complete source unit. A cold
-            // Chinese start may split natural sentences before the HTTP call,
-            // which does not reproduce the reported multi-sentence audio part.
-            let parts = try await fixture.service().generatePagePrefetchSegments(
-                paragraphIndex: 0, text: source, voice: AppSettings.shared.voice(for: "zh"), language: "zh")
+            // A retained provider unit can still contain several sentences.
+            // Preserve that explicit unit to exercise legacy/cache playback;
+            // fresh Mac requests intentionally split at sentence boundaries.
+            var parts: [AudioSegment] = []
+            try await fixture.service().generateBufferedSpeech(paragraphIndex: 0,
+                text: source, voice: AppSettings.shared.voice(for: "zh"), speed: 1,
+                language: "zh", includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
+                continuation: TTSContinuation(requestUnits: [source], nextSegmentIndex: 0,
+                    requiresSourceTiming: true, requestUnitsArePlanned: true),
+                beforeRequest: { _ in .interactive }, onSegmentReady: { parts.append($0) })
             XCTAssertEqual(parts.count, 1)
             read.startWithPrefetchedSegments(parts, paragraphIndex: 0)
             for _ in 0..<300 where audio.playbackPosition < 0.3 { try await Task.sleep(nanoseconds: 10_000_000) }
@@ -171,6 +181,51 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertFalse(player?.currentItem?.forwardPlaybackEndTime.isValid ?? true)
         for _ in 0..<150 where audio.playbackPosition <= 0.8 { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertGreaterThan(audio.playbackPosition, 0.8, "Confirmation must remove the future media limit")
+    }
+
+    func testLateArtificialEndAfterPageAcknowledgementContinuesSameDecoder() async throws {
+        try await verifyLateArtificialEndAfterPageAcknowledgement(pause: false)
+    }
+
+    func testExplicitPauseWinsOverLateArtificialEndAfterAcknowledgement() async throws {
+        try await verifyLateArtificialEndAfterPageAcknowledgement(pause: true)
+    }
+
+    private func verifyLateArtificialEndAfterPageAcknowledgement(pause: Bool) async throws {
+        let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        defer { audio.stop() }
+        let session = audio.claimPlaybackSession(owner: .readAloud)
+        let part = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: wav(), timestamps: [],
+            duration: 2, text: "The carried sentence must keep playing.", isWavFormat: true)
+        XCTAssertTrue(audio.loadSegments([part], autoPlay: false, session: session))
+        var player: AVPlayer?
+        var acknowledged = false
+        XCTAssertTrue(audio.armPagePresentationBoundary(segmentID: part.id, time: 0.2,
+            session: session, continuationTime: 0.25) { id in
+                // Native rendering occupies the main executor while the media
+                // endpoint fires. The paint acknowledgement beats its queued
+                // didEnd callback, exactly as a fast Google page commit can.
+                player = audio.activePlayerForTesting
+                usleep(160_000)
+                XCTAssertEqual(audio.playbackPosition, 0.25, accuracy: 0.002)
+                acknowledged = audio.finishPagePresentation(id)
+                if pause { XCTAssertTrue(audio.pause(session: session)) }
+            })
+        XCTAssertTrue(audio.play(session: session))
+        for _ in 0..<200 where !acknowledged || audio.playbackPosition <= 0.6 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertTrue(acknowledged)
+        XCTAssertNil(audio.pagePresentationHoldID)
+        XCTAssertTrue(audio.activePlayerForTesting === player)
+        XCTAssertEqual(audio.currentSegment?.id, part.id)
+        if pause {
+            XCTAssertEqual(audio.playbackPosition, 0.25, accuracy: 0.002)
+            XCTAssertFalse(audio.isPlaying)
+        } else {
+            XCTAssertGreaterThan(audio.playbackPosition, 0.6,
+                "A late artificial didEnd must resume the acknowledged carried source, not strand it at the page edge")
+        }
     }
 
     func testLatePageStopsAtNextAudibleCueRatherThanAtPreviousWordEnd() async throws {
@@ -590,14 +645,59 @@ final class PaginationContinuityTests: XCTestCase {
         var received: [AudioSegment] = []
         try await fixture.service().generateBufferedSpeech(paragraphIndex: 0, text: raw, voice: "af_heart",
             speed: 1, language: "en", includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
-            continuation: TTSContinuation(requestUnits: [raw], nextSegmentIndex: 0, requiresSourceTiming: true),
+            continuation: TTSContinuation(requestUnits: [normalized], nextSegmentIndex: 0, requiresSourceTiming: true, requestUnitsArePlanned: true),
             beforeRequest: { _ in .interactive }, onSegmentReady: { received.append($0) })
         XCTAssertEqual(fixture.requests, [normalized, "Afterward they left."])
         XCTAssertEqual(received.map(\.text).joined(), normalized)
     }
 
-    func testShortOpeningWaitsForOneDecodedBodyPartWithoutRepeatingPrefix() async throws {
+    func testColdShortOpeningFollowsPlatformPolicyWithoutRepeatingPrefix() async throws {
         try await verifyShortOpening(pauseWhilePreparing: false)
+    }
+
+    func testChangedReflowAudioCannotAutoplayEarlierParagraphPrefix() async throws {
+        try await verifyUnmatchedReflowAnchor(paused: false)
+    }
+
+    func testChangedPausedReflowAudioRequiresChoiceBeforeLoadingEarlierPrefix() async throws {
+        try await verifyUnmatchedReflowAnchor(paused: true)
+    }
+
+    private func verifyUnmatchedReflowAnchor(paused: Bool) async throws {
+        let oldPro = ProManager.shared.debugForcePro
+        ProManager.shared.debugForcePro = true
+        defer { ProManager.shared.debugForcePro = oldPro }
+        useRegularVoiceForTest(language: "en")
+        let prefix = "The same paragraph opening provides source identity. "
+        let oldSource = prefix + "The previously playing sentence is no longer present."
+        let newSource = prefix + "The replacement audio contains different later material."
+        let fixture = ReadAloudHTTPFixture { text, _ in
+            .response(ReadAloudHTTPFixture.body(text, duration: 4))
+        }
+        defer { fixture.close() }
+        let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let read = ReadAloudViewModel(document: .init(id: UUID().uuidString, title: "Changed reflow source",
+            sourceKind: .googleBooks, language: "en", paragraphs: []), audioService: audio, ttsService: fixture.service())
+        defer { read.stop(); read.deactivate(); audio.stop() }
+        read.loadWebParagraphs([ReadingParagraph(id: 0, text: oldSource)], language: "en")
+        read.activate()
+        if paused { read.pausePlayback() }
+        read.replaceLiveWebPage([ReadingParagraph(id: 0, text: newSource)], language: "en", autoplay: !paused,
+            resumeAnchor: .init(segmentText: "The previously playing sentence is no longer present.",
+                sourceParagraphText: oldSource, segmentProgress: 0.7, wasPlaying: !paused))
+        for _ in 0..<200 where read.resumeNotice == nil {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(fixture.requests, [prefix.trimmingCharacters(in: .whitespaces),
+            "The replacement audio contains different later material."])
+        #else
+        XCTAssertEqual(fixture.requests, [newSource])
+        #endif
+        XCTAssertNotNil(read.resumeNotice, "A matching paragraph prefix does not prove the heard sentence survived")
+        XCTAssertNil(audio.currentSegment, "Earlier unmatched audio must never enter the queue")
+        XCTAssertFalse(audio.hasQueuedSegments)
+        XCTAssertFalse(audio.isPlaying)
     }
 
     func testPausedReflowCanReachLaterPartWithoutResumingOrGeneratingPastCursor() async throws {
@@ -622,10 +722,15 @@ final class PaginationContinuityTests: XCTestCase {
         read.replaceLiveWebPage(page, language: "en", autoplay: false,
             resumeAnchor: .init(segmentText: "Restored sentence. ", sourceParagraphText: source,
                 segmentProgress: 0.5, wasPlaying: false))
-        for _ in 0..<300 where audio.currentSegment?.text != "Restored sentence. " || abs(audio.playbackPosition - 2) > 0.2 {
+        #if targetEnvironment(macCatalyst)
+        let expectedRestoredText = "Restored sentence."
+        #else
+        let expectedRestoredText = "Restored sentence. "
+        #endif
+        for _ in 0..<300 where audio.currentSegment?.text != expectedRestoredText || abs(audio.playbackPosition - 2) > 0.2 {
             try await Task.sleep(nanoseconds: 10_000_000)
         }
-        XCTAssertEqual(audio.currentSegment?.text, "Restored sentence. ")
+        XCTAssertEqual(audio.currentSegment?.text, expectedRestoredText)
         XCTAssertFalse(audio.isPlaying)
         XCTAssertTrue(read.isPlaybackPausedByUser)
         XCTAssertEqual(audio.playbackPosition, 2, accuracy: 0.2)
@@ -661,7 +766,12 @@ final class PaginationContinuityTests: XCTestCase {
         read.start()
         for _ in 0..<200 where fixture.requests.count < 2 { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertEqual(fixture.requests, ["I", "Body tail."])
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(audio.currentSegment?.text, "I",
+            "Mac begins a cold title immediately while preparing its confirmed successor")
+        #else
         XCTAssertNil(audio.currentSegment, "The title cannot outrun the cold first body response")
+        #endif
         if pauseWhilePreparing { read.pausePlayback() }
         for _ in 0..<200 where !audio.hasQueuedSegments { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertTrue(audio.hasQueuedSegments, "A paused title remains queued for explicit resume")
@@ -680,6 +790,9 @@ final class PaginationContinuityTests: XCTestCase {
             for _ in 0..<300 where read.currentParagraphIndex != 1 { try await Task.sleep(nanoseconds: 10_000_000) }
             XCTAssertEqual(read.currentParagraphIndex, 1)
             XCTAssertEqual(fixture.requests.filter { $0 == "Body tail." }.count, 1)
+            for _ in 0..<200 where !fixture.requests.contains("tail.") {
+                try await Task.sleep(nanoseconds: 10_000_000)
+            }
             XCTAssertEqual(fixture.requests.filter { $0 == "tail." }.count, 1)
         }
     }
@@ -996,6 +1109,41 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertGreaterThan(audio.playbackPosition, 0.4)
     }
 
+    func testRestoredAudioBeyondOldPageEdgeWaitsForPaintAndKeepsUnheardTail() async throws {
+        for autoPlay in [false, true] {
+            let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+            let session = audio.claimPlaybackSession(owner: .readAloud)
+            defer { audio.stop() }
+            let part = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: wav(), timestamps: [],
+                duration: 2, text: "The restored word moved to the next visible page", isWavFormat: true)
+            var hold: UUID?, completions = 0
+            audio.onPlaybackComplete = { completions += 1 }
+            XCTAssertTrue(audio.loadSegments([part], autoPlay: false, session: session))
+            XCTAssertTrue(audio.armPagePresentationBoundary(segmentID: part.id, time: 0.3,
+                session: session, continuationTime: 0.375) { hold = $0 })
+            XCTAssertTrue(audio.startQueuedSegment(id: part.id, progress: 0.55, autoPlay: autoPlay, session: session))
+            for _ in 0..<200 where audio.playbackPosition < 1 { try await Task.sleep(nanoseconds: 10_000_000) }
+            if !autoPlay {
+                XCTAssertNil(hold, "Restoring a paused item must wait for an explicit Play before changing pages")
+                XCTAssertFalse(audio.isPlaying)
+                XCTAssertTrue(audio.play(session: session))
+            }
+            for _ in 0..<200 where hold == nil { try await Task.sleep(nanoseconds: 10_000_000) }
+            let id = try XCTUnwrap(hold)
+            let restoredPosition = audio.playbackPosition
+            XCTAssertEqual(restoredPosition, 1.1, accuracy: 0.05)
+            XCTAssertEqual(completions, 0)
+            XCTAssertTrue(audio.finishPagePresentation(id))
+            for _ in 0..<100 where audio.playbackPosition < 1.35 && completions == 0 {
+                try await Task.sleep(nanoseconds: 10_000_000)
+            }
+            XCTAssertEqual(completions, 0, "The old page edge cannot consume the unplayed remainder")
+            XCTAssertGreaterThan(audio.playbackPosition, restoredPosition + 0.15,
+                "Acknowledgement must continue the same restored audio, not leave it drained")
+            XCTAssertEqual(audio.currentSegment?.id, part.id)
+        }
+    }
+
     func testRealCompletionAfterVisualHoldIgnoresEstimatedDurationPadding() async throws {
         let audio = AudioPlayerService(testTemporaryRoot: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
         defer { audio.stop() }
@@ -1309,6 +1457,10 @@ final class PaginationContinuityTests: XCTestCase {
         try await verifyKoboCuePages(pageCount: 2)
     }
 
+    func testKoboReflowDuringCarriedAudioKeepsItsSourceAndPausedClock() async throws {
+        try await verifyKoboCuePages(pageCount: 2, reflowCarry: true)
+    }
+
     func testKoboThreePagesUseTwoRealCuesAndOneSourceProducer() async throws {
         try await verifyKoboCuePages(pageCount: 3)
     }
@@ -1350,6 +1502,14 @@ final class PaginationContinuityTests: XCTestCase {
         try await verifyKoboCuePages(pageCount: 2, wholePage: true, bookEnd: true)
     }
 
+    func testKoboReadAtBookEndAfterExplainCompletesWithoutTimeout() async throws {
+        try await verifyKoboCuePages(pageCount: 2, wholePage: true, bookEnd: true, bookEndAfterExplain: true)
+    }
+
+    func testKoboBookEndReplayDrainsNewPresentationHold() async throws {
+        try await verifyKoboCuePages(pageCount: 2, wholePage: true, bookEnd: true, replayBookEnd: true)
+    }
+
     func testNextPageProducerSurvivesCurrentPagePartTransitions() async throws {
         try await verifyKoboCuePages(pageCount: 2, wholePage: true, multipartPreload: true)
     }
@@ -1364,7 +1524,9 @@ final class PaginationContinuityTests: XCTestCase {
 
     private func verifyKoboCuePages(pageCount: Int, wholePage: Bool = false, deferFirstAnchor: Bool = false,
                                   preparedCarry: Bool = false, expectsNativePaint: Bool? = nil,
-                                  bookEnd: Bool = false, multipartPreload: Bool = false, untimedOpening: Bool = false, background: Bool = false) async throws {
+                                  bookEnd: Bool = false, multipartPreload: Bool = false, untimedOpening: Bool = false, background: Bool = false,
+                                  reflowCarry: Bool = false, bookEndAfterExplain: Bool = false,
+                                  replayBookEnd: Bool = false) async throws {
         let oldPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
         defer { ProManager.shared.debugForcePro = oldPro }
@@ -1384,7 +1546,7 @@ final class PaginationContinuityTests: XCTestCase {
                 return .response(try! JSONSerialization.data(withJSONObject: body))
             }
             if text == "The prepared successor." { return .response(ReadAloudHTTPFixture.body(text, duration: 3)) }
-            var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body(text, duration: preparedCarry ? 6 : 3)) as! [String: Any]
+            var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body(text, duration: preparedCarry || reflowCarry ? 6 : 3)) as! [String: Any]
             body["timestamps"] = [["word":"Slow","start_time":0.0,"end_time":preparedCarry ? 3.0 : 0.4],
                                   ["word":"rapidly","start_time":preparedCarry ? 3.0 : 0.4,"end_time":preparedCarry ? 4.0 : 1.3],
                                   ["word":"onward","start_time":preparedCarry ? 4.0 : 1.3,"end_time":preparedCarry ? 5.8 : 2.8]]
@@ -1469,6 +1631,18 @@ final class PaginationContinuityTests: XCTestCase {
             _ = try await web.evaluateJavaScript("window.requestAnimationFrame=()=>0;true")
             bridge.applicationActivityChanged(isActive: false)
         }
+        if bookEndAfterExplain {
+            bridge.setActive(readMode: false)
+            // The short final source naturally bypasses remote planning and
+            // asks the provider for its next page, just like an Author footer.
+            explain.start()
+            for _ in 0..<150 where explain.status != .completed || explain.isContinuingLivePage {
+                try await Task.sleep(for: .milliseconds(20))
+            }
+            XCTAssertEqual(explain.status, .completed)
+            XCTAssertFalse(explain.isContinuingLivePage)
+            bridge.setActive(readMode: true)
+        }
         read.start()
         if bookEnd {
             for _ in 0..<250 where !read.isFinished || audio.pagePresentationHoldID != nil {
@@ -1477,14 +1651,53 @@ final class PaginationContinuityTests: XCTestCase {
             XCTAssertTrue(read.isFinished, "Proven book end must finish the source session")
             XCTAssertNil(audio.pagePresentationHoldID, "Book end is not an unconfirmed next-page paint")
             XCTAssertFalse(audio.isBuffering)
+            if replayBookEnd {
+                read.jump(to: 0)
+                for _ in 0..<150 where !audio.isPlaying {
+                    try await Task.sleep(for: .milliseconds(20))
+                }
+                XCTAssertTrue(audio.isPlaying, "The replay must actually start before checking its completion")
+                for _ in 0..<250 where !read.isFinished || audio.pagePresentationHoldID != nil {
+                    try await Task.sleep(for: .milliseconds(20))
+                }
+                XCTAssertTrue(read.isFinished, "Replaying a terminal page still completes the new audio queue")
+                XCTAssertNil(audio.pagePresentationHoldID, "An earlier end confirmation must drain the replay's hold")
+                XCTAssertFalse(audio.isBuffering)
+            }
             let turns = try await web.evaluateJavaScript("turns") as? Int
             XCTAssertEqual(turns, 0)
             return
         }
         var held = false
         var mediaAfterAcknowledgement = false
+        var didReflowCarry = false
         for _ in 0..<600 {
             held = held || audio.pagePresentationHoldID != nil
+            if reflowCarry, !didReflowCarry, !inbox.presentations.isEmpty,
+               audio.pagePresentationHoldID == nil, read.currentSegmentBelongsToLiveWebCarry {
+                read.pausePlayback()
+                let anchor = try XCTUnwrap(read.makeWeReadPlaybackResumeAnchor(),
+                    "The carried source remains resumable after its old page-local paragraph index is retired")
+                XCTAssertEqual(anchor.sourceParagraphText, "Slow rapidly onward.")
+                XCTAssertFalse(anchor.wasPlaying)
+                let position = audio.playbackPosition
+                _ = try await web.evaluateJavaScript("""
+                  document.getElementById('BookView').style.width='480px';
+                  document.querySelector('iframe').style.left='0px';
+                  document.querySelector('iframe').contentDocument.querySelector('p').style.fontSize='26px';true
+                  """)
+                for _ in 0..<250 {
+                    if fixture.requests.count >= 2, read.currentParagraphIndex == 0,
+                       abs(audio.playbackPosition - position) < 0.15 { break }
+                    try await Task.sleep(nanoseconds: 20_000_000)
+                }
+                XCTAssertEqual(read.stagedLiveWebParagraphTexts.first, anchor.sourceParagraphText)
+                XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.15)
+                XCTAssertFalse(audio.isPlaying)
+                XCTAssertTrue(read.isPlaybackPausedByUser)
+                didReflowCarry = true
+                read.ensurePlaying()
+            }
             let confirmed = background
                 ? inbox.turnPositions.count >= pageCount - 1 && audio.pagePresentationHoldID == nil
                 : inbox.presentations.filter({ $0["ready"] as? Bool == true }).count >= pageCount - 1
@@ -1524,7 +1737,8 @@ final class PaginationContinuityTests: XCTestCase {
         }
         let turns = try await web.evaluateJavaScript("turns") as? Int
         XCTAssertEqual(turns, pageCount - 1)
-        XCTAssertEqual(fixture.requests.filter { $0 == (wholePage ? (multipartPreload ? "Slow first." : "Slow.") : "Slow rapidly onward.") }.count, 1)
+        XCTAssertEqual(fixture.requests.filter { $0 == (wholePage ? (multipartPreload ? "Slow first." : "Slow.") : "Slow rapidly onward.") }.count, reflowCarry ? 2 : 1)
+        if reflowCarry { XCTAssertTrue(didReflowCarry) }
     }
 
     func testKoboNativeBookClipHiddenLabelsDropCapAndFade() async throws {
@@ -1578,6 +1792,36 @@ final class PaginationContinuityTests: XCTestCase {
             for key in ["sourceParagraphIndex", "sourceUTF16Start", "sourceUTF16End"] {
                 XCTAssertEqual(actual.map { $0[key] as? Int ?? -1 }, predicted.map { $0[key] as? Int ?? -1 }, key)
             }
+        }
+    }
+
+    func testGoogleReopenedTailPaintsRetainedAudioWordsWithSignedDOMOrigin() async throws {
+        try await withGoogleFixture(#"""
+        <reader-app><reader-rendered-page style="position:absolute;left:0;top:0;width:350px;height:560px;overflow:hidden"><div class="gb-segment"><p>promised words remain here and promised words stay visible.</p></div></reader-rendered-page></reader-app>
+        """#) { web in
+            let result = try await web.evaluateJavaScript("""
+              CR.extract('fixture');
+              (()=>{
+                const prior='An earlier promised passage belongs entirely to the previous page. ';
+                const tail=document.querySelector('p').textContent;
+                CR.init({segments:[{paragraphIndex:0,text:prior+tail,domParagraphIndex:0,domCharOffset:-prior.length}]});
+                const offset=tail.lastIndexOf('promised');
+                const range=document.createRange();range.setStart(document.querySelector('p').firstChild,offset);
+                range.setEnd(document.querySelector('p').firstChild,offset+8);
+                const expected=range.getBoundingClientRect();
+                CR.highlightWord({paragraphIndex:0,segSeq:1,words:tail.split(' '),wordIndex:5,segmentTexts:[prior]});
+                const word=[...document.querySelectorAll('.cr-hl-ov')].map(n=>n.getBoundingClientRect().left);
+                CR.highlightRange({paragraphIndex:0,charStart:prior.length+offset,charEnd:prior.length+offset+8});
+                const direct=[...document.querySelectorAll('.cr-hl-ov')].map(n=>n.getBoundingClientRect().left);
+                return {word,direct,expected:expected.left};
+              })()
+              """) as? [String: Any]
+            let expected = try XCTUnwrap(result?["expected"] as? Double)
+            let word = try XCTUnwrap((result?["word"] as? [Double])?.first)
+            let direct = try XCTUnwrap((result?["direct"] as? [Double])?.first)
+            XCTAssertEqual(word, expected, accuracy: 0.5,
+                "Prior offscreen words must not consume a repeated visible word while rebuilding the cursor")
+            XCTAssertEqual(direct, expected, accuracy: 0.5)
         }
     }
 
@@ -1780,6 +2024,54 @@ final class PaginationContinuityTests: XCTestCase {
             }
             let shown = try await web.evaluateJavaScript("document.querySelector('reader-page.shown').id") as? String
             XCTAssertEqual(shown, "page-0-1")
+        }
+    }
+
+    func testGoogleReflowFindsPartialNativeSourceAndVerifiedContext() async throws {
+        let target = "The speaking paragraph has a unique exact prefix identifying its place in the verified native sequence. "
+        let tail = "Its remaining audio is beyond the currently measured pages."
+        let neighbor = "The preceding paragraph is also unique and proves which side of the current spread owns the unheard audio."
+        struct Scenario {
+            let name: String
+            let blocks: String
+            let source: String
+            let context: [[String: String]]
+            let shouldTurn: Bool
+        }
+        let scenarios = [
+            Scenario(name: "partial target", blocks: "<p ocean-sliced-element>\(target)</p>", source: target + tail, context: [], shouldTurn: true),
+            Scenario(name: "future target with verified earlier neighbor", blocks: "<p>\(neighbor)</p>", source: target + tail, context: [["text": neighbor, "side": "before"]], shouldTurn: true),
+            Scenario(name: "wrong-side neighbor", blocks: "<p>\(neighbor)</p>", source: target + tail, context: [["text": neighbor, "side": "after"]], shouldTurn: false),
+            Scenario(name: "ambiguous repeated prefix", blocks: "<p>\(target)</p><p ocean-sliced-element>\(target)</p>", source: target + tail, context: [], shouldTurn: false),
+            Scenario(name: "unrelated native text", blocks: "<p>This other paragraph cannot prove where the previous audio moved.</p>", source: target + tail, context: [["text": neighbor, "side": "before"]], shouldTurn: false)
+        ]
+        for scenario in scenarios {
+            let inbox = PageMessages()
+            let html = """
+            <reader-horizontal-view><ol><li class="onepage">
+            <reader-page id="page-0-0" class="shown -gb-loaded"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment"><p>Earlier unrelated chapter text.</p></div></reader-rendered-page></reader-page>
+            <reader-page id="page-0-1" class="-gb-loaded" style="left:1000px"><reader-rendered-page class="-gb-text layout" style="width:350px;height:560px"><div class="gb-segment">\(scenario.blocks)</div></reader-rendered-page></reader-page>
+            </li></ol></reader-horizontal-view>
+            <button onclick="window.revealClicks=(window.revealClicks||0)+1;document.querySelectorAll('reader-page').forEach(p=>{p.classList.toggle('shown',p.id==='page-0-1');p.style.left=p.id==='page-0-1'?'0px':'1000px'})"><mat-icon>chevron_right</mat-icon></button>
+            """
+            try await withGoogleFixture(html, messages: inbox) { web in
+                for _ in 0..<200 where !inbox.values.contains(where: { $0["type"] as? String == "rendered" }) {
+                    try await Task.sleep(nanoseconds: 20_000_000)
+                }
+                let current = try XCTUnwrap(inbox.values.first { $0["type"] as? String == "rendered" }?["payload"] as? [String: Any])
+                let payload: [String: Any] = ["reflowSourceText": scenario.source, "reflowContext": scenario.context,
+                    "reflowBaseline": try XCTUnwrap(current["signature"] as? String),
+                    "originFrameSessionID": try XCTUnwrap(current["frameSessionID"] as? String)]
+                let data = try JSONSerialization.data(withJSONObject: payload)
+                _ = try await web.evaluateJavaScript("CastReaderGoogleBooks.refresh(" + String(decoding: data, as: UTF8.self) + ")")
+                try await Task.sleep(nanoseconds: 800_000_000)
+                let clicks = try await web.evaluateJavaScript("window.revealClicks||0") as? Int
+                XCTAssertEqual(clicks, scenario.shouldTurn ? 1 : 0, scenario.name)
+                XCTAssertFalse(inbox.values.contains { value in
+                    let payload = value["payload"] as? [String: Any]
+                    return payload?["reason"] as? String == "manual" || payload?["reason"] as? String == "auto"
+                }, scenario.name)
+            }
         }
     }
 
@@ -2098,7 +2390,7 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertEqual(oldCompletions, finishBeforeAdoption ? 1 : 0)
     }
 
-    func testShortDialogueStartupAccumulatesSeveralOrderedParagraphs() async throws {
+    func testShortDialogueFollowsPlatformStartupPolicyAndPromotesParagraphsOnce() async throws {
         let oldPro = ProManager.shared.debugForcePro, oldSpeed = AppSettings.shared.speed
         ProManager.shared.debugForcePro = true
         AppSettings.shared.speed = 1.5
@@ -2117,8 +2409,16 @@ final class PaginationContinuityTests: XCTestCase {
         read.start()
         for _ in 0..<500 where !audio.hasAudibleProgress { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertTrue(audio.hasAudibleProgress)
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(audio.currentSegment?.text, texts[0])
+        XCTAssertLessThan(fixture.requests.count, texts.count,
+            "Mac cold playback starts before waiting for every short dialogue response")
+        XCTAssertTrue(read.dbgKindlePrefetchIndices.allSatisfy { (1...3).contains($0) },
+            "Only committed successors can be prepared")
+        #else
         XCTAssertEqual(fixture.requests, texts, "First playback waits for a bounded duration, not one short body part")
         XCTAssertEqual(read.dbgKindleReadyIndices, [1, 2, 3])
+        #endif
         for _ in 0..<500 where read.currentParagraphIndex < 3 { try await Task.sleep(nanoseconds: 10_000_000) }
         XCTAssertEqual(read.currentParagraphIndex, 3)
         XCTAssertEqual(fixture.requests, texts, "Promotion uses each existing producer exactly once")

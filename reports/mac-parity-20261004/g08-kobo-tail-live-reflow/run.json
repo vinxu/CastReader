@@ -1,0 +1,6 @@
+{
+  "startedAt": "2026-10-05T07:41:57.661789+08:00",
+  "logByteOffset": 2968188,
+  "candidate": "g08-kobo-contracts/tail-candidate-identity.json",
+  "scenario": "Consecutive font shrink while paused, then resume, wider window, carried audio continuity"
+}

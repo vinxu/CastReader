@@ -1,0 +1,79 @@
+[
+  {
+    "locale": "fr-FR",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3644
+  },
+  {
+    "locale": "hi",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3033
+  },
+  {
+    "locale": "zh-Hant",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 1187
+  },
+  {
+    "locale": "pt-BR",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3315
+  },
+  {
+    "locale": "en-US",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3143
+  },
+  {
+    "locale": "it",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3452
+  },
+  {
+    "locale": "es-MX",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3452
+  },
+  {
+    "locale": "zh-Hans",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 1053
+  },
+  {
+    "locale": "de-DE",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3461
+  },
+  {
+    "locale": "ja",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 1445
+  },
+  {
+    "locale": "es-ES",
+    "fields": [
+      "description"
+    ],
+    "descriptionLength": 3452
+  }
+]

@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-06",
+  "scope": "Mac left Tab highlight flicker; focused UI regression only",
+  "previous_fix": "User reported recurrence after disabling SwiftUI animations; prior settled-state checks did not establish animation correctness",
+  "diagnosis": {
+    "observed": "Six native-sidebar selection requests each produced exactly one committed value; no model oscillation observed",
+    "inference": "The remaining visual behavior is in the adaptive sidebar selection presentation; its internal animation was not measured frame by frame"
+  },
+  "implementation": [
+    "Mac uses four plain fixed-position sidebar buttons, each with its own nonanimated selected background",
+    "Retain TabView ownership and page state; tabBarOnly content with native tab controls hidden",
+    "Prevent duplicate promoted native titlebar tabs; use inline Mac page titles",
+    "Keep iPhone/iPad navigation branch unchanged"
+  ],
+  "source_sha256": {
+    "CastReader/Views/MainTabView.swift": "0975fe92b8705ae25634c4235f38ab01c60432f4568e363b33401edbbe262764",
+    "CastReader/Views/Home/HomeView.swift": "7af0b670e439f050fc2c799fd3c29f1e971881b1bb103aa5779af68ac4a4c349",
+    "CastReader/Views/Settings/SettingsView.swift": "650736af7c91cc3403f2ee136d735fdb799819a23f28dc69dee4481ba5f791e5",
+    "CastReader/Views/Settings/VoiceBrowserView.swift": "b06ca355abb485abaac63362277c7d4dbb5fe57619ab96152d9a191e2efb3f5b"
+  },
+  "debug": {
+    "build": "PASS",
+    "log": "/tmp/mac-tab-fixed-sidebar-debug.log",
+    "checks": {
+      "four_tabs_actual_mouse_selection": "PASS",
+      "rapid_sequential_clicks_and_repeat_current": "PASS",
+      "single_selected_button_and_one_commit_per_change": "PASS",
+      "library_Kindle_filter_retained": "PASS",
+      "Kindle_mini_continues_playing_across_four_tabs": "PASS",
+      "expand_keeps_playing_and_hides_sidebar_and_library_toolbar": "PASS",
+      "pause_and_mouse_return": "PASS",
+      "downloaded_navigation_and_back": "PASS",
+      "sources_navigation_and_back": "PASS",
+      "import_panel_and_cancel": "PASS",
+      "command_4_and_command_2_update_selection": "PASS",
+      "no_duplicate_native_tab_toolbar": "PASS"
+    }
+  },
+  "release": {
+    "status": "PASS",
+    "log": "/tmp/mac-tab-fixed-sidebar-release.log",
+    "configuration": "Release arm64",
+    "installed_app": "/Users/xuxuheng/Applications/CastReader for Mac.app",
+    "executable_sha256": "236aac015a85152029eefb6789983e1834289a1111d667e24e9309af148a36f5",
+    "signature_sandbox_and_app_groups": "PASS",
+    "signing_report": "/tmp/mac-tab-fixed-sidebar-signing.json",
+    "checks": {
+      "four_tabs_actual_mouse_selection": "PASS",
+      "rapid_sequential_clicks_and_repeat_current": "PASS",
+      "single_selected_button_no_native_tab_toolbar": "PASS",
+      "reader_hides_sidebar_and_library_toolbar": "PASS",
+      "mouse_return_restores_Library_selection_toolbar_and_paused_mini": "PASS"
+    },
+    "final_state": "Library selected; Kindle Mini Player paused; original voice and 1.5x retained"
+  },
+  "limits": [
+    "No full services or four-platform matrix rerun",
+    "No new iPhone/iPad device install or acceptance",
+    "No frame-by-frame capture of the previous native indicator"
+  ]
+}

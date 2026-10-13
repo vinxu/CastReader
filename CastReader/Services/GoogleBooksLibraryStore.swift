@@ -147,11 +147,26 @@ final class GoogleBooksLibraryStore: ObservableObject {
         }
         switch sort {
         case .recent:
-            return filtered.sorted { ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt) }
+            return filtered.sorted(by: Self.recentlyReadFirst)
         case .title:
             return filtered.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         case .author:
             return filtered.sorted { $0.displayAuthor.localizedCaseInsensitiveCompare($1.displayAuthor) == .orderedAscending }
+        }
+    }
+
+    private static func recentlyReadFirst(_ left: GoogleBooksBook, _ right: GoogleBooksBook) -> Bool {
+        // Discovering a book again does not make it more recently read.
+        // Stable identity breaks ties in a snapshot whose sync times are equal.
+        switch (left.lastOpenedAt, right.lastOpenedAt) {
+        case let (a?, b?) where a != b: return a > b
+        case (_?, nil): return true
+        case (nil, _?): return false
+        default:
+            if left.lastSyncedAt != right.lastSyncedAt {
+                return left.lastSyncedAt > right.lastSyncedAt
+            }
+            return left.id < right.id
         }
     }
 
@@ -241,7 +256,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
             anchors = anchors.filter { retainedIDs.contains($0.key) }
         }
         let wasConnected = hasConnected
-        books = merged.values.sorted { ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt) }
+        books = merged.values.sorted(by: Self.recentlyReadFirst)
         hasConnected = true
         if let label = account?.label?.trimmingCharacters(in: .whitespacesAndNewlines), !label.isEmpty {
             accountLabel = label
@@ -390,9 +405,7 @@ final class GoogleBooksLibraryStore: ObservableObject {
                 }
             }
         }
-        books = sanitizedByID.values.sorted {
-            ($0.lastOpenedAt ?? $0.lastSyncedAt) > ($1.lastOpenedAt ?? $1.lastSyncedAt)
-        }
+        books = sanitizedByID.values.sorted(by: Self.recentlyReadFirst)
         anchors = sanitizedAnchors
         // Persist the cleaned migration so an invalid legacy URL cannot return
         // on the next launch.

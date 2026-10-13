@@ -30,7 +30,7 @@ final class CloneCreditPurchaseTests: XCTestCase {
         store = makeStore()
         await store.refresh()
         XCTAssertEqual(store.currentBalance?.availableMs, 7_200_000, store.message ?? "No balance")
-        XCTAssertNotNil(store.product)
+        _ = try XCTUnwrap(store.product, "StoreKit returned no configured consumable")
     }
 
     override func tearDown() async throws {
@@ -197,6 +197,9 @@ final class CloneCreditPurchaseTests: XCTestCase {
     }
 
     func testCancellationDoesNotChargeOrBlockAnotherPurchase() async throws {
+        #if targetEnvironment(macCatalyst)
+        throw XCTSkip("StoreKitTest simulated purchase errors are unavailable in the Catalyst SDK")
+        #else
         try await session.setSimulatedError(.generic(StoreKitError.userCancelled), forAPI: .purchase)
         await store.purchase()
         XCTAssertEqual(store.currentBalance?.purchasedRemainingMs, 0)
@@ -212,6 +215,7 @@ final class CloneCreditPurchaseTests: XCTestCase {
         session.disableDialogs = true
         await store.purchase()
         XCTAssertEqual(store.currentBalance?.purchasedRemainingMs, 7_200_000, store.message ?? "No delivery after cancellation")
+        #endif
     }
 
     func testExhaustedRequestWaitsForPurchaseAndResumesOnlyAfterDelivery() async throws {
@@ -224,6 +228,11 @@ final class CloneCreditPurchaseTests: XCTestCase {
         access.continueAfterCreditPurchase(store: store)
         XCTAssertTrue(access.hasCreditWaiters, "Zero balance must not resume generation")
         await store.purchase()
+        guard store.currentBalance?.canApply == true else {
+            waiting.cancel()
+            XCTFail(store.message ?? "Purchase did not deliver usable credits")
+            return
+        }
         access.continueAfterCreditPurchase(store: store)
         let resumed = try await waiting.value
         XCTAssertTrue(resumed)

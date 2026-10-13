@@ -1,7 +1,11 @@
 import Foundation
 import LinkPresentation
 import UniformTypeIdentifiers
+#if os(macOS)
+import AppKit
+#else
 import UIKit
+#endif
 
 enum ShareInboxMode: String, Codable {
     case read
@@ -64,6 +68,16 @@ struct ShareInboxRecord: Codable, Identifiable {
 /// Normalize that input at the boundary so the containing app opens the actual page
 /// instead of reading the caption and URL aloud as ordinary text.
 enum ShareInboxLinkExtractor {
+    /// Safari on macOS can vend public.url as NSData instead of NSURL.
+    /// Only decode bytes advertised as a URL; document/image data must keep
+    /// their normal import path. Callers still validate the resulting scheme.
+    static func providerURL(from item: NSSecureCoding, typeIdentifier: String) -> URL? {
+        if let url = item as? URL { return url }
+        guard typeIdentifier == UTType.url.identifier || typeIdentifier == UTType.fileURL.identifier,
+              let data = item as? Data, !data.isEmpty, data.count <= 16_384 else { return nil }
+        return URL(dataRepresentation: data, relativeTo: nil)
+    }
+
     static func firstWebURL(in text: String) -> URL? {
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         guard let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else {
@@ -115,8 +129,14 @@ enum ShareInboxLinkMetadataLoader {
                 continuation.resume(returning: data)
             }
         }
+        #if os(macOS)
+        guard let data, let image = NSImage(data: data),
+              let tiff = image.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.82])
+        #else
         guard let data, let image = UIImage(data: data) else { return nil }
         return image.jpegData(compressionQuality: 0.82)
+        #endif
     }
 }
 

@@ -31,6 +31,14 @@ struct KindleOfflineLibraryView: View {
         self.onReaderPresented = onReaderPresented
     }
 
+    private var deviceSymbol: String {
+        #if targetEnvironment(macCatalyst)
+        return "desktopcomputer"
+        #else
+        return "iphone"
+        #endif
+    }
+
     private var filtered: [KindleOfflineBook] {
         let text = query.trimmingCharacters(in: .whitespacesAndNewlines)
         return books.filter { text.isEmpty || $0.title.localizedCaseInsensitiveContains(text) || $0.author.localizedCaseInsensitiveContains(text) }
@@ -51,7 +59,7 @@ struct KindleOfflineLibraryView: View {
                     .accessibilityIdentifier("offlineLibraryEmpty")
             } else if let scope, loadedScope == scope {
                 Section {
-                    Label("保存在这台设备，无需联网即可打开", systemImage: "iphone")
+                    Label("保存在这台设备，无需联网即可打开", systemImage: deviceSymbol)
                         .font(.footnote).foregroundStyle(.blue)
                     Text("\(books.count) 本 · \(Int64(books.reduce(0) { $0 + $1.byteCount }).formatted(.byteCount(style: .file).locale(AppLanguageManager.shared.locale)))")
                         .font(.caption).foregroundStyle(.secondary)
@@ -69,6 +77,7 @@ struct KindleOfflineLibraryView: View {
                         .accessibilityIdentifier("offlineLibraryBook.\(book.sourceBookID)")
                         if book.status != .complete {
                             Button { resume(book, expectedScope: scope) } label: { Label("继续下载整本书", systemImage: "arrow.down.circle") }
+                                .buttonStyle(.plain)
                                 .accessibilityIdentifier("offlineLibraryResume.\(book.sourceBookID)")
                         }
                     }
@@ -94,6 +103,7 @@ struct KindleOfflineLibraryView: View {
         .navigationTitle("已下载").navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "搜索离线书名或作者")
         .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .onAppear { playback.prepareForOfflineBrowsing() }
         .task(id: scope) { await refresh() }
         .refreshable { await refresh() }
         .onReceive(NotificationCenter.default.publisher(for: KindleOfflineBookStore.didChange).receive(on: RunLoop.main)) { notification in

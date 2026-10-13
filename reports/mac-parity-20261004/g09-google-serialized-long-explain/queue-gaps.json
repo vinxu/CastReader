@@ -1,0 +1,256 @@
+{
+  "scope": "Completed audio queues to next actual playing event; does not measure the duration of all possible in-item buffering.",
+  "intervals": [
+    {
+      "queueCompleted": "15:53:45.375",
+      "nextPlayback": "15:53:45.420",
+      "seconds": 0.045
+    },
+    {
+      "queueCompleted": "15:54:10.601",
+      "nextPlayback": "15:54:10.633",
+      "seconds": 0.032
+    },
+    {
+      "queueCompleted": "15:54:23.252",
+      "nextPlayback": "15:54:23.364",
+      "seconds": 0.112
+    },
+    {
+      "queueCompleted": "15:54:39.540",
+      "nextPlayback": "15:54:39.576",
+      "seconds": 0.036
+    },
+    {
+      "queueCompleted": "15:55:04.322",
+      "nextPlayback": "15:55:04.358",
+      "seconds": 0.036
+    },
+    {
+      "queueCompleted": "15:55:40.681",
+      "nextPlayback": "15:55:50.199",
+      "seconds": 9.518
+    },
+    {
+      "queueCompleted": "15:56:01.835",
+      "nextPlayback": "15:56:01.866",
+      "seconds": 0.031
+    },
+    {
+      "queueCompleted": "15:56:21.430",
+      "nextPlayback": "15:56:21.542",
+      "seconds": 0.112
+    },
+    {
+      "queueCompleted": "15:56:34.860",
+      "nextPlayback": "15:56:34.896",
+      "seconds": 0.036
+    },
+    {
+      "queueCompleted": "15:56:51.904",
+      "nextPlayback": "15:56:51.931",
+      "seconds": 0.027
+    },
+    {
+      "queueCompleted": "15:57:03.158",
+      "nextPlayback": "15:57:13.707",
+      "seconds": 10.549
+    },
+    {
+      "queueCompleted": "15:57:33.002",
+      "nextPlayback": "15:57:33.141",
+      "seconds": 0.139
+    },
+    {
+      "queueCompleted": "15:57:52.159",
+      "nextPlayback": "15:57:52.193",
+      "seconds": 0.034
+    },
+    {
+      "queueCompleted": "15:58:15.135",
+      "nextPlayback": "15:58:15.259",
+      "seconds": 0.124
+    },
+    {
+      "queueCompleted": "15:58:30.772",
+      "nextPlayback": "15:58:30.804",
+      "seconds": 0.032
+    },
+    {
+      "queueCompleted": "15:58:53.194",
+      "nextPlayback": "15:58:53.314",
+      "seconds": 0.12
+    },
+    {
+      "queueCompleted": "15:59:13.471",
+      "nextPlayback": "15:59:13.504",
+      "seconds": 0.033
+    },
+    {
+      "queueCompleted": "15:59:33.663",
+      "nextPlayback": "15:59:43.116",
+      "seconds": 9.453
+    },
+    {
+      "queueCompleted": "15:59:59.191",
+      "nextPlayback": "16:00:07.337",
+      "seconds": 8.146
+    },
+    {
+      "queueCompleted": "16:00:26.072",
+      "nextPlayback": "16:00:26.107",
+      "seconds": 0.035
+    },
+    {
+      "queueCompleted": "16:00:35.779",
+      "nextPlayback": "16:00:35.897",
+      "seconds": 0.118
+    },
+    {
+      "queueCompleted": "16:00:52.121",
+      "nextPlayback": "16:00:52.157",
+      "seconds": 0.036
+    },
+    {
+      "queueCompleted": "16:01:05.540",
+      "nextPlayback": "16:01:05.564",
+      "seconds": 0.024
+    },
+    {
+      "queueCompleted": "16:01:22.019",
+      "nextPlayback": "16:01:22.139",
+      "seconds": 0.12
+    },
+    {
+      "queueCompleted": "16:01:44.430",
+      "nextPlayback": "16:01:44.462",
+      "seconds": 0.032
+    },
+    {
+      "queueCompleted": "16:02:03.033",
+      "nextPlayback": "16:02:03.153",
+      "seconds": 0.12
+    },
+    {
+      "queueCompleted": "16:02:26.819",
+      "nextPlayback": "16:02:26.855",
+      "seconds": 0.036
+    },
+    {
+      "queueCompleted": "16:02:55.502",
+      "nextPlayback": "16:02:55.619",
+      "seconds": 0.117
+    },
+    {
+      "queueCompleted": "16:03:15.844",
+      "nextPlayback": "16:03:15.876",
+      "seconds": 0.032
+    },
+    {
+      "queueCompleted": "16:03:35.769",
+      "nextPlayback": "16:03:46.372",
+      "seconds": 10.603
+    },
+    {
+      "queueCompleted": "16:04:02.979",
+      "nextPlayback": "16:04:03.011",
+      "seconds": 0.032
+    },
+    {
+      "queueCompleted": "16:04:21.176",
+      "nextPlayback": "16:04:28.721",
+      "seconds": 7.545
+    },
+    {
+      "queueCompleted": "16:04:40.797",
+      "nextPlayback": "16:04:40.908",
+      "seconds": 0.111
+    },
+    {
+      "queueCompleted": "16:04:57.084",
+      "nextPlayback": "16:04:57.121",
+      "seconds": 0.037
+    },
+    {
+      "queueCompleted": "16:05:19.175",
+      "nextPlayback": "16:05:19.202",
+      "seconds": 0.027
+    },
+    {
+      "queueCompleted": "16:05:33.596",
+      "nextPlayback": "16:05:33.714",
+      "seconds": 0.118
+    },
+    {
+      "queueCompleted": "16:05:50.951",
+      "nextPlayback": "16:05:50.985",
+      "seconds": 0.034
+    },
+    {
+      "queueCompleted": "16:06:03.463",
+      "nextPlayback": "16:06:03.491",
+      "seconds": 0.028
+    },
+    {
+      "queueCompleted": "16:06:25.063",
+      "nextPlayback": "16:06:25.180",
+      "seconds": 0.117
+    },
+    {
+      "queueCompleted": "16:06:42.290",
+      "nextPlayback": "16:06:42.322",
+      "seconds": 0.032
+    },
+    {
+      "queueCompleted": "16:07:12.433",
+      "nextPlayback": "16:07:12.538",
+      "seconds": 0.105
+    },
+    {
+      "queueCompleted": "16:07:38.696",
+      "nextPlayback": "16:07:38.805",
+      "seconds": 0.109
+    },
+    {
+      "queueCompleted": "16:08:00.956",
+      "nextPlayback": "16:08:09.053",
+      "seconds": 8.097
+    },
+    {
+      "queueCompleted": "16:08:22.529",
+      "nextPlayback": "16:08:22.562",
+      "seconds": 0.033
+    },
+    {
+      "queueCompleted": "16:08:35.030",
+      "nextPlayback": "16:08:35.149",
+      "seconds": 0.119
+    },
+    {
+      "queueCompleted": "16:08:58.455",
+      "nextPlayback": "16:08:58.500",
+      "seconds": 0.045
+    },
+    {
+      "queueCompleted": "16:09:16.802",
+      "nextPlayback": "16:09:16.827",
+      "seconds": 0.025
+    },
+    {
+      "queueCompleted": "16:09:29.570",
+      "nextPlayback": "16:09:29.686",
+      "seconds": 0.116
+    },
+    {
+      "queueCompleted": "16:09:49.366",
+      "nextPlayback": "16:09:49.401",
+      "seconds": 0.035
+    },
+    {
+      "queueCompleted": "16:10:10.509",
+      "nextPlayback": "16:10:10.532",
+      "seconds": 0.023
+    }
+  ],
+  "maxSeconds": 10.603
+}

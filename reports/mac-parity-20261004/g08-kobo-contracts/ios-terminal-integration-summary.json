@@ -1,0 +1,53 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "BA9ADC22-E48F-49F1-B771-F9C42C57BA13",
+        "deviceName" : "CastReader Login Review iPad",
+        "modelName" : "iPad Air 11-inch (M3)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 1,
+      "passedTests" : 185,
+      "skippedTests" : 1,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 1,
+  "finishTime" : 1791170025.519,
+  "passedTests" : 185,
+  "result" : "Failed",
+  "skippedTests" : 1,
+  "startTime" : 1791169731.089,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "failed: caught error: \"Error Domain=WKErrorDomain Code=5 \"JavaScript execution returned a result of an unsupported type\" UserInfo={NSLocalizedDescription=JavaScript execution returned a result of an unsupported type}\"",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 29,
+      "testIdentifierString" : "GoogleBooksWebBridgeTests/testKoboOwnedDialogHidesCaptionWithoutChangingPlaybackOrCue()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/GoogleBooksWebBridgeTests/testKoboOwnedDialogHidesCaptionWithoutChangingPlaybackOrCue",
+      "testName" : "testKoboOwnedDialogHidesCaptionWithoutChangingPlaybackOrCue()"
+    }
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "17% of duration",
+      "text" : "5 longest test runs with outlier durations exceeding 7.31s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 187
+}

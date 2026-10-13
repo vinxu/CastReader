@@ -1,0 +1,28 @@
+{
+  "status": "PASS",
+  "app": "/private/tmp/CastReaderMacCoreConvergence/Build/Products/Release-maccatalyst/CastReaderMac.app",
+  "strictDeepSignature": "PASS",
+  "bundles": [
+    {
+      "bundle": "com.same.castreader",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    },
+    {
+      "bundle": "com.same.castreader.CastReaderMacShare",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    },
+    {
+      "bundle": "com.same.castreader.CastReaderMacWidget",
+      "sandbox": true,
+      "provisionedAppGroups": [
+        "group.com.same.castreader"
+      ]
+    }
+  ]
+}

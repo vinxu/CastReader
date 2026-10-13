@@ -1,0 +1,6 @@
+{
+  "startedAt": "2026-10-05T06:12:22.672829",
+  "logByteOffset": 2060559,
+  "scenario": "Start paused at Chapter Two last occupied page 43/348; Play at Bella 1x; official button transport must cross to Chapter Three 45-46/348",
+  "candidate": "g08-kobo-contracts/desktop-candidate-identity.json"
+}

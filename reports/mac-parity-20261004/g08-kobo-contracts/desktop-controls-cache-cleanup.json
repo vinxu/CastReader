@@ -1,0 +1,13 @@
+{
+  "at": "2026-10-05T08:48:50.040034",
+  "removedRegenerableCaches": [
+    {
+      "path": "/tmp/CastReaderMacTests.UlWIkh/DerivedData/ModuleCache.noindex",
+      "bytes": 134634506
+    },
+    {
+      "path": "/tmp/CastReaderMacTests.UlWIkh/DerivedData/Index.noindex",
+      "bytes": 24586536
+    }
+  ]
+}

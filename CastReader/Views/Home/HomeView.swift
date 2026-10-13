@@ -29,6 +29,16 @@ enum HomeLayout {
     static let compactCardPadding: CGFloat = 12
     static let regularCardPadding: CGFloat = 16
     static let railOverflow: CGFloat = 4
+
+    /// Touch targets need extra height on iPad; desktop navigation links use
+    /// their native compact height, matching Kindle and Continue Listening.
+    static var shelfLinkMinimumHeight: CGFloat? {
+        #if targetEnvironment(macCatalyst)
+        return nil
+        #else
+        return AdaptiveLayout.isPad ? 44 : nil
+        #endif
+    }
 }
 
 /// 首页横滑卡片统一处理卡间距、阴影缓冲和与页面正文的首卡对齐。
@@ -317,6 +327,7 @@ struct HomeView: View {
 
     @State private var captureStage: CaptureStage?
     @State private var showFileImporter = false
+    @State private var fileImportIsImageOnly = false
     @State private var notice: String?
     @State private var cloudHistoryFailure: CloudHistoryFailurePresentation?
     @State private var isProcessingPDF = false
@@ -334,6 +345,16 @@ struct HomeView: View {
     @State private var showKindleProbe = false
     @State private var showWeReadProbe = false
 #endif
+
+    private var showsHomeToolbar: Bool {
+        #if targetEnvironment(macCatalyst)
+        // AppKit keeps toolbar items from the underlying NavigationStack even
+        // when the persistent reader overlay hides Home from hit testing.
+        return isSurfaceActive
+        #else
+        return true
+        #endif
+    }
 
     private let scenarioColumns = [GridItem(.flexible(), spacing: 14), GridItem(.flexible(), spacing: 14)]
 
@@ -372,7 +393,7 @@ struct HomeView: View {
                         }
                     }
                     voiceFeatureBanners
-                    if !pro.isPro,
+                    if pro.hasResolvedServerEntitlement, !pro.isPro,
                        growthLoop.shouldShowGenericHomeProCard(
                         onboardingActivated: libraryOnboarding.isActivated
                        ) {
@@ -388,26 +409,43 @@ struct HomeView: View {
             .reservesMiniPlayerSpace()
             .background(AppTheme.background.ignoresSafeArea())
             .navigationTitle("CastReader")
+            #if targetEnvironment(macCatalyst)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(isSurfaceActive ? .automatic : .hidden, for: .navigationBar)
+            #endif
             .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
+                if showsHomeToolbar {
+                  HomeToolbarItems {
                     // 收件箱下沉到设置里（低频入口），未读数由头像上的红点接手。
                     if !hasBottomImportControl {
                         Button { importRouter.openQuickImport() } label: {
+                            #if targetEnvironment(macCatalyst)
+                            Image(systemName: "plus")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 16, height: 16)
+                                .foregroundStyle(AppTheme.foreground)
+                                .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
+                                .contentShape(Rectangle())
+                            #else
                             Image(systemName: "plus.circle.fill")
                                 .frame(minWidth: 44, minHeight: 44)
+                            #endif
                         }
                         .accessibilityLabel(Text("导入内容"))
                         .accessibilityIdentifier("plusImportButton")
                     }
-                    ShelfSourcesToolbarButton(onTap: {
+                    ShelfSourcesToolbarButton(scene: readerScene, onTap: {
                         activeSheet = .librarySources
                     })
 
                     SettingsToolbarButton(
+                        scene: readerScene,
                         shareInboxUnreadCount: shareInboxUnreadCount,
                         onOpenShareInbox: onOpenShareInbox
                     )
-                    .frame(width: 30, height: 30)
+                    .frame(width: HomeToolbarLayout.buttonSize, height: HomeToolbarLayout.buttonSize)
+                  }
                 }
             }
             .overlay { if isProcessingContent { processingOverlay } }
@@ -432,6 +470,7 @@ struct HomeView: View {
             }
         }
         .onDisappear {
+            ReaderRunLog.write("IMPORT home disappeared processing=\(isProcessingContent)")
             // A pushed Home destination is not the stable Home root either.
             onReviewPresentationBlockedChanged(true)
             cancelCloudHistoryReopen()
@@ -539,11 +578,13 @@ struct HomeView: View {
                 .environment(\.locale, appLanguage.locale)
                 .environment(\.layoutDirection, appLanguage.selectedLanguage.isRightToLeft ? .rightToLeft : .leftToRight)
         }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: supportedTypes, allowsMultipleSelection: false) { result in
+        .castReaderFileImporter(isPresented: $showFileImporter, allowedContentTypes: fileImportIsImageOnly ? [.image] : supportedTypes, allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
+                ReaderRunLog.write("IMPORT file selected format=\(url.pathExtension.lowercased())")
                 confirmImport(format: analyticsFormat(for: url))
                 handleImportedFile(url)
             } else {
+                ReaderRunLog.write("IMPORT file picker cancelled or failed")
                 cancelImport()
             }
         }
@@ -1170,8 +1211,14 @@ struct HomeView: View {
     private func trigger(_ src: ImportSource) {
         switch src {
         case .camera:       DispatchQueue.main.async { captureStage = .picker(.init(sourceType: .camera)) }
-        case .photoLibrary: DispatchQueue.main.async { captureStage = .picker(.init(sourceType: .photoLibrary)) }
-        case .file:         DispatchQueue.main.async { showFileImporter = true }
+        case .photoLibrary:
+            #if targetEnvironment(macCatalyst)
+            DispatchQueue.main.async { fileImportIsImageOnly = true; showFileImporter = true }
+            #else
+            DispatchQueue.main.async { captureStage = .picker(.init(sourceType: .photoLibrary)) }
+            #endif
+        case .file:
+            DispatchQueue.main.async { fileImportIsImageOnly = false; showFileImporter = true }
         case .url:          DispatchQueue.main.async { activeSheet = .url }
         case .text:         DispatchQueue.main.async { activeSheet = .text }
         }
@@ -1464,7 +1511,11 @@ struct HomeView: View {
     private func handleUnifiedDocumentFile(_ url: URL, format: SupportedDocumentFormat) {
         let scenario = importScenario
         let mode = importMode
-        guard let boundary = AccountContentIsolation.captureBoundaryToken() else { return }
+        guard let boundary = AccountContentIsolation.captureBoundaryToken() else {
+            ReaderRunLog.write("IMPORT missing account boundary")
+            return
+        }
+        ReaderRunLog.write("IMPORT parse begin format=\(format.rawValue)")
         isProcessingPDF = true
         accountScopedImportTask?.cancel()
         accountScopedImportTask = Task {
@@ -1477,6 +1528,7 @@ struct HomeView: View {
                         requiresSecurityScopedAccess: true
                     )
                 )
+                ReaderRunLog.write("IMPORT parse finished cancelled=\(Task.isCancelled) currentAccount=\(AccountContentIsolation.isCurrent(boundary)) paragraphs=\(result.document.paragraphs.count)")
                 guard !Task.isCancelled,
                       AccountContentIsolation.isCurrent(boundary) else { return }
                 importScenario = scenario
@@ -1776,11 +1828,14 @@ private struct ImportOptionsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") { dismiss() }
+                    AdaptiveSheetDismissButton(title: AppLocalized("取消")) { dismiss() }
                         .accessibilityIdentifier("importOptionsCancel")
                 }
             }
         }
+        #if targetEnvironment(macCatalyst)
+        .frame(minWidth: 760, minHeight: 680)
+        #endif
         .task {
             guard Constants.Features.cloudStorageEnabled else { return }
             await cloudStorage.refreshConnectionStates()

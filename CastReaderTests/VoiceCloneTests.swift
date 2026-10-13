@@ -105,6 +105,7 @@ final class VoiceCloneTests: XCTestCase {
         XCTAssertTrue(store.familiarVoices.isEmpty)
     }
 
+    #if !targetEnvironment(macCatalyst)
     func testCloneStartupKeepsAllTextAndBoundsOpeningAcrossLanguages() {
         let samples: [(String, String, Int)] = [
             ("en", String(repeating: "A familiar voice makes reading feel natural, even on a very busy day. ", count: 5), 120),
@@ -124,6 +125,51 @@ final class VoiceCloneTests: XCTestCase {
         }
         XCTAssertEqual(ClonedTTSStartup.requestUnits("Short sentence.", language: "en", voice: "vl_test"), ["Short sentence."])
         XCTAssertTrue(ClonedTTSStartup.requestUnits("  ", language: "en", voice: "vc_test").isEmpty)
+    }
+    #endif
+
+    func testCloneStartupKeepsAllTextAndBoundsEveryRequestAcrossLanguages() {
+        let samples: [(String, String, Int, Int)] = [
+            ("en", String(repeating: "A familiar voice makes reading feel natural, even on a very busy day. ", count: 5), 120, 240),
+            ("zh-CN", String(repeating: "熟悉的声音让阅读更亲切，让我们从第一句话开始慢慢听下去", count: 6) + "。", 48, 96),
+            ("ja", String(repeating: "毎日好きな声で文章を読んで理解を深めましょう", count: 6) + "。", 48, 96),
+            ("en", String(repeating: "Family 👨‍👩‍👧‍👦 and café voices help us listen with care, ", count: 6), 120, 240)
+        ]
+        for (language, text, opening, following) in samples {
+            let expected = ReadingSentenceContract.normalizeWhitespace(text, language: language)
+            let plan = SpeechRequestPlan.requestUnits(text, language: language)
+            for voice in ["af_heart", "vc_personal", "vl_community"] {
+                #if targetEnvironment(macCatalyst)
+                let chunks = ClonedTTSStartup.requestUnits(text, language: language, voice: voice)
+                #else
+                let chunks = SpeechRequestPlan.requestUnits(text, language: language)
+                #endif
+                XCTAssertEqual(chunks, plan, "The Mac sentence planner must preserve every voice family: \(voice)")
+                XCTAssertGreaterThan(chunks.count, 1)
+                XCTAssertLessThanOrEqual(chunks[0].utf16.count, opening)
+                XCTAssertTrue(chunks.dropFirst().allSatisfy { $0.utf16.count <= following })
+                XCTAssertEqual(chunks.joined(), expected, "No loss, duplication or damaged Unicode: \(language)")
+            }
+        }
+        XCTAssertEqual(SpeechRequestPlan.requestUnits("First sentence. Second sentence.", language: "en"),
+                       ["First sentence. ", "Second sentence."])
+        XCTAssertEqual(SpeechRequestPlan.requestUnits("Dr. Smith paid 3.14 dollars. Next sentence.", language: "en"),
+                       ["Dr. Smith paid 3.14 dollars. ", "Next sentence."])
+        XCTAssertEqual(SpeechRequestPlan.requestUnits("这是第一句。然后是第二句。", language: "zh"),
+                       ["这是第一句。", "然后是第二句。"])
+        XCTAssertTrue(SpeechRequestPlan.requestUnits("  ", language: "en").isEmpty)
+    }
+
+    func testPlannedContinuationPreservesPartialTailAndRequestIdentity() {
+        let tail = String(repeating: "remaining words ", count: 12)
+        let checkpoint = TTSContinuation(requestUnits: [tail, "Final sentence."], nextSegmentIndex: 3,
+            requiresSourceTiming: true, requestUnitsArePlanned: true)
+        XCTAssertEqual(TTSContinuation.plannedUnits(text: "ignored", language: "en", continuation: checkpoint),
+                       checkpoint.requestUnits, "Retry must not repartition a previously dispatched unit")
+        let raw = TTSContinuation(requestUnits: ["First sentence. Second sentence."], nextSegmentIndex: 0,
+                                  requiresSourceTiming: true)
+        XCTAssertEqual(TTSContinuation.plannedUnits(text: "ignored", language: "en", continuation: raw),
+                       ["First sentence. ", "Second sentence."], "Live readers cannot bypass the common planner")
     }
 
     @MainActor
@@ -1458,20 +1504,20 @@ final class VoiceCloneTests: XCTestCase {
             multipart["consent_version"],
             "voice-owner-consent-2026-07-12-v1"
         )
-        XCTAssertEqual(multipart["consent_source"], "ios")
+        XCTAssertEqual(multipart["consent_source"], Constants.clientPlatform)
         XCTAssertEqual(china["consentConfirmed"] as? Bool, true)
         XCTAssertEqual(
             china["consentVersion"] as? String,
             "voice-owner-consent-2026-07-12-v1"
         )
-        XCTAssertEqual(china["consentSource"] as? String, "ios")
+        XCTAssertEqual(china["consentSource"] as? String, Constants.clientPlatform)
         let structuredConsent = try XCTUnwrap(china["consent"] as? [String: Any])
         XCTAssertEqual(structuredConsent["confirmed"] as? Bool, true)
         XCTAssertEqual(
             structuredConsent["version"] as? String,
             "voice-owner-consent-2026-07-12-v1"
         )
-        XCTAssertEqual(structuredConsent["source"] as? String, "ios")
+        XCTAssertEqual(structuredConsent["source"] as? String, Constants.clientPlatform)
     }
 
     func testCreateMetadataSendsTextOnlyWhenTheCallerExplicitlyProvidesIt() throws {

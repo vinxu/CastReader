@@ -1,0 +1,18 @@
+[
+  {
+    "path": "../CastReader/WebAssets/bundle.js",
+    "oldHash": "92deba5e2cdb7d1d73eae9d0b246e8c34659935e6a7f4790d307839d92487e0d",
+    "newHash": "be708d2b3ef9ab1c3cfc793926a7f00738dee613ead62809cd938bed21ea94e6",
+    "prefixPreserved": true,
+    "suffixPreserved": true,
+    "replacementHash": "e6cb7d8a26e4a793221102234d9ebe8da47b6cbb7a32bcf7ec6ee53074beee09"
+  },
+  {
+    "path": "../CastReaderTests/Fixtures/google-books-webreader-xctest.js",
+    "oldHash": "5399d7f2bff47a304306218096a32b104bdb6db87d3ab4e0cc2066828396f99f",
+    "newHash": "cf6fcbc69162cc16ffcf8703b2c23a99c0adeb439d8097ce447e19e39f45187c",
+    "prefixPreserved": true,
+    "suffixPreserved": true,
+    "replacementHash": "e6cb7d8a26e4a793221102234d9ebe8da47b6cbb7a32bcf7ec6ee53074beee09"
+  }
+]

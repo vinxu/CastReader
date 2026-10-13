@@ -443,10 +443,63 @@ enum TTSSentenceSegmenter {
     }
 }
 
-/// Only foreground clone startup gets a short opening chunk. Keep every
-/// character and leave regular voices / saved continuations unchanged.
+/// Mac readers and voice families use the same bounded sentence requests.
+/// Paragraphs remain the display/resume identity; these are only audio units.
+/// Never merge complete sentences to fill a batch. Long sentences are split at
+/// clause/word boundaries, preserving their exact normalized prefix and suffix.
+enum SpeechRequestPlan {
+    static func requestUnits(_ text: String, language: String) -> [String] {
+        let source = ReadingSentenceContract.normalizeWhitespace(text, language: language)
+        guard !source.isEmpty else { return [] }
+        let ranges = ReadingSentenceContract.nsRanges(in: source)
+        let cjk = ["zh", "ja", "ko"].contains(VoiceCatalog.normalizedLanguage(language))
+        let openingLimit = cjk ? 48 : 120
+        let followingLimit = cjk ? 96 : 240
+        let ns = source as NSString
+        var result: [String] = []
+        var start = 0
+        for index in ranges.indices {
+            let end = index + 1 < ranges.count ? ranges[index + 1].location : ns.length
+            var remainder = ns.substring(with: NSRange(location: start, length: end - start))
+            start = end
+            while !remainder.isEmpty {
+                let limit = result.isEmpty ? openingLimit : followingLimit
+                if remainder.utf16.count <= limit {
+                    result.append(remainder)
+                    break
+                }
+                var boundary = remainder.startIndex
+                var length = 0
+                var clause: String.Index?
+                var word: String.Index?
+                for cursor in remainder.indices {
+                    let next = remainder.index(after: cursor)
+                    let size = String(remainder[cursor]).utf16.count
+                    guard length + size <= limit else { break }
+                    length += size
+                    boundary = next
+                    if remainder[cursor].isWhitespace { word = next }
+                    if length >= limit / 3, ",;:，；：、—".contains(remainder[cursor]) { clause = next }
+                }
+                // One extended grapheme can exceed the nominal limit; never
+                // split an emoji/surrogate sequence to enforce a byte budget.
+                if boundary == remainder.startIndex { boundary = remainder.index(after: boundary) }
+                let cut = clause ?? word ?? boundary
+                result.append(String(remainder[..<cut]))
+                remainder = String(remainder[cut...])
+            }
+        }
+        return result
+    }
+}
+
+/// Preserve each platform's verified startup policy. Mac shares the bounded
+/// sentence planner; iOS keeps regular voices and existing continuations intact.
 enum ClonedTTSStartup {
     static func requestUnits(_ text: String, language: String, voice: String) -> [String] {
+        #if targetEnvironment(macCatalyst)
+        return SpeechRequestPlan.requestUnits(text, language: language)
+        #else
         var units = TTSSentenceSegmenter.requestUnits(text, language: language)
         guard VoiceOption.requiresGenerationQuota(voice), let first = units.first else { return units }
         let cjk = ["zh", "ja"].contains(VoiceCatalog.normalizedLanguage(language))
@@ -471,6 +524,7 @@ enum ClonedTTSStartup {
         guard !opening.trimmed.isEmpty, !remainder.trimmed.isEmpty else { return units }
         units.replaceSubrange(0...0, with: [opening, remainder])
         return units
+        #endif
     }
 }
 

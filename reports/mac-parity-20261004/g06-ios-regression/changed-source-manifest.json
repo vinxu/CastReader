@@ -1,0 +1,47 @@
+[
+  {
+    "path": "CastReader/Views/Kindle/KindleBookView.swift",
+    "sourceSHA256": "3d880a9e917f77f355805df76ed04ff8b845bfdce6f0649ca76bd0d140e3c989",
+    "isolated": false
+  },
+  {
+    "path": "CastReader/Views/Kindle/KindleOfflineDownloadView.swift",
+    "sourceSHA256": "fd106f18388970b83bf5457b4e8bd2d6e45f40ffaac45315d17314e257c8ac32",
+    "isolated": false
+  },
+  {
+    "path": "CastReader/Services/KindleOfflineDownloadCoordinator.swift",
+    "sourceSHA256": "7784b751637d613a5a5046ef87fd0bf368704738b41ca451916398ff627e75c2",
+    "isolated": false
+  },
+  {
+    "path": "CastReader/Localizable.xcstrings",
+    "sourceSHA256": "e2b53af6ed9b52eb9a503feb47a71ccaa59792b2d246c76d6cef9b2e47b370f6",
+    "isolated": false
+  },
+  {
+    "path": "CastReaderTests/TestRepository.swift",
+    "sourceSHA256": "4937fd48c79667498ea07cb31ce5cac99b9c6838b26f25fde44072949adcfc4c",
+    "isolated": false
+  },
+  {
+    "path": "CastReaderTests/KindleNativePageScriptTests.swift",
+    "sourceSHA256": "673fc230f19b1a8a38386622bbf3cdd95e9a69027744495b490bc26125b70d72",
+    "isolated": false
+  },
+  {
+    "path": "CastReaderTests/KindlePageFlipProbeScriptTests.swift",
+    "sourceSHA256": "9cc89c78425d49a5172afbdd4e7df927a1e390f012d0dae512f00b0e22dacc9f",
+    "isolated": false
+  },
+  {
+    "path": "CastReaderTests/KindleReadingSettingsScriptTests.swift",
+    "sourceSHA256": "2f6c3a4b8b93f7a25cbb541b1bbb73876310bef7c962d8bb069f3918d6ed7662",
+    "isolated": false
+  },
+  {
+    "path": "CastReaderTests/KindleOfflineBookStoreTests.swift",
+    "sourceSHA256": "19f1e158d18bacbb17eae83c3e181457648c09e1f021830df7fb1ddf3fc0d963",
+    "isolated": false
+  }
+]

@@ -1,0 +1,77 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "BA9ADC22-E48F-49F1-B771-F9C42C57BA13",
+        "deviceName" : "CastReader Login Review iPad",
+        "modelName" : "iPad Air 11-inch (M3)",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 4,
+      "passedTests" : 28,
+      "skippedTests" : 3,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.2",
+  "expectedFailures" : 0,
+  "failedTests" : 4,
+  "finishTime" : 1791196067.392,
+  "passedTests" : 28,
+  "result" : "Failed",
+  "skippedTests" : 3,
+  "startTime" : 1791196061.347,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+    {
+      "failureText" : "XCTAssertEqual failed: (\"0\") is not equal to (\"4\")",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 3,
+      "testIdentifierString" : "PaymentTests/testAllProductsOfferSevenDayFreeTrial()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/PaymentTests/testAllProductsOfferSevenDayFreeTrial",
+      "testName" : "testAllProductsOfferSevenDayFreeTrial()"
+    },
+    {
+      "failureText" : "XCTUnwrap failed: expected non-nil value of type \"Product\"",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 12,
+      "testIdentifierString" : "PaymentTests/testFreeTrialGateRequiresBothOfferAndEligibility()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/PaymentTests/testFreeTrialGateRequiresBothOfferAndEligibility",
+      "testName" : "testFreeTrialGateRequiresBothOfferAndEligibility()"
+    },
+    {
+      "failureText" : "XCTAssertEqual failed: (\"0\") is not equal to (\"4\") - 应加载 v1+v2 各月度/年度共四个产品",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 24,
+      "testIdentifierString" : "PaymentTests/testProductsLoad()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/PaymentTests/testProductsLoad",
+      "testName" : "testProductsLoad()"
+    },
+    {
+      "failureText" : "XCTUnwrap failed: expected non-nil value of type \"Product\" - 未加载月度产品",
+      "targetName" : "CastReaderTests",
+      "testIdentifier" : 27,
+      "testIdentifierString" : "PaymentTests/testPurchase_requiresSignIn()",
+      "testIdentifierURL" : "test://com.apple.xcode/CastReader/CastReaderTests/PaymentTests/testPurchase_requiresSignIn",
+      "testName" : "testPurchase_requiresSignIn()"
+    }
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "14% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 0.19s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 35
+}

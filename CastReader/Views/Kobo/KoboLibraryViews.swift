@@ -83,7 +83,11 @@ struct KoboHomeSection: View {
                             Text(AppLocalized("查看全部"))
                                 .font(.subheadline.weight(.semibold))
                                 .foregroundColor(AppTheme.primary)
+                                #if targetEnvironment(macCatalyst)
+                                .frame(minHeight: HomeLayout.shelfLinkMinimumHeight)
+                                #else
                                 .frame(minHeight: horizontalSizeClass == .regular ? 44 : nil)
+                                #endif
                         }
                         .accessibilityIdentifier("homeShelfViewAll.kobo")
                     }
@@ -166,6 +170,10 @@ struct KoboLibraryView: View {
     @State private var sort: KoboLibrarySort = .recent
     @State private var showConnect = false
 
+    private var visibleBooks: [KoboBook] {
+        store.sortedBooks(sort: sort, query: query)
+    }
+
     var body: some View {
         List {
             if typeSize.isAccessibilitySize {
@@ -178,7 +186,12 @@ struct KoboLibraryView: View {
                 }
             }
             Section {
-                ForEach(store.sortedBooks(sort: sort, query: query)) { book in
+                if visibleBooks.isEmpty && !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    Label(AppLocalized("没有匹配的书籍"), systemImage: "magnifyingglass")
+                        .foregroundColor(AppTheme.mutedForeground)
+                        .accessibilityIdentifier("koboLibraryNoMatches")
+                }
+                ForEach(visibleBooks) { book in
                     Button { open(book) } label: {
                         HStack(spacing: 14) {
                             KoboCoverView(book: book)
@@ -334,6 +347,8 @@ struct KoboLibraryConnectView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(AppLocalized("关闭")) { dismiss() }
+                        .buttonStyle(.plain)
+                        .fixedSize()
                 }
                 ToolbarItemGroup(placement: .primaryAction) {
                     Button { model.goBack() } label: {

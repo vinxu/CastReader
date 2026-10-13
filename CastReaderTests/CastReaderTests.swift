@@ -3522,12 +3522,19 @@ final class LocalizationCatalogTests: XCTestCase {
     func testWeReadViewportCropIsPredictedBeforeLoadAndCalibratedFromVisibleText() {
         let phone = CGSize(width: 390, height: 700)
         let predicted = WeReadViewportCrop.predicted(for: phone)
+        #if targetEnvironment(macCatalyst)
+        XCTAssertEqual(predicted.widthScale, 1)
+        XCTAssertEqual(predicted.offsetX, 0)
+        XCTAssertEqual(WeReadViewportCrop.pageZoom, 0.8)
+        #else
         XCTAssertEqual(predicted.widthScale, 1.19, accuracy: 0.001)
         XCTAssertEqual(predicted.offsetX, -37.05, accuracy: 0.01)
+        XCTAssertEqual(WeReadViewportCrop.pageZoom, 1)
+        #endif
         let initialFrame = predicted.webViewFrame(for: phone)
         XCTAssertEqual(initialFrame.origin.x, predicted.offsetX, accuracy: 0.001)
         XCTAssertEqual(initialFrame.origin.y, 0, accuracy: 0.001)
-        XCTAssertEqual(initialFrame.width, phone.width * 1.19, accuracy: 0.001)
+        XCTAssertEqual(initialFrame.width, phone.width * predicted.widthScale, accuracy: 0.001)
         XCTAssertEqual(initialFrame.height, phone.height, accuracy: 0.001)
         XCTAssertEqual(WeReadViewportCrop.compactReaderBreakpoint, 700)
         XCTAssertEqual(WeReadViewportCrop.compactPageHorizontalPadding, 50)

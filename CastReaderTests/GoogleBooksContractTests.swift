@@ -112,6 +112,29 @@ final class GoogleBooksContractTests: XCTestCase {
         XCTAssertEqual(LiveWebSourceReflowContract.remaining([slice(0, 44, 0, "new page")], after: [42: 21]).map(\.text), ["new page"])
     }
 
+    func testReflowReopenedTailKeepsSignedOriginAndOnlyVisibleDOMRanges() throws {
+        let prefix = "The preceding page owns the earlier part of this immutable audio source. "
+        let tail = "The current spoken sentence remains exactly visible after font reflow."
+        let extra = " Additional unread text belongs after that retained sentence."
+        let original = LiveWebPageSourceSlice(visibleParagraphIndex: 2, sourceParagraphIndex: 42,
+            sourceUTF16Start: 0, sourceUTF16End: (prefix + tail).utf16.count, text: prefix + tail)
+        let visible = LiveWebPageSourceSlice(visibleParagraphIndex: 0, sourceParagraphIndex: 81,
+            sourceUTF16Start: 0, sourceUTF16End: (tail + extra).utf16.count, text: tail + extra)
+        let mapped = try XCTUnwrap(LiveWebSourceReflowContract.remap(original, in: [visible]))
+        XCTAssertEqual(mapped.sourceUTF16Start, -prefix.utf16.count,
+            "Google can reopen the same paragraph with its visible tail numbered from zero")
+        XCTAssertEqual(mapped.sourceUTF16End, tail.utf16.count)
+        XCTAssertEqual(mapped.text, original.text)
+        let fragments = LiveWebSourceReflowContract.domFragments(for: original, in: [visible], domOffsets: [0])
+        XCTAssertEqual(fragments.count, 1)
+        XCTAssertEqual(fragments.first?.charStart, prefix.utf16.count)
+        XCTAssertEqual(fragments.first?.domCharOffset, -prefix.utf16.count)
+        XCTAssertEqual((fragments.first?.charStart ?? -1) + (fragments.first?.domCharOffset ?? -1), 0)
+        let duplicate = LiveWebPageSourceSlice(visibleParagraphIndex: 1, sourceParagraphIndex: 82,
+            sourceUTF16Start: 0, sourceUTF16End: (tail + extra).utf16.count, text: tail + extra)
+        XCTAssertNil(LiveWebSourceReflowContract.remap(original, in: [visible, duplicate]))
+    }
+
     func testExplainReflowRecreatedSourceHashRequiresExactUniqueTextOverlap() throws {
         func slice(_ dom: Int, _ source: Int, _ start: Int, _ text: String) -> LiveWebPageSourceSlice {
             LiveWebPageSourceSlice(visibleParagraphIndex: dom, sourceParagraphIndex: source,

@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-06",
+  "overall": "PARTIAL — two live provider checks remain blocked; formal Mac App Store transaction is release-stage pending",
+  "installedReleaseSHA256": "511c78de8c364590a86d926c2dbab82e2ca9d10494bfd4d6bcd8a7279d3d32d2",
+  "scope": "International Mac only; OReilly excluded; no repeat long runs or full sync conflict matrix",
+  "inheritedPass": [
+    "Account / Pro / cold app launch",
+    "PDF, EPUB with images, DOCX, text and web Read/Explain",
+    "Kindle, Kobo and Google Books existing core opening, reading and resume",
+    "Four synced book sources visible and consumable on Mac; exact multi-client conflicts are outside core scope"
+  ],
+  "voice": {
+    "status": "PASS_CORE",
+    "privateVoice": "Mac QA Calm Narrator",
+    "flows": [
+      "authorized sample import and trim",
+      "creation and rename",
+      "cloud preview observed Stop Preview",
+      "Read with word highlighting",
+      "Explain with narration and original-text marks"
+    ],
+    "preferencesRestored": [
+      "English Heart",
+      "Chinese 晓萱 zf_001"
+    ],
+    "limits": "No sharing/deletion or full billing lifecycle; playback state verified, subjective voice quality not assessed"
+  },
+  "weread": {
+    "status": "PASS_TRIAL_RESTORE; AUTHENTICATED_FINAL_RETEST_PENDING",
+    "fix": "Freeze retained WKWebView dimensions while minimized and during Mac navigation animation; apply settled visible dimensions after transition. Desktop pageZoom remains 0.8.",
+    "releaseObservation": "Real first-chapter trial page paused Part 1 of 4, caption and orange circle on ship name. Minimized then expanded: same page, same caption, same paused Part 1 of 4, same circle. Explicit resume changed to Playing and advanced caption; paused afterward.",
+    "unverified": "Authenticated paid-book pagination and cold reopening after latest fix require the expired provider session to be restored. Earlier authenticated Read/Explain observations are historical, not proof for the new fix.",
+    "handoff": "Normal Release left at actual WeRead QR login; async login request remains unanswered"
+  },
+  "youtube": {
+    "status": "BLOCKED_PROVIDER",
+    "freshVideo": "NHHPNMIK-fY",
+    "normalReleaseAttempt": "Public transcript extraction returned YouTube temporarily limited caption access; Cancel recovered correctly.",
+    "cacheDoesNotCount": true,
+    "action": "No repeated retry loop"
+  },
+  "macPurchase": {
+    "status": "PASS_LOCAL_STOREKIT; PRODUCTION_PENDING",
+    "testsPassed": 4,
+    "tests": [
+      "4 product load",
+      "Product.purchase verified xcode transaction; no unconfirmed server Pro",
+      "Restore preserves receipt while invalid account is closed",
+      "Clear test ledger + AppStore.sync removes cached receipt and entitlement"
+    ],
+    "realMoneyCharged": false,
+    "production": "ASC read-only query returned no Mac app version; no production transaction or server posting was claimed or attempted"
+  },
+  "focusedTests": {
+    "pass": 7,
+    "fail": 0,
+    "skip": 0,
+    "bundle": "/tmp/mac-core-synced.xcresult"
+  },
+  "release": "Universal Release built, main app + share + widget strict signatures/provisioned App Groups verified; installed and launched normally"
+}

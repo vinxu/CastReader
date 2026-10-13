@@ -885,10 +885,13 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         CloneCreditClient.prepareAcceptanceRequest(&request)
 
         let quotaRead = await MainActor.run { VoiceCloneStore.shared.beginQuotaRead() }
+        let networkStartedAt = ProcessInfo.processInfo.systemUptime
         let data: Data
         let response: URLResponse
+        let networkElapsedMs: Int
         do {
             (data, response) = try await cloneTTSSession.data(for: request)
+            networkElapsedMs = Int((ProcessInfo.processInfo.systemUptime - networkStartedAt) * 1000)
         } catch {
             if let retry = try await retryClonedVoiceTTSIfNeeded(
                 error: error,
@@ -929,6 +932,7 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 deadline: deadline
             )
         }
+        ReaderRunLog.write("TTS clone timing request=\(requestID) networkMs=\(networkElapsedMs) workerQueueMs=\(http.value(forHTTPHeaderField: "X-TTS-Queue-Wait-Ms") ?? "unknown") workerRunMs=\(http.value(forHTTPHeaderField: "X-TTS-Run-Ms") ?? "unknown")")
         let responseRequestID = http.value(forHTTPHeaderField: "X-Request-ID")
             ?? requestID
         let quotaMode = http.value(forHTTPHeaderField: "X-Clone-Quota-Mode")
