@@ -39,10 +39,28 @@ mac.build_configurations.each do |config|
     require_equal(config.build_settings[key], value, "#{config.name} #{key}")
   end
 end
-# Freeze the latest integrated iOS 1.2.49 Build 84 graph, including Duo and
-# locked-page continuation. Comparing to the older Build 75 graph would reject
-# those additions and could encourage accidentally restoring the old target.
-ios_baseline = 'a95540d4b74e1c62cc9afcc8683752a97f0e2172'
+release = JSON.parse(File.read(File.join(root, 'scripts/mac-release-version.json')))
+([mac] + mac.dependencies.map(&:target)).each do |target|
+  target.build_configurations.each do |config|
+    require_equal(config.build_settings.values_at('MARKETING_VERSION', 'CURRENT_PROJECT_VERSION'),
+                  release.values_at('version', 'build'), "Aligned #{target.name} Mac release")
+  end
+end
+selection = File.readlines(File.join(root, 'scripts/mac-unit-test-selection.txt')).map(&:strip)
+  .reject { |line| line.empty? || line.start_with?('#') }
+scheme = Xcodeproj::XCScheme.new(File.join(root, 'CastReader.xcodeproj/xcshareddata/xcschemes/CastReaderMac.xcscheme'))
+tests = project.targets.find { |target| target.name == 'CastReaderMacTests' }
+testable = scheme.test_action.testables.find { |item| item.buildable_references.any? { |ref| ref.target_uuid == tests&.uuid } }
+abort 'FAIL: Missing Mac test selection' unless testable&.use_test_selection_whitelist?
+require_equal(testable.selected_tests.map(&:identifier), selection, 'Mac test scheme matches maintained selection')
+%w[SpeechGenerationControlTests ExplainGenerationControlTests ReaderPlaybackLoadingViewTests
+   AudioStreamingPauseIntentTests AudioPlaybackOwnershipTests PresetTTSRequestSchedulerTests].each do |name|
+  abort "FAIL: Missing playback regression #{name}" unless selection.include?(name)
+end
+# Freeze the validated iOS 1.2.51 Build 86 graph, including shared generation
+# control and its regression suites. Mac synchronization must never roll back
+# the iOS sources, release settings or extensions to an older graph.
+ios_baseline = '7ba153670535ef14ca4c75d237abeced01c0f731'
 original, status = Open3.capture2('git', '-C', root, 'show', "#{ios_baseline}:CastReader.xcodeproj/project.pbxproj")
 abort 'Cannot read baseline project' unless status.success?
 Dir.mktmpdir('CastReaderProjectBaseline') do |temp|
@@ -51,28 +69,11 @@ Dir.mktmpdir('CastReaderProjectBaseline') do |temp|
   File.write(File.join(path, 'project.pbxproj'), original)
   baseline = Xcodeproj::Project.open(path)
   baseline.targets.each do |old|
-    next if ['CastReaderMac', 'CastReaderMacTests'].include?(old.name)
+    next if old.name.start_with?('CastReaderMac')
     current = project.targets.find { |target| target.uuid == old.uuid }
     require_equal(current&.to_hash, old.to_hash, "Preserved target #{old.name}")
     (old.build_phases.to_a + old.build_configurations.to_a + old.dependencies.to_a).each do |object|
       actual = project.objects_by_uuid[object.uuid]&.to_hash
-      if old.name == 'CastReader' && object.isa == 'PBXSourcesBuildPhase'
-        # Explicit additive platform adapters and the iOS StoreKit promotion coordinator.
-        # Permit its explicit addition, while still rejecting every removal,
-        # unrelated source addition, or build-setting/extension change.
-        actual = Marshal.load(Marshal.dump(actual))
-        actual['files'].reject! do |id|
-          ['PlatformFileImporter.swift', 'MacDocumentCameraViewController.swift', 'PromotedPurchaseCoordinator.swift'].include?(project.objects_by_uuid[id]&.file_ref&.path)
-        end unless object.files.any? { |file| file.file_ref&.path == 'PlatformFileImporter.swift' }
-      end
-      if old.name == 'CastReaderTests' && object.isa == 'PBXResourcesBuildPhase'
-        # Shared offline OCR regression uses the reported public-domain page.
-        # Permit only this test fixture; app resources/settings remain identical.
-        actual = Marshal.load(Marshal.dump(actual))
-        actual['files'].reject! do |id|
-          project.objects_by_uuid[id]&.file_ref&.path == 'kindle-offline-dual-page.png'
-        end unless object.files.any? { |file| file.file_ref&.path == 'kindle-offline-dual-page.png' }
-      end
       release_targets = ['CastReader', 'CastReader Share Extension', 'CastReader Widget', 'CastReader Safari Extension']
       if release_targets.include?(old.name) && object.isa == 'XCBuildConfiguration'
         # Releases advance all four iOS components together; every other setting
@@ -97,4 +98,4 @@ puts JSON.pretty_generate(status: 'PASS', shared_sources: mac.source_build_phase
   ios_baseline: ios_baseline,
   original_ios_settings_and_extensions: 'unchanged except aligned release version/build',
   ios_release: ios.build_configurations.first.build_settings.values_at('MARKETING_VERSION', 'CURRENT_PROJECT_VERSION'),
-  additional_ios_sources: ['PromotedPurchaseCoordinator.swift'], shared_platform_adapters: ['PlatformFileImporter.swift', 'MacDocumentCameraViewController.swift'])
+  mac_release: release, mac_test_selections: selection.count)
