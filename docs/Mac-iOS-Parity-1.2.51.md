@@ -1,6 +1,6 @@
 # Mac 1.2.51：iOS 迭代对齐与验收
 
-日期：2026-10-16，北京时间。当前为验收中的候选，发布状态以本报告最终回读为准。
+2026-10-16 **03:14:18（北京时间）已正式提交 App Store 审核**。Mac 版本与审核单均回读为 **WAITING_FOR_REVIEW**；保留 **AFTER_APPROVAL**，审核通过后自动发布。此状态不表示已经上线。
 
 ## 基线与范围
 
@@ -34,9 +34,10 @@
 - 重点隔离回归：231 PASS / 0 FAIL / 2 SKIP。跳过的是需显式提供的捷克语和芬兰语外部 PDF 样本；PDF 深浅色、高亮投影与布局回归均通过。
 - 完整 Mac scheme 回归：2,044 PASS / 0 FAIL / 4 SKIP（共 2,048）。跳过为 Google Books 外网 shell、捷克语/芬兰语外部 PDF、显式启用的 YouTube 在线提取。首个完整入口因 Bash 空数组在启动前退出，保留 `full/` 记录；修复后 `full-r2/` 是单次成功完整运行。
 - 正常签名应用国际/英文朗读与解读 × 常规、社区、私人声音：六项 PASS。Bella、Morgan Freeman by Tims、既有 Mac QA 私人音色均有新生成 HTTP 200、AVPlayer 实际推进、字幕/高亮及自动下一段或下一块证据。原文标注可见，讲解共 8 块。
-- 升级保留正式账号、Pro、四书源书架与旧阅读记录。窗口从 1024×610 放大至 1726×925 时解读继续，暂停后恢复尺寸仍保持暂停。Kindle 原位置朗读与暂停、Google Books 恢复/逐词高亮/等待中暂停通过。Kobo 官网真人验证待处理；微信读书实际页面提取、中文 TTS、逐词覆盖与段落推进通过，但当前为公开版权页且页面显示登录，本轮不声称完成已登录书库跨页验收。Kindle 手动下一页未取得新的页指纹，本轮不把该动作列为实机跨页通过，跨页回归证据来自完整测试套件。
-- Release 签名、架构、本地化与夹具排除：待执行。
-- App Store 上传、29 语言更新说明、原截图保留和送审回读：待执行。
+- 升级保留正式账号、Pro、四书源书架与旧阅读记录。窗口从 1024×610 放大至 1726×925 时解读继续，暂停后恢复尺寸仍保持暂停。Kindle 原位置朗读与暂停、Google Books 恢复/逐词高亮/等待中暂停通过。Kobo 官网真人验证阻塞，已询问此次验证授权，未收到确认前不操作验证码；微信读书实际页面提取、中文 TTS、逐词覆盖与段落推进通过，但当前为公开版权页且页面显示登录，本轮不声称完成已登录书库跨页验收。Kindle 手动下一页未取得新的页指纹，本轮不把该动作列为实机跨页通过，跨页回归证据来自完整测试套件。
+- Release 归档 PASS：主应用 / Share / Widget 都是 1.2.51（88）、arm64 + x86_64、最低 macOS 14.6；严格签名、沙盒、App Group、有效描述文件通过。三组件均有 28 种 UI 语言；主应用另外保留葡语 pt 回退目录，已逐项对照源字符串目录。54 项测试夹具扫描无命中，Debug 正对照通过。
+- 同一归档 Release 安装后正常启动，原账号/Pro/书架保留；测试文本从第 24 段恢复并实际读到末尾，显示末词高亮。跟随系统语言、Morgan 音色与 1.5x 均保留，播放停止。
+- App Store：单次官方 Xcode 上传成功，Build 88 为 VALID / APP_STORE_ELIGIBLE；29 语言更新说明匹配，145 张原截图内容/顺序和标题/副标题保留。最终审计 errors 为空，版本与审核单均 WAITING_FOR_REVIEW。
 
 首次新 QuickRead 计划请求发生超时，正常 UI 显示错误及重试入口；重试生成成功后完成实际讲解、标注与跨块推进。保留该失败尝试，没有更改服务、超时参数或使用假讲解规避验收。核心证据为 `live-core-observations.json`，含账号或书籍细节的完整运行日志仅本机保留。运行验收使用 Apple silicon；Intel 仅进行通用架构构建检查，不宣称 Intel 实机测试。
 
@@ -45,3 +46,18 @@
 ## 商店资料
 
 以本轮读取的现行 Mac 商店文案为基准，仅更新 29 个语言条目的 What's New；本地意图文件为 `store/app-store/mac-1.2.51/asc-metadata.json`。已快照当前标题、副标题与原截图。价格、商品、地区、隐私、法律声明及其他平台不属于本次修改范围。
+
+## 正式归档
+
+源码 `f15aacffe48453063af719f2de36d3c15d5a4322`（PR #12 已合入 main）。归档位于 `/Users/xuxuheng/Documents/CastReader-Releases/Mac-1.2.51-88-20261016/CastReaderMac-1.2.51-88.xcarchive`。安装位置 `/Users/xuxuheng/Applications/CastReader for Mac.app`。`archive-identity.json` 记录每个可执行文件 SHA-256；`release-source-88.json` 保留与已测 87 的逐文件对照。
+
+## Apple 最终记录
+
+- App：`6757636395`；MAC_OS version：`e4b2526e-993e-406d-917e-a9b105f568e6`。
+- 精确 Build：`90cf6d55-7976-4040-969f-ad8ea06420ca`，1.2.51（88），`VALID / APP_STORE_ELIGIBLE`，非豁免加密保持 false。
+- Review Submission：`4449f4f0-9d25-4eb2-8b02-83a8c8783362`，`WAITING_FOR_REVIEW`；提交时间 `2026-10-15T19:14:18.626Z`。
+- 提交后版本及绑定 Build 已再次回读，发布方式 `AFTER_APPROVAL`。
+- 实际上传包已保留为发布目录中的 `CastReaderMac-1.2.51-88.pkg`，SHA-256：`b91c8840359f5f7077bf90bce1c09a9bdc54097ed7e830864dea9545f4fb74ed`。归档和上传包均保持不变。
+- Mac scheme 全量与核心六格均通过；Kobo 官网 CAPTCHA、微信读书已登录全书跨页、Kindle 本轮手动下一页新指纹及 Intel 实机运行不在本轮完成的实测范围，不把这些补充验收记为 PASS。
+
+最终证据：`archive-identity.json`、`archive-bundle-verification.json`、`archive-fixture-scan.json`、`release-ui-smoke.json`、`upload-receipt.json`、`store-preservation.json`、`asc-final-audit.json`、`submission-result.json`、`post-submission-readback.json`。详细私有运行日志与 xcresult 留在本机。正式应用停留在首页，保存测试文本末段进度，播放已停止。

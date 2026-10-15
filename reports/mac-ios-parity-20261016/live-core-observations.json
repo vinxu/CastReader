@@ -230,5 +230,18 @@
       "scope": "Live public copyright page extracted and read with real zh TTS, word overlay and paragraph advance. Full authenticated library pagination not claimed; page shows login."
     }
   },
-  "releaseBuild": "88"
+  "releaseBuild": "88",
+  "allowanceUI": {
+    "beforeAvailableMinutesRounded": 121,
+    "afterAvailableMinutesRounded": 115,
+    "afterMonthlyMinutesRounded": 94,
+    "afterPurchasedMinutesRounded": 21,
+    "note": "Shared account balance observations, not exclusive billing attribution; no purchase performed."
+  },
+  "exitState": {
+    "voice": "Morgan Freeman by Tims",
+    "speed": 1.5,
+    "playback": "stopped",
+    "uiLanguage": "unchanged system-following"
+  }
 }

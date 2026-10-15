@@ -1,0 +1,13 @@
+{
+  "version": "1.2.51",
+  "build": "88",
+  "installedFromArchive": true,
+  "status": "PASS",
+  "observations": [
+    "Normal app launched with existing account and four cached shelves.",
+    "Saved test text reopened at paragraph 24, continued to final paragraph with visible word highlight, ended paused.",
+    "Settings show Monthly Pro and Follow System language.",
+    "Morgan Freeman by Tims and 1.5x retained."
+  ],
+  "noInjectedAudioOrPro": true
+}
