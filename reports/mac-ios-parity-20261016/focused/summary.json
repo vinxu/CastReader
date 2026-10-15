@@ -1,52 +1,47 @@
 {
-  "devicesAndConfigurations" : [
+  "devicesAndConfigurations": [
     {
-      "device" : {
-        "architecture" : "arm64",
-        "deviceId" : "00006000-001A08DE11C3801E",
-        "deviceName" : "My Mac",
-        "modelName" : "MacBook Pro",
-        "osBuildNumber" : "25G241",
-        "osVersion" : "26.7.1",
-        "platform" : "macOS"
+      "device": {
+        "architecture": "arm64",
+        "deviceName": "My Mac",
+        "modelName": "MacBook Pro",
+        "osBuildNumber": "25G241",
+        "osVersion": "26.7.1",
+        "platform": "macOS"
       },
-      "expectedFailures" : 0,
-      "failedTests" : 0,
-      "passedTests" : 231,
-      "skippedTests" : 2,
-      "testPlanConfiguration" : {
-        "configurationId" : "1",
-        "configurationName" : "Test Scheme Action"
+      "expectedFailures": 0,
+      "failedTests": 0,
+      "passedTests": 231,
+      "skippedTests": 2,
+      "testPlanConfiguration": {
+        "configurationId": "1",
+        "configurationName": "Test Scheme Action"
       }
     }
   ],
-  "environmentDescription" : "CastReaderMac · Built with macOS 26.7.1",
-  "expectedFailures" : 0,
-  "failedTests" : 0,
-  "finishTime" : 1792084482.809,
-  "passedTests" : 231,
-  "result" : "Passed",
-  "runtimeWarnings" : [
+  "environmentDescription": "CastReaderMac · Built with macOS 26.7.1",
+  "expectedFailures": 0,
+  "failedTests": 0,
+  "finishTime": 1792084482.809,
+  "passedTests": 231,
+  "result": "Passed",
+  "runtimeWarnings": [
     {
-      "issueType" : "Runtime Warning",
-      "message" : "This method should not be called on the main thread as it may lead to UI unresponsiveness."
+      "issueType": "Runtime Warning",
+      "message": "This method should not be called on the main thread as it may lead to UI unresponsiveness."
     }
   ],
-  "skippedTests" : 2,
-  "startTime" : 1792084053.423,
-  "statistics" : [
-
-  ],
-  "testFailures" : [
-
-  ],
-  "title" : "Test - CastReaderMac",
-  "topInsights" : [
+  "skippedTests": 2,
+  "startTime": 1792084053.423,
+  "statistics": [],
+  "testFailures": [],
+  "title": "Test - CastReaderMac",
+  "topInsights": [
     {
-      "category" : "Longest Test Runs",
-      "impact" : "14% of duration",
-      "text" : "3 longest test runs with outlier durations exceeding 9.78s (three standard deviations)"
+      "category": "Longest Test Runs",
+      "impact": "14% of duration",
+      "text": "3 longest test runs with outlier durations exceeding 9.78s (three standard deviations)"
     }
   ],
-  "totalTestCount" : 233
+  "totalTestCount": 233
 }
