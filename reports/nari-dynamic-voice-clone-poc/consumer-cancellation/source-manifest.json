@@ -1,0 +1,13 @@
+{
+  "reports/nari-dynamic-voice-clone-poc/worker/clone_worker.py": "9116a6afaac3efdf85ed0b04d0a10a3354c7545ac6603834f1892338e49543c4",
+  "reports/nari-dynamic-voice-clone-poc/worker/inference_scheduler.py": "c5c1a3c66f861732a022afbf7dae4484954b1abeaf8409d2b1c6e72fa270f43f",
+  "reports/nari-dynamic-voice-clone-poc/worker/request_coalescer.py": "5b9fd09d4f6ae88f2002e225e703cf6099ab84c97b33682f8333508bae39cd26",
+  "reports/nari-dynamic-voice-clone-poc/worker/consumer_cancellation.py": "32231f0adefb50899caf3851b62f2ee4023b08361b9654b1374ce1ba5173ff93",
+  "reports/nari-dynamic-voice-clone-poc/worker/consumer_nari_ack.py": "22fc12bf5f593897c70bd53888fd35ae1f0addef21ae3fd59a5ced92c32f7f59",
+  "reports/nari-dynamic-voice-clone-poc/consumer-cancellation/alignment/alignment_gateway.py": "375d575057f3e948a1a7b1c061a458524b66284df29bebeb87ede2d25b2db407",
+  "reports/nari-dynamic-voice-clone-poc/consumer-cancellation/alignment/alignment_contract.py": "b45900489a55c46d8962e2c2b7f2348d56b584131c5dfebdac71806ee143e7b4",
+  "reports/nari-dynamic-voice-clone-poc/consumer-cancellation/alignment/alignment_priority.py": "1d861abcf3eb09b98c4c4bc7c443abe95a43e1cc9bface4168fd121fbfd4a055",
+  "reports/nari-dynamic-voice-clone-poc/consumer-cancellation/alignment/caption_pipeline.py": "1a5cbdea1380b080c786c1e6140991bc54729b1dd9148dedeb63f0dc237a6e75",
+  "reports/nari-dynamic-voice-clone-poc/consumer-cancellation/alignment/shared_alignment.py": "fd549ab2111b4c9ae11899e4ef2dcc21ade2e82fb8d68fec5d36c8cff94ed043",
+  "reports/nari-dynamic-voice-clone-poc/consumer-cancellation/nari/shared_nari.py": "a9b68157529e43e46d6aba6f2fbd6c96a18bcc3b815f0b09fa5260432e96968d"
+}

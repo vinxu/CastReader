@@ -18,6 +18,8 @@ import time
 import uuid
 from collections.abc import Callable
 from typing import Generic, TypeVar
+from contextvars import copy_context
+from consumer_cancellation import ConsumerCancelled, check_cancelled, current_cancellation
 
 
 T = TypeVar("T")
@@ -62,6 +64,7 @@ class _Job(Generic[T]):
     value: T | None = None
     error: BaseException | None = None
     cancelled: bool = False
+    cancellation: object | None = None
 
 
 class InferenceScheduler:
@@ -118,6 +121,9 @@ class InferenceScheduler:
             raise ValueError("invalid scheduler priority")
         if timeout_s <= 0:
             raise ValueError("timeout_s must be positive")
+        cancellation = current_cancellation()
+        check_cancelled(cancellation)
+        context = copy_context()
         now = time.monotonic()
         job: _Job[T] = _Job(
             request_id=request_id or uuid.uuid4().hex,
@@ -125,7 +131,8 @@ class InferenceScheduler:
             priority=priority,
             submitted_at=now,
             deadline_at=now + timeout_s,
-            execute=execute,
+            execute=lambda: context.run(execute),
+            cancellation=cancellation,
         )
         with self._condition:
             if not self._accepting:
@@ -138,11 +145,28 @@ class InferenceScheduler:
 
         # A small grace interval lets the execution thread publish a terminal
         # result when the request finishes exactly at its declared deadline.
-        if not job.event.wait(timeout_s + 0.25):
-            with self._condition:
-                job.cancelled = True
-                self._condition.notify()
-            raise SchedulerDeadlineExceeded("GPU request deadline exceeded")
+        wait_deadline = now + timeout_s + .25
+        while not job.event.wait(.02):
+            stopped = cancellation.is_set()
+            expired = time.monotonic() >= wait_deadline
+            if stopped or expired:
+                with self._condition:
+                    job.cancelled = True
+                    if job.started_at is None:
+                        # Reclaim cancelled admission now, even while another
+                        # request still owns the GPU execution slot.
+                        queue = self._queues[job.priority]
+                        if job in queue:
+                            queue.remove(job)
+                            job.error = (ConsumerCancelled("consumer left before GPU execution")
+                                if stopped else SchedulerDeadlineExceeded("GPU request expired before execution"))
+                            job.finished_at = time.monotonic()
+                            job.event.set()
+                    self._condition.notify_all()
+                if stopped:
+                    raise ConsumerCancelled("consumer left the GPU queue")
+                raise SchedulerDeadlineExceeded("GPU request deadline exceeded")
+        check_cancelled(cancellation)
         if job.error is not None:
             raise job.error
         if job.started_at is None or job.finished_at is None:
@@ -201,11 +225,12 @@ class InferenceScheduler:
     def _next_job_locked(self, now: float) -> _Job[object] | None:
         candidates: list[tuple[int, float, int]] = []
         for priority, queue in self._queues.items():
-            while queue and (queue[0].cancelled or queue[0].deadline_at <= now):
+            while queue and (queue[0].cancelled or queue[0].deadline_at <= now or
+                             (queue[0].cancellation is not None and queue[0].cancellation.is_set())):
                 expired = queue.popleft()
-                expired.error = SchedulerDeadlineExceeded(
-                    "GPU request expired before execution"
-                )
+                expired.error = (ConsumerCancelled("consumer left before GPU execution")
+                    if expired.cancellation is not None and expired.cancellation.is_set()
+                    else SchedulerDeadlineExceeded("GPU request expired before execution"))
                 expired.finished_at = now
                 expired.event.set()
                 self._expired += 1
@@ -236,6 +261,7 @@ class InferenceScheduler:
                 job.started_at = time.monotonic()
                 self._active = job
             try:
+                check_cancelled(job.cancellation)
                 job.value = job.execute()
             except BaseException as error:  # propagate the original API error
                 job.error = error

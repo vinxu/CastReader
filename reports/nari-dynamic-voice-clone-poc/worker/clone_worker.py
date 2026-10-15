@@ -26,7 +26,8 @@ import httpx
 import numpy as np
 import soundfile as sf
 import torch
-from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Header, HTTPException, UploadFile, Request
+from consumer_cancellation import check_cancelled, run_on_disconnect, cancellable_pcm, cancellable_post, retiring_pcm
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
@@ -1543,10 +1544,9 @@ def nari_streamed_wav(
 ) -> tuple[int, bytes]:
     """Collect PCM over a cancellable HTTP stream and return a complete WAV.
 
-    Closing the HTTP stream before Nari reaches a terminal state executes its
-    ``stream_bytes`` finalizer, which cancels the engine request. A worker or
-    scheduler deadline therefore releases the GPU instead of merely abandoning
-    a still-running non-streaming request.
+    Each attempt has its own exact retirement ID. The scheduler callback stays
+    occupied after disconnect/deadline until the same Nari instance confirms
+    that its engine has removed the request. Socket closure is not an ACK.
     """
 
     remaining = deadline_at - time.monotonic()
@@ -1557,19 +1557,20 @@ def nari_streamed_wav(
         "response_format": "pcm",
         "stream": True,
     }
-    with NARI_CLIENT.stream(
-        "POST",
-        f"{NARI_URL}/v1/audio/speech",
-        json=transport_payload,
+    check_cancelled()
+    token_path = os.environ.get("CONSUMER_NARI_TOKEN_FILE")
+    if not token_path:
+        raise RuntimeError("consumer Nari exact-retirement token is not configured")
+    token = Path(token_path).read_text().strip()
+    status, pcm = retiring_pcm(
+        NARI_URL, token=token, json=transport_payload, deadline_at=deadline_at,
         timeout=max(0.25, min(NARI_REQUEST_TIMEOUT_SECONDS, remaining)),
-    ) as response:
-        if response.status_code != 200:
-            return response.status_code, b""
-        pcm = bytearray()
-        for chunk in response.iter_bytes():
-            if time.monotonic() >= deadline_at:
-                raise TimeoutError("Nari streamed synthesis exceeded its deadline")
-            pcm.extend(chunk)
+    )
+    check_cancelled()
+    if status != 200:
+        return status, b""
+    if time.monotonic() >= deadline_at:
+        raise TimeoutError("Nari streamed synthesis exceeded its deadline")
     if not pcm or len(pcm) % 2:
         raise HTTPException(503, "Nari returned invalid PCM")
     output = io.BytesIO()
@@ -1591,10 +1592,12 @@ def request_nari(request: SpeechRequest) -> bytes:
     seeds = (request.seed, (request.seed + 104_729) % 2_147_483_647)
     for attempt, seed in enumerate(seeds, start=1):
         try:
-            response = NARI_CLIENT.post(
-                f"{NARI_URL}/v1/audio/speech",
-                json=nari_request_payload(request, language=language, seed=seed),
+            check_cancelled()
+            status, content = nari_streamed_wav(
+                nari_request_payload(request, language=language, seed=seed),
+                deadline_at=time.monotonic() + NARI_REQUEST_TIMEOUT_SECONDS,
             )
+            response = httpx.Response(status, content=content)
         except httpx.HTTPError as error:
             raise HTTPException(503, "Nari is unavailable") from error
         if response.status_code == 422:
@@ -1716,6 +1719,7 @@ def request_xvector_fallback(
         (request.seed, True),
     )
     for attempt, (seed, deterministic) in enumerate(attempts, start=1):
+        check_cancelled()
         remaining = deadline - time.monotonic()
         if remaining <= 0.25:
             break
@@ -1991,6 +1995,7 @@ def schedule_validated_voice(
 ) -> ScheduledResult[ValidatedVoiceAudio]:
     """Keep CPU ASR outside the single-GPU lane and retry one safe mode."""
 
+    check_cancelled()
     started = time.monotonic()
     request_deadline = started + SYNTHESIS_TIMEOUT_SECONDS
     generated = schedule(
@@ -2001,7 +2006,9 @@ def schedule_validated_voice(
         request_id=request_id,
     )
     try:
+        check_cancelled()
         validated = validate_voice_candidate(request, generated.value)
+        check_cancelled()
         return ScheduledResult(
             value=validated,
             request_id=generated.request_id,
@@ -2642,8 +2649,7 @@ def estimated_timestamps(
     return result
 
 
-@app.post("/v1/captioned-speech", dependencies=[Depends(require_token)])
-def captioned_speech(
+def _captioned_speech_sync(
     request: CaptionedSpeechRequest,
     response: Response,
     x_tts_priority: str | None = Header(default=None),
@@ -2790,8 +2796,7 @@ def captioned_speech(
     return result.value
 
 
-@app.post("/v1/speech", dependencies=[Depends(require_token)])
-def speech(
+def _speech_sync(
     request: SpeechRequest,
     x_tts_priority: str | None = Header(default=None),
     x_request_id: str | None = Header(default=None),
@@ -2807,3 +2812,29 @@ def speech(
         media_type="audio/wav",
         headers=timing_headers(result),
     )
+
+
+@app.post("/v1/captioned-speech", dependencies=[Depends(require_token)])
+async def captioned_speech(
+    http_request: Request,
+    request: CaptionedSpeechRequest,
+    x_tts_priority: str | None = Header(default=None),
+    x_request_id: str | None = Header(default=None),
+):
+    response = Response()
+    result = await run_on_disconnect(http_request, lambda: _captioned_speech_sync(
+        request, response, x_tts_priority, x_request_id))
+    from fastapi.responses import JSONResponse
+    return JSONResponse(result, headers={key: value for key, value in response.headers.items()
+                                         if key.lower() not in {"content-length", "content-type"}})
+
+
+@app.post("/v1/speech", dependencies=[Depends(require_token)])
+async def speech(
+    http_request: Request,
+    request: SpeechRequest,
+    x_tts_priority: str | None = Header(default=None),
+    x_request_id: str | None = Header(default=None),
+):
+    return await run_on_disconnect(http_request, lambda: _speech_sync(
+        request, x_tts_priority, x_request_id))

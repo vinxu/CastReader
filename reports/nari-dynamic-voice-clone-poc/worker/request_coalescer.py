@@ -10,6 +10,8 @@ import time
 from collections.abc import Callable
 from typing import Generic, TypeVar
 
+from consumer_cancellation import ConsumerCancelled, SharedCancellation, bind_cancellation, check_cancelled, current_cancellation
+
 
 T = TypeVar("T")
 
@@ -31,6 +33,7 @@ class CoalescedResult(Generic[T]):
 @dataclasses.dataclass
 class _Entry(Generic[T]):
     fingerprint: str
+    cancellation: SharedCancellation = dataclasses.field(default_factory=SharedCancellation)
     event: threading.Event = dataclasses.field(default_factory=threading.Event)
     value: T | None = None
     error: BaseException | None = None
@@ -73,7 +76,10 @@ class RequestCoalescer:
     ) -> CoalescedResult[T]:
         if not key or not fingerprint or wait_timeout_s <= 0:
             raise ValueError("invalid idempotency request")
+        caller = current_cancellation()
+        check_cancelled(caller)
         owner = False
+        retiring = False
         with self._lock:
             self._purge_locked(time.monotonic())
             cached = self._cache.get(key)
@@ -90,16 +96,40 @@ class RequestCoalescer:
                 entry = _Entry(fingerprint=fingerprint)
                 self._inflight[key] = entry  # type: ignore[assignment]
                 owner = True
+            try:
+                entry.cancellation.add(caller)
+            except ConsumerCancelled:
+                retiring = True
+
+        if retiring:
+            # This is a fresh explicit HTTP consumer, not revival of the old
+            # cancelled operation. Wait for its terminal before reusing the ID.
+            deadline = time.monotonic() + wait_timeout_s
+            while not entry.event.wait(.02):
+                check_cancelled(caller)
+                if time.monotonic() >= deadline:
+                    raise IdempotencyWaitTimeout("cancelled request is still retiring")
+            check_cancelled(caller)
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise IdempotencyWaitTimeout("cancelled request is still retiring")
+            return self.execute(key, fingerprint, execute, wait_timeout_s=remaining)
 
         if not owner:
-            if not entry.event.wait(wait_timeout_s):
-                raise IdempotencyWaitTimeout("timed out waiting for original request")
+            deadline = time.monotonic() + wait_timeout_s
+            while not entry.event.wait(.02):
+                check_cancelled(caller)
+                if time.monotonic() >= deadline:
+                    raise IdempotencyWaitTimeout("timed out waiting for original request")
+            check_cancelled(caller)
             if entry.error is not None:
                 raise entry.error
             return CoalescedResult(entry.value, "coalesced")  # type: ignore[arg-type]
 
         try:
-            value = execute()
+            with bind_cancellation(entry.cancellation):
+                check_cancelled()
+                value = execute()
         except BaseException as error:
             with self._lock:
                 entry.error = error
@@ -118,6 +148,7 @@ class RequestCoalescer:
             while len(self._cache) > self.max_entries:
                 self._cache.popitem(last=False)
             entry.event.set()
+        check_cancelled(caller)
         return CoalescedResult(value, "owner")
 
     def _purge_locked(self, now: float) -> None:
