@@ -226,7 +226,9 @@
       "scope": "Reader failed to load content, bounded recovery shown; reauthentication reaches Cloudflare Verify you are human. Confirmation requested before interacting."
     },
     "weread": {
-      "status": "PENDING"
+      "status": "PASS_LIMITED",
+      "scope": "Live public copyright page extracted and read with real zh TTS, word overlay and paragraph advance. Full authenticated library pagination not claimed; page shows login."
     }
-  }
+  },
+  "releaseBuild": "88"
 }

@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "shared_sources": 246,
+  "shared_resources": 15,
+  "ios_baseline": "7ba153670535ef14ca4c75d237abeced01c0f731",
+  "original_ios_settings_and_extensions": "unchanged except aligned release version/build",
+  "ios_release": [
+    "1.2.51",
+    "86"
+  ],
+  "mac_release": {
+    "version": "1.2.51",
+    "build": "88"
+  },
+  "mac_test_selections": 136
+}
