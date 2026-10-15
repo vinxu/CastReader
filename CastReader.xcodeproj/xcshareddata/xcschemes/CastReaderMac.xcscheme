@@ -429,6 +429,33 @@
                <Test
                   Identifier = "ReaderViewportTests">
                </Test>
+               <Test
+                  Identifier = "SpeechGenerationControlTests">
+               </Test>
+               <Test
+                  Identifier = "ExplainGenerationControlTests">
+               </Test>
+               <Test
+                  Identifier = "ReaderPlaybackLoadingViewTests">
+               </Test>
+               <Test
+                  Identifier = "AudioStreamingPauseIntentTests">
+               </Test>
+               <Test
+                  Identifier = "AudioPlaybackOwnershipTests">
+               </Test>
+               <Test
+                  Identifier = "PresetTTSRequestSchedulerTests">
+               </Test>
+               <Test
+                  Identifier = "ExplainBatchContinuationTests">
+               </Test>
+               <Test
+                  Identifier = "StudyBoostTests">
+               </Test>
+               <Test
+                  Identifier = "PromotedPurchaseRequestTests">
+               </Test>
             </SelectedTests>
          </TestableReference>
       </Testables>

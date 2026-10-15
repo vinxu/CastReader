@@ -88,16 +88,18 @@ for target in targets:
 (products / 'IsolatedMac.xctestrun').write_bytes(plistlib.dumps(run))
 PY
 status=0
-test_filters=()
+# macOS ships Bash 3.2, where expanding an empty array under nounset fails.
+# Keep the action in the array so an unfiltered full run is always valid.
+test_arguments=(test-without-building)
 if [[ -n "${CASTREADER_TEST_ONLY:-}" ]]; then
   while IFS= read -r test_identifier; do
-    [[ -n "$test_identifier" ]] && test_filters+=("-only-testing:CastReaderMacTests/$test_identifier")
+    [[ -n "$test_identifier" ]] && test_arguments+=("-only-testing:CastReaderMacTests/$test_identifier")
   done <<< "$CASTREADER_TEST_ONLY"
 fi
 xcodebuild -xctestrun "$derived/Build/Products/IsolatedMac.xctestrun" \
   -destination 'platform=macOS,variant=Mac Catalyst,arch=arm64' \
   -parallel-testing-enabled NO -resultBundlePath "$report/tests.xcresult" \
-  "${test_filters[@]}" test-without-building > "$report/tests.log" 2>&1 || status=$?
+  "${test_arguments[@]}" > "$report/tests.log" 2>&1 || status=$?
 xcrun xcresulttool get test-results summary --path "$report/tests.xcresult" --format json > "$report/summary.json"
 printf 'Isolated Mac tests exit=%s; report=%s\n' "$status" "$report"
 exit "$status"

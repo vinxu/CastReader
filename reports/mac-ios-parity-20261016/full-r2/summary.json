@@ -1,0 +1,67 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "00006000-001A08DE11C3801E",
+        "deviceName" : "My Mac",
+        "modelName" : "MacBook Pro",
+        "osBuildNumber" : "25G241",
+        "osVersion" : "26.7.1",
+        "platform" : "macOS"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 2044,
+      "skippedTests" : 4,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReaderMac · Built with macOS 26.7.1",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1792085618.726,
+  "passedTests" : 2044,
+  "result" : "Passed",
+  "runtimeWarnings" : [
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "[Internal] Thread running at User-interactive quality-of-service class waiting on a lower QoS thread running at Default quality-of-service class. Investigate ways to avoid priority inversions"
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Making a purchase without listening for transaction updates risks missing successful purchases. Create a Task to iterate Transaction.updates at launch.",
+      "sourceURL" : "file:///tmp/CastReaderMacTests.nm91A9/CastReaderTests/PaymentTests.swift"
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Making a purchase without listening for transaction updates risks missing successful purchases. Create a Task to iterate Transaction.updates at launch.",
+      "sourceURL" : "file:///tmp/CastReaderMacTests.nm91A9/CastReaderTests/PaymentTests.swift"
+    },
+    {
+      "issueType" : "Runtime Warning",
+      "message" : "Making a purchase without listening for transaction updates risks missing successful purchases. Create a Task to iterate Transaction.updates at launch.",
+      "sourceURL" : "file:///tmp/CastReaderMacTests.nm91A9/CastReaderTests/PaymentTests.swift"
+    }
+  ],
+  "skippedTests" : 4,
+  "startTime" : 1792084633.092,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReaderMac",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "27% of duration",
+      "text" : "31 longest test runs with outlier durations exceeding 4.58s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 2048
+}

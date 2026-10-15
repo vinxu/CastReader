@@ -155,3 +155,15 @@ PhotoLanguageCorrectionTests
 ReadingLanguageTests
 CloneCreditBalanceRegressionTests
 ReaderViewportTests
+
+# iOS 1.2.51 parity: production HTTP admission, pause/resume, loading and
+# playback ownership must run on Catalyst as well as the mobile host.
+SpeechGenerationControlTests
+ExplainGenerationControlTests
+ReaderPlaybackLoadingViewTests
+AudioStreamingPauseIntentTests
+AudioPlaybackOwnershipTests
+PresetTTSRequestSchedulerTests
+ExplainBatchContinuationTests
+StudyBoostTests
+PromotedPurchaseRequestTests
