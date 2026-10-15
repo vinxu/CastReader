@@ -266,7 +266,7 @@ final class WebReaderEvalTests: XCTestCase {
         var frame = document.createElement('iframe');
         frame.id = 'reader-frame';
         frame.style.cssText = 'display:block;width:360px;height:220px;border:0';
-        frame.srcdoc = '<!doctype html><html><head><style>body{font:18px/1.6 -apple-system;padding:12px}</style></head><body></body></html>';
+        frame.srcdoc = '<!doctype html><html><head><style>body{font:18px/1.6 -apple-system;padding:12px}</style></head><body id="loaded-reader-frame"></body></html>';
         document.body.appendChild(frame);
         """)
 
@@ -275,7 +275,7 @@ final class WebReaderEvalTests: XCTestCase {
             if await webView.jsBool(
                 "!!(document.getElementById('reader-frame') && " +
                 "document.getElementById('reader-frame').contentDocument && " +
-                "document.getElementById('reader-frame').contentDocument.body)"
+                "document.getElementById('reader-frame').contentDocument.getElementById('loaded-reader-frame'))"
             ) {
                 frameReady = true
                 break

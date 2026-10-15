@@ -82,10 +82,10 @@ enum ReaderExplainPlaybackPresentationState: Equatable {
 }
 
 /// Short AVPlayer/TTS staging gaps are normal between streamed segments. Keep
-/// the last stable control state for 300ms so those gaps do not flash the play
+/// the last stable control state for 500ms so those gaps do not flash the play
 /// button or status copy. A sustained wait then becomes an explicit spinner.
 enum ReaderPlaybackWaitingDebounceContract {
-    static let delayMilliseconds: UInt64 = 300
+    static let delayMilliseconds: UInt64 = 500
     static let delayNanoseconds = delayMilliseconds * 1_000_000
 
     static func hasExceededDelay(elapsedMilliseconds: UInt64) -> Bool {
@@ -160,6 +160,11 @@ struct ReaderPrimaryPlaybackButtonContent: View {
 /// remains true it deliberately refuses to accept transient `.paused` values
 /// caused by `isPlaying` dropping at a segment boundary.
 struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View>: View {
+    private struct Input: Equatable {
+        let stablePresentation: Presentation
+        let rawWaiting: Bool
+    }
+
     @ObservedObject private var sleepTimer = AudioPlayerService.shared.sleepTimer
     let stablePresentation: Presentation
     let rawWaiting: Bool
@@ -189,15 +194,13 @@ struct ReaderDebouncedWaitingPresentation<Presentation: Equatable, Content: View
                     previousStablePresentation = stablePresentation
                 }
             }
-            .onChange(of: stablePresentation) { newValue in
-                guard !rawWaiting else { return }
-                previousStablePresentation = newValue
-            }
-            .onChange(of: rawWaiting) { isWaiting in
-                if !isWaiting {
-                    waitingHasExceededDelay = false
-                    previousStablePresentation = stablePresentation
-                }
+            .onChange(of: Input(stablePresentation: stablePresentation, rawWaiting: rawWaiting)) { input in
+                // Observe one coherent snapshot. Separate onChange handlers
+                // can capture the previous render's waiting flag and save a
+                // transient .paused value at the same audio boundary.
+                guard !input.rawWaiting else { return }
+                waitingHasExceededDelay = false
+                previousStablePresentation = input.stablePresentation
             }
             .task(id: rawWaiting) {
                 guard rawWaiting else {

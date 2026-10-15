@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import SwiftUI
 import UIKit
 import WebKit
 import AuthenticationServices
@@ -4178,7 +4179,7 @@ final class ReaderPlaybackBarLayoutContractTests: XCTestCase {
     func testShortSegmentWaitingKeepsPreviousStablePresentation() {
         XCTAssertFalse(
             ReaderPlaybackWaitingDebounceContract.hasExceededDelay(
-                elapsedMilliseconds: 299
+                elapsedMilliseconds: 499
             )
         )
         XCTAssertEqual(
@@ -4190,14 +4191,14 @@ final class ReaderPlaybackBarLayoutContractTests: XCTestCase {
                 waitingPresentation: ReadPlaybackPresentationState.waiting
             ),
             .playing,
-            "a normal sub-300ms segment handoff must keep the pause icon and listening status"
+            "a normal sub-500ms segment handoff must keep the pause icon and listening status"
         )
     }
 
     func testSustainedWaitingUsesStableOrangeLoadingControl() {
         XCTAssertTrue(
             ReaderPlaybackWaitingDebounceContract.hasExceededDelay(
-                elapsedMilliseconds: 300
+                elapsedMilliseconds: 500
             )
         )
         XCTAssertEqual(
@@ -4293,6 +4294,142 @@ final class ReaderPlaybackBarLayoutContractTests: XCTestCase {
             ),
             "an explicitly paused Explain session must remain paused"
         )
+    }
+}
+
+/// Mount the production Kindle button: pure resolver tests alone missed the
+/// Kindle UI bypassing the shared waiting contract entirely.
+@MainActor
+final class ReaderPlaybackLoadingViewTests: XCTestCase {
+    private final class Playback: ObservableObject {
+        @Published var loading = false
+        @Published var playing = true
+    }
+
+    private struct Fixture: View {
+        @ObservedObject var playback: Playback
+        let size: CGFloat
+
+        var body: some View {
+            KindlePlayButtonContent(
+                isLoading: playback.loading,
+                isPlaying: playback.playing,
+                size: size,
+                loadingMessage: "Loading"
+            )
+            .frame(width: 180, height: 180)
+            .background(Color.white)
+            .environment(\.colorScheme, .light)
+        }
+    }
+
+    private func mount(_ playback: Playback, size: CGFloat = 52) async throws -> UIWindow {
+        AudioPlayerService.shared.sleepTimer.resumeByUser()
+        let scene = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 180, height: 180)
+        window.rootViewController = UIHostingController(rootView: Fixture(playback: playback, size: size))
+        window.makeKeyAndVisible()
+        window.rootViewController?.view.layoutIfNeeded()
+        try await Task.sleep(for: .milliseconds(120))
+        return window
+    }
+
+    private func pixels(_ window: UIWindow) throws -> Data {
+        let view = try XCTUnwrap(window.rootViewController?.view)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(bounds: view.bounds, format: format).image { _ in
+            view.drawHierarchy(in: view.bounds, afterScreenUpdates: true)
+        }
+        return try XCTUnwrap(image.pngData())
+    }
+
+    private func attach(_ data: Data, name: String) {
+        try? data.write(to: FileManager.default.temporaryDirectory.appendingPathComponent("loading-regression-\(name).png"))
+        let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.png")
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
+    func testRepeatedShortParagraphHandoffsKeepPortraitAndLandscapePixelsStable() async throws {
+        for size: CGFloat in [44, 52] {
+            let playback = Playback()
+            let window = try await mount(playback, size: size)
+            defer { window.isHidden = true }
+            let playing = try pixels(window)
+            attach(playing, name: "handoff-\(Int(size))-playing")
+            for _ in 0..<3 {
+                playback.playing = false
+                playback.loading = true
+                try await Task.sleep(for: .milliseconds(180))
+                attach(try pixels(window), name: "handoff-\(Int(size))-short-wait")
+                XCTAssertEqual(try pixels(window), playing,
+                    "A short item handoff must keep the pause glyph and must not show the loading bubble")
+                playback.playing = true
+                playback.loading = false
+                try await Task.sleep(for: .milliseconds(80))
+                XCTAssertEqual(try pixels(window), playing)
+            }
+        }
+    }
+
+    func testSustainedWaitStillShowsLoadingAndAudioResumeClearsItImmediately() async throws {
+        let playback = Playback()
+        let window = try await mount(playback)
+        defer { window.isHidden = true }
+        let playing = try pixels(window)
+        playback.playing = false
+        playback.loading = true
+        try await Task.sleep(for: .milliseconds(750))
+        let loading = try pixels(window)
+        XCTAssertNotEqual(loading, playing, "A genuine wait must remain visible")
+        attach(playing, name: "playing")
+        attach(loading, name: "sustained-loading")
+        playback.playing = true
+        playback.loading = false
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(try pixels(window), playing, "No minimum spinner duration may delay the real playing state")
+    }
+
+    func testPauseCancelsPendingIndicatorAndNextSeekStartsANewDelay() async throws {
+        let playback = Playback()
+        let window = try await mount(playback)
+        defer { window.isHidden = true }
+        let playing = try pixels(window)
+        playback.playing = false
+        playback.loading = true
+        try await Task.sleep(for: .milliseconds(180))
+        playback.loading = false // User paused while preparation was in flight.
+        try await Task.sleep(for: .milliseconds(80))
+        let paused = try pixels(window)
+        XCTAssertNotEqual(paused, playing)
+        try await Task.sleep(for: .milliseconds(550))
+        XCTAssertEqual(try pixels(window), paused, "Cancelled loading must not appear later")
+        playback.loading = true // A new seek has a fresh grace period.
+        try await Task.sleep(for: .milliseconds(180))
+        XCTAssertEqual(try pixels(window), paused)
+        playback.playing = true
+        playback.loading = false
+        try await Task.sleep(for: .milliseconds(550))
+        XCTAssertEqual(try pixels(window), playing, "Old waits cannot overwrite the new playing state")
+    }
+
+    func testInitialLoadWaitsButExplicitPauseClearsAnAlreadyVisibleIndicator() async throws {
+        let playback = Playback()
+        playback.playing = false
+        let window = try await mount(playback)
+        defer { window.isHidden = true }
+        let paused = try pixels(window)
+        playback.loading = true
+        try await Task.sleep(for: .milliseconds(180))
+        XCTAssertEqual(try pixels(window), paused)
+        try await Task.sleep(for: .milliseconds(570))
+        XCTAssertNotEqual(try pixels(window), paused)
+        playback.loading = false
+        try await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(try pixels(window), paused)
     }
 }
 

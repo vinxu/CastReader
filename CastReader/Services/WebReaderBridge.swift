@@ -989,6 +989,14 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
         guard self.readVM == nil else { return }   // 只关联一次
         self.readVM = readVM
         self.explainVM = explainVM
+        pageSpeechGenerator = pageSpeechGenerator.controlled(by: AudioPlayerService.shared.speechGeneration)
+        AudioPlayerService.shared.speechGeneration.addBufferProvider { [weak self] in
+            guard let self else { return nil }
+            guard self.isReadMode, self.readVM?.isActive == true else { return [] }
+            return (self.preparedWeReadPage?.segments ?? [])
+                + (self.preparedGoogleBooksReadPage?.segments ?? [])
+                + (self.preparedGoogleBooksSpeechPreview?.segments ?? [])
+        }
         explainVM.isSourcePanelPresented = false
         // Every web-library adapter inherits this document's established
         // language. A short opening page must not erase it; fresh documents
@@ -2915,7 +2923,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
             AudioSegment(
                 paragraphIndex: segment.paragraphIndex,
                 segmentIndex: 800_000_000 + (serial % 100_000) * 1_000 + offset,
-                audioData: segment.audioData,
+                audioData: segment.audioData, generationIdentity: segment.generationIdentity,
                 timestamps: segment.timestamps,
                 duration: segment.duration,
                 text: segment.text,
@@ -5019,7 +5027,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 paragraphIndex: segment.paragraphIndex,
                 segmentIndex:
                     900_000_000 + (serial % 100_000) * 1_000 + offset,
-                audioData: segment.audioData,
+                audioData: segment.audioData, generationIdentity: segment.generationIdentity,
                 timestamps: segment.timestamps,
                 duration: segment.duration,
                 text: segment.text,
@@ -5275,7 +5283,7 @@ final class WebReaderBridge: NSObject, WKScriptMessageHandler, WKNavigationDeleg
                 segmentIndex:
                     segmentIndexBase.map { $0 + offset }
                         ?? segment.segmentIndex,
-                audioData: segment.audioData,
+                audioData: segment.audioData, generationIdentity: segment.generationIdentity,
                 timestamps: segment.timestamps,
                 duration: segment.duration,
                 text: segment.text,

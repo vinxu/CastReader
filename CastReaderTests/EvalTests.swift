@@ -270,7 +270,7 @@ final class EvalTests: XCTestCase {
         let doc = DocumentBuilder.fromMarkdown(prefetchMd, title: "t", sourceURL: nil, language: "zh")
         let firstText = try XCTUnwrap(doc.readableParagraphs.first?.text)
         let fixture = ReadAloudHTTPFixture { text, _ in
-            .response(ReadAloudHTTPFixture.body(text, duration: firstText.contains(text) ? 30 : 1))
+            .response(ReadAloudHTTPFixture.body(text, duration: firstText.contains(text) ? 8 : 1))
         }
         let vm = ReadAloudViewModel(document: doc, ttsService: fixture.service())
         defer { _ = vm.stop(); vm.deactivate(); fixture.close() }
@@ -301,7 +301,7 @@ final class EvalTests: XCTestCase {
         doc.paragraphs = Array(doc.paragraphs.prefix(2))
         let firstText = try XCTUnwrap(doc.readableParagraphs.first?.text)
         let fixture = ReadAloudHTTPFixture { text, _ in
-            .response(ReadAloudHTTPFixture.body(text, duration: firstText.contains(text) ? 30 : 1))
+            .response(ReadAloudHTTPFixture.body(text, duration: firstText.contains(text) ? 8 : 1))
         }
         let vm = ReadAloudViewModel(document: doc, ttsService: fixture.service())
         defer { _ = vm.stop(); vm.deactivate(); fixture.close() }
