@@ -622,12 +622,12 @@ class AudioPlayerService: NSObject, ObservableObject {
         return value.isFinite && value >= 0 ? value : currentTime
     }
 
-    @Published var currentTime: Double = 0
+    @Published var currentTime: Double = 0 { didSet { notifySpeechGeneration() } }
     /// Transport IDs (e.g. 0-0) repeat across pages. Async UI observers must
     /// bind each queued clock event to the actual media instance as well.
     var currentMediaIdentity: ObjectIdentifier? { playerItem.map(ObjectIdentifier.init) }
     @Published var duration: Double = 0
-    @Published var playbackRate: Float = 1.0
+    @Published var playbackRate: Float = 1.0 { didSet { notifySpeechGeneration() } }
     @Published var currentSegment: AudioSegment?
     @Published var isBuffering = false
     /// True while a streaming producer has promised additional queue items.
@@ -677,18 +677,49 @@ class AudioPlayerService: NSObject, ObservableObject {
     }
     /// A user pause outlives a network wait and is distinct from natural item
     /// completion (where isPlaying is also false).
-    private(set) var isExplicitlyPaused = false
-    private var currentItemDrained = false
+    private(set) var isExplicitlyPaused = false {
+        didSet { notifySpeechGeneration(paused: isExplicitlyPaused) }
+    }
+    private var currentItemDrained = false { didSet { notifySpeechGeneration() } }
     private var currentItemCompletionDelivered = false
     private var queueCompletionDelivered = false
     private var progressEvidence = AudioPlaybackProgressEvidence()
     private var isSeekingInitialPosition = false
 
     // Segments queue
-    private var segmentsQueue: [AudioSegment] = []
+    private var segmentsQueue: [AudioSegment] = [] { didSet { notifySpeechGeneration() } }
     private var currentSegmentIndex = 0
     private var gatedSegmentIndex: Int?
     private var playbackOwnership = AudioPlaybackOwnershipState()
+
+    private func notifySpeechGeneration(paused: Bool? = nil) {
+        if Thread.isMainThread {
+            MainActor.assumeIsolated {
+                if let paused { speechGeneration.setPaused(paused) }
+                else { speechGeneration.notify() }
+            }
+        } else {
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                if let paused { self.speechGeneration.setPaused(paused) }
+                else { self.speechGeneration.notify() }
+            }
+        }
+    }
+
+    @MainActor lazy var speechGeneration: SpeechGenerationControl = {
+        let control = SpeechGenerationControl()
+        control.setPaused(isExplicitlyPaused)
+        control.playbackSnapshot = { [weak self] in
+            guard let self else { return .init() }
+            let start = max(0, self.currentSegmentIndex + (self.currentItemDrained ? 1 : 0))
+            return .init(pending: Array(self.segmentsQueue.dropFirst(start)),
+                queueIDs: Set(self.segmentsQueue.map(\.generationIdentity)),
+                currentID: self.currentSegment?.generationIdentity,
+                position: self.playbackPosition, rate: Double(self.playbackRate))
+        }
+        return control
+    }()
 
     // 临时文件管理
     private let playbackTemporaryDirectory: URL

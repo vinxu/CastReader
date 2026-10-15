@@ -1218,7 +1218,7 @@ final class ReadAloudViewModel: ObservableObject {
         self.document = document
         self.historyStore = historyStore
         self.restoresSavedReadingPosition = restoresSavedReadingPosition
-        self.speechGenerator = speechGenerator ?? ttsService
+        self.speechGenerator = (speechGenerator ?? ttsService).controlled(by: audioService.speechGeneration)
         self.progressBoundaryToken = historyStore.progressBoundaryToken
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         self.analyticsSessionCoordinator = analyticsSessionCoordinator
@@ -1254,6 +1254,13 @@ final class ReadAloudViewModel: ObservableObject {
             .voice(for: correctedLanguage ?? document.language)
         recomputeReadableIndices()
         bind()
+        audio.speechGeneration.addBufferProvider { [weak self] in
+            guard let self else { return nil }
+            guard self.isActive, self.ownsAudioQueue else { return [] }
+            return (self.foregroundStream?.segments ?? [])
+                + self.readAheadStreams.values.flatMap(\.segments)
+                + self.liveWebCarryPrewarmSegments
+        }
         restoreSavedReadingPosition()
         GrowthLoopConversionCoordinator.shared.contentBecameReady(document)
     }
@@ -1975,6 +1982,46 @@ final class ReadAloudViewModel: ObservableObject {
         weReadBoundary: WeReadPageSpeechBoundary? = nil,
         resumeAnchor: WeReadPlaybackResumeAnchor? = nil
     ) {
+        // Layout-only changes must retain already generated audio and its clock,
+        // including a sentence carried from the preceding visible page.
+        let carried = currentSegmentBelongsToLiveWebCarry ? currentCarryTiming : nil
+        let retainedSource = carried?.source ?? (paras.indices.contains(currentParagraphIndex)
+            ? paras[currentParagraphIndex].resolvedSpeechText : nil)
+        let retainedSegments = carried?.segments ?? segmentsByParagraph[currentParagraphIndex]
+        if let anchor = resumeAnchor,
+           currentTTSCompleteForPageHandoff,
+           let restored = WeReadPlaybackResumeContract.paragraphIndex(in: p, anchor: anchor),
+           audio.currentSegment?.paragraphIndex == restored,
+           p[restored].resolvedSpeechText == retainedSource,
+           let retainedSegments, !retainedSegments.isEmpty,
+           (language ?? docLanguage) == docLanguage,
+           playbackVoiceID == settings.voice(for: docLanguage) {
+            flushReadingProgress()
+            generationEpoch &+= 1
+            generationTask?.cancel()
+            generationTask = nil
+            clearPrefetch()
+            resetLiveWebCarryPrewarmState()
+            isAwaitingLiveWebCarryCompletion = false
+            pendingLiveWebCarryStartIndex = nil
+            pendingLiveWebResume = nil
+            webParagraphs = p
+            if let language { webLanguage = language }
+            weReadSpeechBoundary = weReadBoundary
+            currentParagraphIndex = restored
+            segmentsByParagraph = [restored: retainedSegments]
+            webAudioSegments = retainedSegments
+            processedDisplayText = retainedSegments.map(\.text).joined()
+            recomputeReadableIndices()
+            didSignalPageBoundaryApproaching = false
+            lastWordKey = ""
+            updateHighlight(audio.playbackPosition)
+            if autoplay, !isPlaybackPausedByUser {
+                preloadNext(after: restored)
+            }
+            ReaderRunLog.write("READ reflow retained complete audio para=\(restored)")
+            return
+        }
         flushReadingProgress()
         pendingReadingAudioCursor = nil
         pendingResumeParagraphIndex = nil
@@ -2027,10 +2074,9 @@ final class ReadAloudViewModel: ObservableObject {
         if autoplay, !isPlaybackPausedByUser, !readableIndices.isEmpty {
             start()
         } else if let resumedParagraph, resumeAnchor?.wasPlaying == false, isActive {
-            // A viewport reflow is not a user navigation. Rebuild the anchored
-            // paragraph while paused so its word can be painted immediately;
-            // the normal resume path seeks before exposing the audio item.
-            // A manual turn has no resumeAnchor and still waits for Play.
+            // Retain the anchored producer checkpoint. The shared generation
+            // gate keeps it dormant until Play; no replacement HTTP is allowed
+            // merely because a paused viewport changed size.
             generate(resumedParagraph, autoPlay: false)
         }
     }
@@ -2180,7 +2226,7 @@ final class ReadAloudViewModel: ObservableObject {
         let epoch = generationEpoch
         for reserve in reserves {
             let stream = reserve.stream, index = stream.paragraphIndex
-            guard !reserve.adopted, stream.failure == nil, paras.indices.contains(index),
+            guard !reserve.adopted, !reserve.discarded, stream.failure == nil, paras.indices.contains(index),
                   readableIndices.contains(index), reserve.sourceText == paras[index].resolvedSpeechText,
                   stream.voice == settings.voice(for: docLanguage), stream.language == docLanguage,
                   pageCueRejection(stream.segments, paragraph: index) == nil else {
@@ -2192,6 +2238,11 @@ final class ReadAloudViewModel: ObservableObject {
             readAheadMediaLeases[index] = reserve.mediaLease
             reserve.mediaLease = nil
             if !stream.segments.isEmpty { kindlePrefetchedSegments[index] = stream.segments }
+            reserve.ownsAudibleDemand = { [weak self] in
+                guard let self else { return false }
+                return stream.promoted && self.isCurrent(stream, epoch: epoch, session: session)
+                    && self.currentParagraphIndex == index
+            }
             reserve.adopt(request: { [weak self] checkpoint in
                 guard let self else { throw CancellationError() }
                 return try await self.prepareBufferedRequest(stream, checkpoint: checkpoint, epoch: epoch, session: session)
@@ -2445,7 +2496,7 @@ final class ReadAloudViewModel: ObservableObject {
             segmentIndex: 850_000_000
                 + Int(serial % 5_000) * 10_000
                 + rawSegment.segmentIndex,
-            audioData: rawSegment.audioData,
+            audioData: rawSegment.audioData, generationIdentity: rawSegment.generationIdentity,
             timestamps: rawSegment.timestamps,
             duration: rawSegment.duration,
             text: rawSegment.text,
@@ -2462,6 +2513,7 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         liveWebCarryPrewarmSegments.append(segment)
+        audio.speechGeneration.notify()
         audio.prestageSegments([segment])
         ReaderRunLog.write(
             "WEREAD exact prewarm segment para=\(paragraphIndex) " +
@@ -4063,7 +4115,16 @@ final class ReadAloudViewModel: ObservableObject {
             _ = audio.clearQueue(session: session)
         }
         _ = audio.setMoreSegmentsExpected(true, session: session)
-        if !autoPlay { _ = audio.pause(session: session) }
+        if !autoPlay {
+            // A completed document can change narrator without a prior Pause
+            // action. Keep the UI and the generation gate on the same intent:
+            // this producer is waiting for Play, not loading audible content.
+            isPlaybackPausedByUser = true
+            isPlaying = false
+            isBuffering = false
+            _ = audio.pause(session: session)
+            finishVoiceSwitch(voiceSwitchID)
+        }
         if continuation != nil, autoPlay { _ = audio.play(session: session) }
         setYouTubeAudioQuotaOrigin(
             paragraphIndex: index,
@@ -4167,6 +4228,11 @@ final class ReadAloudViewModel: ObservableObject {
                     allowAccessRefresh: allowAccessRefresh
                 ) else { return }
                 NSLog("CRDBG generate request begin para=%d voice=%@ epoch=%llu", index, voice, epoch)
+                try await SpeechGenerationContext.$audibleDemand.withValue({ [weak self] in
+                    guard let self else { return false }
+                    return self.isActive && self.generationEpoch == epoch && self.ownsAudioQueue
+                        && self.currentParagraphIndex == index && self.audioSessionToken == session
+                }) {
                 try await self.speechGenerator.generateBufferedSpeech(
                     paragraphIndex: index,
                     text: SpeechTextSanitizer.sanitizedForTTS(
@@ -4231,6 +4297,7 @@ final class ReadAloudViewModel: ObservableObject {
                         voiceSwitchID: voiceSwitchID
                     )
                 })
+                }
                 await MainActor.run {
                     guard self.generationEpoch == epoch,
                           self.currentParagraphIndex == index,
@@ -4741,8 +4808,7 @@ final class ReadAloudViewModel: ObservableObject {
         let pending = readAheadStreams.values.filter { !$0.promoted && $0 !== stream }
         let segments = pending.flatMap(\.segments)
         let seconds = segments.reduce(0) { $0 + max(0, $1.duration) } / max(0.25, Double(audio.playbackRate))
-        let target = max(stream?.targetSeconds ?? 12, kindleContinuousInput == nil ? 12 : 24)
-        return seconds < target && segments.count < 64
+        return seconds < 30 && audio.speechGeneration.bufferedSeconds < 30 && segments.count < 64
             && segments.reduce(0, { $0 + $1.audioData.count }) < 4 * 1024 * 1024
     }
 
@@ -4793,6 +4859,11 @@ final class ReadAloudViewModel: ObservableObject {
         ReaderRunLog.write("READ prefetch start para=\(nextIndex) epoch=\(epoch) chars=\(para.resolvedSpeechText.utf16.count) streaming=Y")
         let task = Task { [weak self] in
             do {
+                try await SpeechGenerationContext.$audibleDemand.withValue({ [weak self] in
+                    guard let self else { return false }
+                    return stream.promoted && self.isCurrent(stream, epoch: epoch, session: session)
+                        && self.currentParagraphIndex == nextIndex
+                }) {
                 try await generator.generateBufferedSpeech(
                     paragraphIndex: nextIndex,
                     text: SpeechTextSanitizer.sanitizedForTTS(para.resolvedSpeechText),
@@ -4806,6 +4877,7 @@ final class ReadAloudViewModel: ObservableObject {
                     }, onSegmentReady: { [weak self] segment in
                         await self?.receiveBufferedSegment(segment, stream: stream, epoch: epoch, session: session)
                     })
+                }
                 guard let self, self.isCurrent(stream, epoch: epoch, session: session),
                       !Task.isCancelled else { return }
                 stream.finished = true
@@ -4893,6 +4965,7 @@ final class ReadAloudViewModel: ObservableObject {
             return
         }
         stream.append(segment)
+        audio.speechGeneration.notify()
         if stream.promoted {
             appendSegment(segment, paragraph: stream.paragraphIndex, epoch: epoch,
                           session: session, autoPlay: true, voiceSwitchID: nil)
@@ -5694,7 +5767,7 @@ final class ReadAloudViewModel: ObservableObject {
             return AudioSegment(
                 paragraphIndex: segment.paragraphIndex,
                 segmentIndex: segment.segmentIndex,
-                audioData: segment.audioData,
+                audioData: segment.audioData, generationIdentity: segment.generationIdentity,
                 timestamps: [],
                 duration: segment.duration,
                 text: segment.text,

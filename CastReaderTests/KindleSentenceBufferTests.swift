@@ -480,28 +480,64 @@ final class KindleContinuousInputTests: XCTestCase {
         let settings = AppSettings.shared
         let replacement = settings.voice(for: "en") == "af_bella" ? "af_nicole" : "af_bella"
         XCTAssertTrue(settings.setVoice(replacement, for: "en"))
-        try await waitUntil { fixture.requests.filter { $0 == first }.count == 2 }
         if paused {
-            await vm.dbgWaitGeneration()
+            try await Task.sleep(for: .milliseconds(250))
+            XCTAssertEqual(fixture.requests.filter { $0 == first }.count, 1,
+                           "Changing a voice while paused must wait for explicit Resume before generation")
             XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 1)
             XCTAssertFalse(audio.isPlaying)
             XCTAssertTrue(audio.isExplicitlyPaused)
+            XCTAssertTrue(vm.isPlaybackPausedByUser)
+            try await waitUntil { VoiceSwitchStatusCenter.shared.progress == nil }
+            vm.togglePlayPause()
+            try await waitUntil { fixture.requests.filter { $0 == first }.count == 2 }
+            try await waitUntil { audio.hasAudibleProgress }
         } else {
+            try await waitUntil { fixture.requests.filter { $0 == first }.count == 2 }
             try await waitUntil { fixture.requests.filter { $0 == next }.count == 2 }
-            XCTAssertTrue(vm.dbgSegments(for: 0).isEmpty,
-                          "Read-ahead must begin while the replacement current unit is still generating")
+            XCTAssertFalse(vm.dbgSegments(for: 0).isEmpty,
+                           "The shared HTTP lease must finish replacement audio before admitting read-ahead")
             await vm.dbgWaitGeneration()
             XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 2,
-                           "Completing the foreground request must not duplicate its concurrent read-ahead")
+                           "Completing the foreground request must not duplicate its bounded read-ahead")
         }
     }
 
-    func testPresetVoiceSwitchPreparesConfirmedSuccessorBeforeReplacementAudio() async throws {
+    func testPresetVoiceSwitchPreparesConfirmedSuccessorWithoutParallelGeneration() async throws {
         try await verifyPresetSwitchReadAhead(paused: false)
     }
 
     func testPausedVoiceSwitchDoesNotStartEarlyReadAheadOrPlayback() async throws {
         try await verifyPresetSwitchReadAhead(paused: true)
+    }
+
+    func testFinishedDocumentVoiceSwitchWaitsForPlayWithoutStuckLoading() async throws {
+        let text = "The final sentence ends here."
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: 0.4))
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: .init(title: "Completed voice switch", sourceKind: .text,
+            language: "en", paragraphs: [.init(id: 0, text: text)]),
+            audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        vm.dbgGenerate(0)
+        try await waitUntil { vm.isFinished }
+        let settings = AppSettings.shared
+        let replacement = settings.voice(for: "en") == "af_bella" ? "af_nicole" : "af_bella"
+        XCTAssertTrue(settings.setVoice(replacement, for: "en"))
+        try await waitUntil { vm.acceptanceVoiceID == replacement }
+        try await waitUntil { VoiceSwitchStatusCenter.shared.progress == nil }
+        XCTAssertEqual(fixture.requests, [text], "Changing a completed document's voice must not generate before Play")
+        XCTAssertTrue(vm.isPlaybackPausedByUser, "The control must offer Play while the producer is dormant")
+        XCTAssertFalse(vm.isPlaying)
+        XCTAssertFalse(vm.isBuffering)
+        XCTAssertTrue(audio.isExplicitlyPaused)
+        vm.togglePlayPause()
+        try await waitUntil { fixture.requests.count == 2 && audio.hasAudibleProgress }
+        XCTAssertEqual(fixture.requests, [text, text])
+        XCTAssertEqual(vm.acceptanceVoiceID, replacement)
     }
 
     func testNearEndResumePreparesSuccessorBeforeFirstPlayback() async throws {
@@ -546,6 +582,8 @@ final class KindleContinuousInputTests: XCTestCase {
             vm.pausePlayback()
             await vm.dbgWaitGeneration()
             try await Task.sleep(nanoseconds: 1_400_000_000)
+            XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 1,
+                           "The cancelled future request cannot restart until Resume")
             XCTAssertFalse(audio.isPlaying)
             XCTAssertTrue(vm.isPlaybackPausedByUser)
             XCTAssertEqual(vm.currentParagraphIndex, 0)
@@ -558,6 +596,7 @@ final class KindleContinuousInputTests: XCTestCase {
         }
         try await waitUntil { vm.currentParagraphIndex == 1 && audio.hasAudibleProgress }
         XCTAssertEqual(fixture.requests.filter { $0 == first }.count, 1)
-        XCTAssertEqual(fixture.requests.filter { $0 == next }.count, 1)
+        XCTAssertEqual(fixture.requests.filter { $0 == next }.count, pauseWhilePreparing ? 2 : 1,
+                       "Resume retries the cancelled HTTP attempt; completed audio is never regenerated")
     }
 }

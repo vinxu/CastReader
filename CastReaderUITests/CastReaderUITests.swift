@@ -4814,7 +4814,11 @@ final class CoreReleaseLiveUITests: XCTestCase {
         image.name = "core-" + region + "-" + step; image.lifetime = .keepAlways; add(image)
     }
     override func tearDownWithError() throws {
-        if (testRun?.totalFailureCount ?? 0) > 0 { try? save(XCUIApplication(), "failure") }
+        let app = XCUIApplication()
+        if (testRun?.totalFailureCount ?? 0) > 0 {
+            try? save(app, "failure")
+            app.terminate()
+        }
     }
     func testPrepareRegionalRegularVoice() throws {
         let app = XCUIApplication()
@@ -4849,8 +4853,10 @@ final class CoreReleaseLiveUITests: XCTestCase {
         let cn = region == "cn"
         let language = cn ? "zh" : "en"
         let normal = cn ? "zf_001" : "af_heart"
-        let community = cn ? "vl_65b2c4daaea282b057a7" : "vl_d1efb23a380bdaa2f6b0"
-        let owned = cn ? "vc_63a448ca35794f57b0aea0e189a68cb3" : "vc_62934fe77f764051aa341b4b076bbb85"
+        let community = ProcessInfo.processInfo.environment["CASTREADER_CORE_PUBLIC_VOICE"]
+            ?? (cn ? "vl_65b2c4daaea282b057a7" : "vl_d1efb23a380bdaa2f6b0")
+        let owned = ProcessInfo.processInfo.environment["CASTREADER_CORE_PRIVATE_VOICE"]
+            ?? (cn ? "vc_63a448ca35794f57b0aea0e189a68cb3" : "vc_62934fe77f764051aa341b4b076bbb85")
         let english = [
             "A useful reading routine begins with one clear question. Before opening an article, decide what you want to understand and what evidence would answer that question.",
             "Read the first paragraph at a comfortable pace. Notice its main claim, then look for the examples that explain or support the author's point.",

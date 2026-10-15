@@ -48,9 +48,20 @@ enum ClonedTTSRequestChunker {
         guard !localRemainder.isEmpty else { return response }
         let serverRemainder = response.unprocessedText?
             .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let continuation = [serverRemainder, localRemainder]
-            .filter { !$0.isEmpty }
-            .joined(separator: "\n")
+        // Keep the exact source suffix and its separator. A trimmed server
+        // tail concatenated with local text can otherwise merge two words.
+        let trimmedInput = submittedInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        let continuation: String
+        if !serverRemainder.isEmpty, trimmedInput.hasSuffix(serverRemainder),
+           let range = submittedInput.range(of: serverRemainder, options: .backwards) {
+            continuation = String(submittedInput[range.lowerBound...]) + localRemainder
+        } else if serverRemainder.isEmpty {
+            continuation = localRemainder
+        } else {
+            // Preserve an invalid server tail so source-coverage validation
+            // rejects it, rather than silently skipping unknown source text.
+            continuation = serverRemainder + "\n" + localRemainder
+        }
         return TTSResponse(
             audio: response.audio,
             audioFormat: response.audioFormat,
@@ -615,6 +626,19 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         presetPriority: PresetTTSRequestScheduler.Priority? = nil,
         requiresSourceTiming: Bool = false
     ) async throws -> TTSResponse {
+        if let control = SpeechGenerationContext.current, !SpeechGenerationContext.isAttempt {
+            let logicalID = requestID ?? UUID().uuidString
+            return try await control.run(requestID: logicalID,
+                priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead)) {
+                try await SpeechGenerationContext.$isAttempt.withValue(true) {
+                    var response = try await self.generateTTS(text: text, voice: voice, speed: speed,
+                        language: language, includeVoiceCode: includeVoiceCode, priority: priority,
+                        requestID: logicalID, presetPriority: presetPriority, requiresSourceTiming: requiresSourceTiming)
+                    response.generationReceipt = await control.reserveResponse(duration: response.safeDuration)
+                    return response
+                }
+            }
+        }
         // Preset compute follows the frozen account region, but uses its own
         // anonymous transport. Clone authorization remains on the account API.
         let sanitized = SpeechTextSanitizer.sanitizedForTTS(text)
@@ -657,8 +681,11 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         // units. Preserve the local tail and append it to the server's own
         // continuation so a long paragraph is never silently truncated.
         let isClonedVoice = VoiceOption.requiresGenerationQuota(resolvedVoice)
-        let requestChunk = isClonedVoice
-            ? ClonedTTSRequestChunker.split(sanitized, maxUTF16Length: 600)
+        let boundedReading = SpeechGenerationContext.current != nil
+        let inputLimit = ["zh", "ja", "ko"].contains(canonicalLanguage) ? 160 : 560
+        let requestChunk = boundedReading
+            ? SpeechInputWindow.split(sanitized, maximumUTF16: inputLimit)
+            : isClonedVoice ? ClonedTTSRequestChunker.split(sanitized, maxUTF16Length: 600)
             : ClonedTTSRequestChunker.Chunk(input: sanitized, remainder: "")
         let inputText = requestChunk.input
         let ttsRequest = TTSRequest(
@@ -706,15 +733,17 @@ actor APIService: VoiceCloneSTSCredentialProviding {
         let networkRequestID = requestID ?? UUID().uuidString
         let boundary = await MainActor.run { AccountContentIsolation.captureBoundaryToken() }
         if supported.isGoogle {
-            return try await presetScheduler.run(
+            let response = try await presetScheduler.run(
                 priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead), requestID: networkRequestID
             ) {
                 try await self.requestGoogleStandardTTS(input: inputText, voice: resolvedVoice, body: bodyData,
                     route: route, requestID: networkRequestID, boundary: boundary)
             }
+            return ClonedTTSRequestChunker.appendingLocalRemainder(to: response,
+                submittedInput: inputText, localRemainder: requestChunk.remainder)
         }
         let transportSession = ttsSessions[route] ?? session
-        return try await presetScheduler.run(
+        let response = try await presetScheduler.run(
             priority: presetPriority ?? (priority == .interactive ? .interactive : .readAhead),
             requestID: networkRequestID
         ) {
@@ -723,6 +752,8 @@ actor APIService: VoiceCloneSTSCredentialProviding {
                 route: route, requestID: networkRequestID, session: transportSession
             )
         }
+        return ClonedTTSRequestChunker.appendingLocalRemainder(to: response,
+            submittedInput: inputText, localRemainder: requestChunk.remainder)
     }
 
     private func requestGoogleStandardTTS(input: String, voice: String, body: Data,

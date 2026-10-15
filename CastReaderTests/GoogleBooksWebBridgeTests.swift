@@ -172,11 +172,13 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertTrue(audio.isPlaying)
         read.pausePlayback()
         let retainedAudioText = try XCTUnwrap(audio.currentSegment?.text)
+        let retainedAudioID = try XCTUnwrap(audio.currentSegment?.id)
+        let requestsBeforeReflow = fixture.requests.count
         XCTAssertTrue(source.hasPrefix(retainedAudioText))
         _ = try XCTUnwrap(read.makeWeReadPlaybackResumeAnchor())
         _ = try await webView.evaluateJavaScript("emitPage('refresh','First ','First sentence.','after-reflow')")
         for _ in 0..<200 {
-            if fixture.requests.count >= 2 && read.currentWeReadBoundaryCue != nil { break }
+            if read.currentWeReadBoundaryCue != nil { break }
             try await Task.sleep(for: .milliseconds(25))
         }
         let cue = try XCTUnwrap(read.currentWeReadBoundaryCue)
@@ -187,6 +189,9 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertEqual(firstWord, NSRange(location: 0, length: 5),
             "A shortened extracted sentence must not shift retained audio into negative source coordinates")
         XCTAssertFalse(audio.isPlaying, "Font reflow cannot override Pause")
+        XCTAssertEqual(audio.currentSegment?.id, retainedAudioID)
+        XCTAssertEqual(fixture.requests.count, requestsBeforeReflow,
+                       "A paused layout refresh must reuse the completed audio without new generation")
         let remainder = "Unread material becomes visible in the wider window."
         _ = try await webView.callAsyncJavaScript(
             "emitPage('refresh', text, text, 'wider-reflow');return true",
@@ -202,7 +207,7 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         _ = try await webView.callAsyncJavaScript(
             "emitPage('refresh', text, text, 'reopened-tail', 8);return true",
             arguments: ["text": reopened], in: nil, contentWorld: .page)
-        for _ in 0..<100 where fixture.requests.count < 4 || audio.currentSegment == nil {
+        for _ in 0..<100 where read.stagedLiveWebParagraphTexts != [source, remainder] {
             try await Task.sleep(for: .milliseconds(25))
         }
         XCTAssertEqual(read.stagedLiveWebParagraphTexts, [source, remainder],
@@ -212,6 +217,8 @@ final class GoogleBooksWebBridgeTests: XCTestCase {
         XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.15)
         XCTAssertNil(read.resumeNotice)
         XCTAssertFalse(audio.isPlaying)
+        XCTAssertEqual(audio.currentSegment?.id, retainedAudioID)
+        XCTAssertEqual(fixture.requests.count, requestsBeforeReflow)
     }
 
     func testKoboSamePageRefreshRecoversBlockedContentWithoutAutoplay() async throws {

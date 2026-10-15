@@ -24,7 +24,8 @@ final class SpeechStreamBuffer {
         self.requestID = requestID
     }
 
-    var targetSeconds: Double { min(20, max(12, generationSeconds * 3 + 3)) }
+    var targetSeconds: Double { 30 }
+    private var budgetBlocked = false
 
     func beginRequest(_ continuation: TTSContinuation) {
         self.continuation = continuation
@@ -44,10 +45,15 @@ final class SpeechStreamBuffer {
         guard !paused else { return false }
         let start = currentSegmentID.flatMap { id in segments.firstIndex { $0.id == id } } ?? 0
         let pending = segments.dropFirst(start)
-        let duration = max(0, pending.reduce(0) { $0 + max(0, $1.duration) }
-            - (currentSegmentID == nil ? 0 : position)) / max(0.25, rate)
+        let duration = pending.reduce(0.0) { total, segment in
+            guard segment.duration.isFinite, segment.duration > 0 else { return total + 30 }
+            let consumed = segment.id == currentSegmentID ? position : 0
+            return total + max(0, segment.duration - consumed) / max(0.25, rate)
+        }
         let bytes = pending.reduce(0) { $0 + $1.audioData.count }
-        return pending.isEmpty || (duration < targetSeconds && pending.count < 64 && bytes < 4 * 1024 * 1024)
+        if duration >= 30 { budgetBlocked = true }
+        else if duration < 10 { budgetBlocked = false }
+        return !budgetBlocked && pending.count < 64 && bytes < 4 * 1024 * 1024
     }
 }
 
@@ -58,10 +64,13 @@ final class LivePagePreparedSpeech {
     let sourceText: String
     let stream: SpeechStreamBuffer
     private(set) var adopted = false
+    private(set) var discarded = false
+    private weak var generationControl: SpeechGenerationControl?
     var mediaLease: AudioPlayerService.PreparedMediaLease?
     var ownedRequest: ((TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority)?
     var ownedSegment: ((AudioSegment) -> Void)?
     var ownedCompletion: ((Error?) -> Void)?
+    var ownsAudibleDemand: (() -> Bool)?
 
     init(paragraphIndex: Int, sourceText: String, voice: String, language: String) {
         self.sourceText = sourceText
@@ -72,11 +81,20 @@ final class LivePagePreparedSpeech {
     func start(generator: any ParagraphSpeechGenerating, audio: AudioPlayerService,
                speechInput: String, isCurrent: @escaping () -> Bool,
                fitsBudget: @escaping () -> Bool) {
-        guard stream.task == nil, !stream.finished else { return }
+        guard stream.task == nil, !stream.finished, !discarded else { return }
+        generationControl = audio.speechGeneration
+        audio.speechGeneration.addBufferProvider { [weak self] in
+            guard let self else { return nil }
+            return self.adopted || self.discarded || !isCurrent() ? [] : self.stream.segments
+        }
+        let generator = generator.controlled(by: audio.speechGeneration)
         stream.task = Task { [weak self] in
             guard let self else { return }
             defer { self.stream.task = nil }
             do {
+                try await SpeechGenerationContext.$audibleDemand.withValue({ [weak self] in
+                    self?.ownsAudibleDemand?() == true
+                }) {
                 try await generator.generateBufferedSpeech(
                     paragraphIndex: self.stream.paragraphIndex, text: speechInput,
                     voice: self.stream.voice, speed: 1, language: self.stream.language,
@@ -106,10 +124,12 @@ final class LivePagePreparedSpeech {
                             self.ownedSegment?(segment)
                         } else if isCurrent() {
                             self.stream.append(segment)
+                            audio.speechGeneration.notify()
                             self.mediaLease = audio.retainPreparedSegments(self.stream.segments)
                             ReaderRunLog.write("READ adjacent reserve ready para=\(self.stream.paragraphIndex) seg=\(segment.segmentIndex)")
                         }
                     })
+                }
                 try Task.checkCancellation()
                 self.stream.finished = true
                 self.stream.continuation = nil
@@ -124,17 +144,20 @@ final class LivePagePreparedSpeech {
 
     func adopt(request: @escaping (TTSContinuation) async throws -> PresetTTSRequestScheduler.Priority,
                segment: @escaping (AudioSegment) -> Void, completion: @escaping (Error?) -> Void) {
-        precondition(!adopted)
+        precondition(!adopted && !discarded)
         adopted = true
         ownedRequest = request
         ownedSegment = segment
         ownedCompletion = completion
+        generationControl?.notify()
     }
 
     func discardIfSpeculative() {
         guard !adopted else { return }
+        discarded = true
         stream.task?.cancel()
         mediaLease = nil
+        generationControl?.notify()
     }
 }
 

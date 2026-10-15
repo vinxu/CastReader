@@ -175,6 +175,12 @@ extension ParagraphSpeechGenerating {
     /// sentence highlights. Preserve one complete natural input for this job.
     func generatePagePrefetchSegments(paragraphIndex: Int, text: String, voice: String?,
                                       speed: Double = 1, language: String) async throws -> [AudioSegment] {
+        // This older handoff adopts only complete utterances. Long source
+        // preparation still survives, but its audio is generated incrementally
+        // after the page is confirmed rather than collecting an entire page.
+        let limit = ["zh", "ja", "ko"].contains(language) ? 160 : 560
+        guard text.utf16.count <= limit else { throw CancellationError() }
+        return try await SpeechGenerationContext.withAtomicUnit(text: text, maximumCharacters: limit) {
         var result: [AudioSegment] = []
         try await generateBufferedSpeech(paragraphIndex: paragraphIndex, text: text,
             voice: voice, speed: speed, language: language, includeVoiceCode: true,
@@ -182,6 +188,7 @@ extension ParagraphSpeechGenerating {
             continuation: TTSContinuation(requestUnits: [text], nextSegmentIndex: 0, requiresSourceTiming: true),
             beforeRequest: { _ in .readAhead }, onSegmentReady: { result.append($0) })
         return result
+        }
     }
 
     func generateBufferedSpeech(
@@ -401,6 +408,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     presetPriority: presetPriority,
                     requiresSourceTiming: continuation?.requiresSourceTiming == true
                 )
+                defer { withExtendedLifetime(response.generationReceipt) {} }
                 try Task.checkCancellation()
                 guard let audioData = Data(base64Encoded: response.audio) else {
                     throw TTSError.generationFailed("audio_decode_failed")
@@ -414,6 +422,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     paragraphIndex: paragraphIndex,
                     segmentIndex: segmentIndex,
                     audioData: audioData,
+                    generationIdentity: response.generationReceipt?.id ?? UUID(),
                     timestamps: TTSHighlightPolicy.displayTimestamps(
                         response.safeTimestamps,
                         language: language, voice: resolvedVoice
@@ -502,6 +511,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     includeVoiceCode: includeVoiceCode,
                     requestID: networkRequestID, requiresSourceTiming: continuation?.requiresSourceTiming == true
                 )
+                defer { withExtendedLifetime(response.generationReceipt) {} }
 
                 try Task.checkCancellation()
                 guard currentRequestId == requestId else {
@@ -534,6 +544,7 @@ actor TTSService: ParagraphSpeechGenerating {
                     paragraphIndex: paragraphIndex,
                     segmentIndex: segmentIndex,
                     audioData: audioData,
+                    generationIdentity: response.generationReceipt?.id ?? UUID(),
                     timestamps: timestamps,
                     duration: duration,
                     text: coverage.processedText,
@@ -604,7 +615,7 @@ actor TTSService: ParagraphSpeechGenerating {
         return AudioSegment(
             paragraphIndex: seg.paragraphIndex,
             segmentIndex: seg.segmentIndex,
-            audioData: seg.audioData,
+            audioData: seg.audioData, generationIdentity: seg.generationIdentity,
             timestamps: seg.timestamps,
             duration: dur,
             text: seg.text,

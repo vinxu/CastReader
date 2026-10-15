@@ -90,6 +90,7 @@ enum TTSHighlightPolicy {
 
 // MARK: - TTS Response
 struct TTSResponse: Codable {
+    var generationReceipt: SpeechGenerationReceipt? = nil
     let audio: String // base64 encoded mp3
     let audioFormat: String?
     let timestamps: [TTSTimestamp]?  // Made optional
@@ -530,6 +531,9 @@ enum ClonedTTSStartup {
 
 // MARK: - Audio Segment
 struct AudioSegment: Identifiable {
+    /// Transport IDs repeat across pages; this identity follows the actual
+    /// audio value through preparation, queue promotion and playback.
+    let generationIdentity: UUID
     let id: String
     let paragraphIndex: Int
     let segmentIndex: Int
@@ -543,7 +547,8 @@ struct AudioSegment: Identifiable {
     let unprocessedText: String  // API 返回的未处理文本（用于流式渲染）
     let speaker: String?  // 当前说话者 ID（如 "A", "B"）或 "narrator"
 
-    init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false, unprocessedText: String = "", speaker: String? = nil, timingTimestamps: [TTSTimestamp]? = nil) {
+    init(paragraphIndex: Int, segmentIndex: Int, audioData: Data, generationIdentity: UUID = UUID(), timestamps: [TTSTimestamp], duration: Double, text: String, isWavFormat: Bool = false, unprocessedText: String = "", speaker: String? = nil, timingTimestamps: [TTSTimestamp]? = nil) {
+        self.generationIdentity = generationIdentity
         self.id = "\(paragraphIndex)-\(segmentIndex)"
         self.paragraphIndex = paragraphIndex
         self.segmentIndex = segmentIndex

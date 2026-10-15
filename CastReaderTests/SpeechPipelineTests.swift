@@ -122,11 +122,15 @@ final class SpeechPipelineTests: XCTestCase {
     private func verifyPendingAdjacentReserve(stopAfterAdoption: Bool, pauseAfterAdoption: Bool = false) async throws {
         let head = "Short opening."
         let body = "The pending successor continues the confirmed source exactly once."
+        let bodyGate = ReadAloudHTTPFixture.ResponseGate()
         let fixture = ReadAloudHTTPFixture { text, _ in
-            .response(ReadAloudHTTPFixture.body(text, duration: text == head ? 1.2 : 2),
+            if pauseAfterAdoption && text == body {
+                return .gatedResponse(ReadAloudHTTPFixture.body(text, duration: 2), bodyGate)
+            }
+            return .response(ReadAloudHTTPFixture.body(text, duration: text == head ? 1.2 : 2),
                       delay: text == body ? 0.6 : 0)
         }
-        defer { fixture.close() }
+        defer { bodyGate.release(); fixture.close() }
         let (vm, audio) = makeVM(.weread, fixture: fixture, texts: ["Original page."])
         defer { vm.stop(); vm.deactivate(); audio.stop() }
         let voice = AppSettings.shared.voice(for: "en")
@@ -136,7 +140,8 @@ final class SpeechPipelineTests: XCTestCase {
         // 0-0 transport ID must not masquerade as the predecessor's boundary.
         let opening = generatedOpening.map { segment in
             AudioSegment(paragraphIndex: segment.paragraphIndex, segmentIndex: 800_000_000 + segment.segmentIndex,
-                audioData: segment.audioData, timestamps: segment.timestamps, duration: segment.duration,
+                audioData: segment.audioData, generationIdentity: segment.generationIdentity,
+                timestamps: segment.timestamps, duration: segment.duration,
                 text: segment.text, isWavFormat: segment.isWavFormat, unprocessedText: segment.unprocessedText,
                 speaker: segment.speaker, timingTimestamps: segment.timingTimestamps)
         }
@@ -165,18 +170,24 @@ final class SpeechPipelineTests: XCTestCase {
             XCTAssertLessThanOrEqual(fixture.requests.filter { $0 == body }.count, 1)
         } else {
             if pauseAfterAdoption {
-                try await wait { audio.currentSegment?.text == head && audio.isPlaying }
+                try await wait { audio.currentSegment?.text == head && audio.isPlaying && fixture.requests.contains(body) }
                 vm.togglePlayPause()
+                bodyGate.release()
                 let position = audio.playbackPosition
                 try await Task.sleep(for: .milliseconds(1100))
                 XCTAssertFalse(audio.isPlaying)
                 XCTAssertEqual(audio.currentSegment?.text, head)
                 XCTAssertEqual(audio.playbackPosition, position, accuracy: 0.02)
+                XCTAssertEqual(fixture.requests.filter { $0 == body }.count, 1, "Pause must not dispatch a replacement transport")
                 vm.togglePlayPause()
             }
             try await wait { audio.currentSegment?.text == body && audio.isPlaying }
-            XCTAssertEqual(fixture.requests.filter { $0 == body }.count, 1,
-                           "Visible-page adoption must retain the in-flight producer")
+            let attempts = fixture.capturedRequests.filter { $0.body["input"] as? String == body }
+            XCTAssertEqual(attempts.count, pauseAfterAdoption ? 2 : 1,
+                           "Adoption retains the producer; explicit pause replaces only its cancelled HTTP attempt")
+            XCTAssertNotNil(attempts.first?.logicalRequestID)
+            XCTAssertEqual(Set(attempts.compactMap(\.logicalRequestID)).count, 1)
+            XCTAssertEqual(reserve.stream.segments.count, 1, "The adopted prefix is published only once")
         }
     }
 
@@ -184,7 +195,7 @@ final class SpeechPipelineTests: XCTestCase {
         try await verifyEarlyPrefetchedPlan(stopBeforeDone: true)
     }
 
-    func testPagePrefetchPreparesOneSuccessorBeforeTakeAndNeverRegeneratesIt() async throws {
+    func testPagePrefetchPlansSuccessorButDefersItsSpeechUntilTakeAndNeverRegeneratesOpening() async throws {
         let audio = AudioPlayerService.shared
         audio.clearForAccountBoundary()
         let oldLanguage = AppSettings.shared.explainLanguage
@@ -211,9 +222,9 @@ final class SpeechPipelineTests: XCTestCase {
             quickReadService: QuickReadService(session: plan.session, mobileSessionProvider: SpeechPipelineSessionProvider()))
         defer { vm.stop(); vm.deactivate(); audio.clearForAccountBoundary(); speech.close(); plan.close(); AppSettings.shared.explainLanguage = oldLanguage }
         let payload = try await vm.prefetchFirstBlock(for: document, previousSummary: "Previous page context", textFingerprint: "page-b")
-        try await wait { speech.requests.contains(texts[1]) }
+        try await wait { plan.capturedRequests.contains { $0.path == "/api/quickread/extract-block" } }
         XCTAssertFalse(audio.isPlaying, "Speculation must remain inaudible")
-        XCTAssertFalse(speech.requests.contains(texts[2]), "Speculation is bounded to one successor")
+        XCTAssertEqual(speech.requests, [texts[0]], "Unadopted next page may prepare source but cannot synthesize its successor")
         var completions = 0
         vm.onDocumentFinished = { completions += 1 }
         vm.startFromPrefetched(payload)
@@ -389,13 +400,16 @@ final class SpeechPipelineTests: XCTestCase {
         vm.startFromPrefetched(payload)
         try await wait { audio.isPlaying && vm.debugPreparedVoiceIDs[1] == oldVoice }
         if paused { vm.togglePlayPause() }
+        let requestCountBeforeVoiceChange = speech.requests.count
         AppSettings.shared.setVoice("af_bella", for: "en")
-        try await wait { vm.debugPreparedVoiceIDs[0] == "af_bella" && VoiceSwitchStatusCenter.shared.progress == nil }
         if paused {
+            try await Task.sleep(nanoseconds: 200_000_000)
             XCTAssertFalse(audio.isPlaying)
+            XCTAssertEqual(speech.requests.count, requestCountBeforeVoiceChange, "Voice selection while paused cannot synthesize even the first replacement")
             XCTAssertNil(vm.debugPreparedVoiceIDs[1], "Explicit pause must backpressure future synthesis")
             vm.ensurePlaying()
         }
+        try await wait { vm.debugPreparedVoiceIDs[0] == "af_bella" && VoiceSwitchStatusCenter.shared.progress == nil }
         try await wait { vm.debugPreparedVoiceIDs[1] == "af_bella" }
         XCTAssertEqual(vm.currentBlockIndex, 0, "Rebuild the successor during the current block, not at its end")
         let successor = try XCTUnwrap(vm.debugPreparedSegments(block: 1).first)
@@ -662,7 +676,8 @@ final class SpeechPipelineTests: XCTestCase {
             }
             let session = try XCTUnwrap(audio.activePlaybackSession)
             XCTAssertTrue(audio.pause(session: session))
-            try await wait { vm.currentBlockIndex == 1 }
+            try await Task.sleep(nanoseconds: 100_000_000)
+            XCTAssertFalse(speech.requests.contains(remaining), "Paused recovery cannot synthesize the next block")
             XCTAssertFalse(audio.isPlaying)
             XCTAssertTrue(audio.isExplicitlyPaused)
             vm.togglePlayPause()
@@ -749,20 +764,22 @@ final class SpeechPipelineTests: XCTestCase {
             let session = try XCTUnwrap(audio.activePlaybackSession)
             XCTAssertTrue(audio.pause(session: session))
         }
-        try await wait { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
         if explicitStart && !pauseDuringPlan {
+            try await wait { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
             try await wait { audio.hasAudibleProgress }
         } else {
             try await Task.sleep(nanoseconds: 200_000_000)
+            XCTAssertTrue(speech.requests.isEmpty, "Paused plan must admit zero synthesis")
             XCTAssertFalse(audio.isPlaying, "A later Pause or an automatic continuation must not be overridden")
             vm.togglePlayPause()
+            try await wait { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
             try await wait { audio.hasAudibleProgress }
         }
         XCTAssertEqual(audio.currentSegment?.text, narration)
         XCTAssertEqual(plan.capturedRequests.filter { $0.path == "/api/quickread/extract-plan" }.count, 1)
     }
 
-    func testCompletedReaderPreparesNewVoiceWithoutReplayingOldAudio() async throws {
+    func testCompletedReaderDefersNewVoiceUntilExplicitResumeWithoutReplayingOldAudio() async throws {
         let fixture = ReadAloudHTTPFixture { text, attempt in
             .response(ReadAloudHTTPFixture.body(text, duration: attempt == 1 ? 0.2 : 2))
         }
@@ -772,12 +789,13 @@ final class SpeechPipelineTests: XCTestCase {
         try await wait { vm.isFinished }
         let oldAudio = try XCTUnwrap(player.currentSegment?.audioData)
         AppSettings.shared.setVoice("af_bella", for: "en")
-        try await wait { fixture.requests.count == 2 && vm.status.isReady && VoiceSwitchStatusCenter.shared.progress == nil }
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertEqual(fixture.requests.count, 1, "Selecting a voice while stopped must not start synthesis")
         XCTAssertFalse(player.isPlaying, "Selecting a voice after completion must not start playback")
-        XCTAssertNotEqual(player.currentSegment?.audioData, oldAudio)
         vm.ensurePlaying()
         try await wait { player.hasAudibleProgress }
         XCTAssertEqual(fixture.requests.count, 2)
+        XCTAssertNotEqual(player.currentSegment?.audioData, oldAudio)
         XCTAssertEqual(player.currentSegment?.text, "Read this again.")
     }
 
@@ -886,7 +904,7 @@ final class SpeechPipelineTests: XCTestCase {
     func testPausedReadAheadCannotAutoPromoteOrDispatchMoreWork() async throws {
         let fixture = ReadAloudHTTPFixture { input, _ in
             if input == "Second prefix Tail." {
-                return .response(ReadAloudHTTPFixture.body("Second prefix ", tail: "Tail.", duration: 16))
+                return .response(ReadAloudHTTPFixture.body("Second prefix ", tail: "Tail.", duration: 35))
             }
             return .response(ReadAloudHTTPFixture.body(input, duration: 1.5))
         }
@@ -1114,7 +1132,7 @@ final class SpeechPipelineTests: XCTestCase {
         defer { vm.stop(); vm.deactivate(); player.stop() }
         vm.dbgGenerate(0)
         player.setPlaybackRate(1)
-        try await wait { vm.dbgSegments(for: 0).count == 3 && player.hasAudibleProgress }
+        try await wait { vm.dbgSegments(for: 0).count >= 6 && player.hasAudibleProgress }
         vm.pausePlayback()
         let pausedCount = fixture.requests.count
         player.setPlaybackRate(2)
@@ -1126,13 +1144,73 @@ final class SpeechPipelineTests: XCTestCase {
         XCTAssertLessThan(fixture.requests.count, fragments.count, "Higher speed expands the time window without synthesizing the whole paragraph")
     }
 
+    func testFutureLivePageAudioCannotStarveUnfinishedCurrentReader() async throws {
+        let currentText = String(repeating: "Current page unfinished source must continue. ", count: 30)
+        let futureText = "Retained future page opening."
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            .response(ReadAloudHTTPFixture.body(input, duration: input == futureText ? 35 : 15))
+        }
+        let (vm, player) = makeVM(.weread, fixture: fixture, texts: [currentText])
+        let future = LivePagePreparedSpeech(paragraphIndex: 0, sourceText: futureText, voice: "af_heart", language: "en")
+        defer { vm.stop(); vm.deactivate(); player.stop(); future.discardIfSpeculative(); fixture.close() }
+        future.start(generator: fixture.service(), audio: player, speechInput: futureText,
+                     isCurrent: { true }, fitsBudget: { true })
+        try await wait { future.stream.finished && !future.stream.segments.isEmpty }
+        XCTAssertEqual(player.speechGeneration.bufferedSeconds, 35)
+        vm.dbgGenerate(0)
+        try await wait { player.hasAudibleProgress && vm.dbgSegments(for: 0).count == 1 }
+        try await Task.sleep(for: .milliseconds(150))
+        XCTAssertEqual(fixture.requests.count, 2, "Only the audible bounded input may bypass the future reservation")
+        XCTAssertGreaterThan(player.speechGeneration.bufferedSeconds, 45)
+        XCTAssertFalse(future.adopted, "Progress must not depend on discarding or adopting the future page")
+        XCTAssertTrue(currentText.hasPrefix(try XCTUnwrap(player.currentSegment).text))
+        XCTAssertLessThan(try XCTUnwrap(player.currentSegment).text.count, currentText.count)
+    }
+
+    func testBoundedLongParagraphPauseAndRapidSeekAcrossAllRequestedReaderSources() async throws {
+        for source: ReadingSourceKind in [.web, .pdf, .epub, .kindle, .weread, .googleBooks, .kobo] {
+            let staleGate = ReadAloudHTTPFixture.ResponseGate()
+            let longText = String(repeating: "Long source must remain available without generating the whole document. ", count: 30)
+            let fixture = ReadAloudHTTPFixture { input, _ in
+                if input == "Cancelled target." {
+                    return .gatedResponse(ReadAloudHTTPFixture.body(input), staleGate)
+                }
+                return .response(ReadAloudHTTPFixture.body(input, duration: input == "Current target." ? 0.5 : 35))
+            }
+            let (vm, player) = makeVM(source, fixture: fixture,
+                texts: [longText, "Cancelled target.", "Current target."])
+            defer { staleGate.release(); vm.stop(); vm.deactivate(); player.stop(); fixture.close() }
+            vm.dbgGenerate(0)
+            try await wait { player.hasAudibleProgress && player.speechGeneration.isWaitingForBudget }
+            XCTAssertEqual(fixture.requests.count, 1, "Long paragraph must stop after bounded first input: \(source)")
+            XCTAssertLessThanOrEqual(try XCTUnwrap(fixture.requests.first).utf16.count, 560)
+            XCTAssertTrue(longText.hasPrefix(try XCTUnwrap(vm.dbgSegments(for: 0).first).text))
+            XCTAssertTrue(player.isPlaying, "Budget only suspends generation: \(source)")
+            vm.pausePlayback()
+            try await Task.sleep(nanoseconds: 100_000_000)
+            XCTAssertEqual(fixture.requests.count, 1)
+            XCTAssertTrue(player.isExplicitlyPaused)
+            vm.jump(to: 1)
+            vm.ensurePlaying()
+            try await wait { fixture.requests.contains("Cancelled target.") }
+            vm.jump(to: 2)
+            staleGate.release()
+            try await wait { player.currentSegment?.text == "Current target." && player.hasAudibleProgress }
+            XCTAssertEqual(vm.currentParagraphIndex, 2)
+            XCTAssertTrue(vm.dbgSegments(for: 1).isEmpty, "Late cancelled target cannot publish: \(source)")
+            XCTAssertEqual(fixture.requests.filter { $0 == "Current target." }.count, 1)
+            XCTAssertEqual(fixture.requests.count, 3, "Old long paragraph tail must remain cancelled: \(source)")
+            vm.stop(); vm.deactivate(); player.stop(); fixture.close()
+        }
+    }
+
     func testBufferDemandAccountsForRateAndPause() {
         let buffer = SpeechStreamBuffer(paragraphIndex: 0, voice: "vl_test", language: "en", requestID: "id")
         let segment = AudioSegment(paragraphIndex: 0, segmentIndex: 0, audioData: Data([1]),
-                                   timestamps: [], duration: 12, text: "Buffered text")
+                                   timestamps: [], duration: 30, text: "Buffered text")
         buffer.append(segment)
         XCTAssertFalse(buffer.canRequest(currentSegmentID: nil, position: 0, rate: 1, paused: false))
-        XCTAssertTrue(buffer.canRequest(currentSegmentID: segment.id, position: 5, rate: 1, paused: false))
+        XCTAssertTrue(buffer.canRequest(currentSegmentID: segment.id, position: 21, rate: 1, paused: false))
         XCTAssertTrue(buffer.canRequest(currentSegmentID: nil, position: 0, rate: 2, paused: false))
         XCTAssertFalse(buffer.canRequest(currentSegmentID: segment.id, position: 11, rate: 2, paused: true))
     }
@@ -1360,14 +1438,15 @@ final class ExplainBatchContinuationTests: XCTestCase {
         try await until { plan.capturedRequests.contains { $0.path == "/api/quickread/extract-plan" } }
         if pauseDuringPlan { vm.pauseOwnedPlayback() }
         gate.release()
-        try await until { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
-        XCTAssertEqual(vm.status, .streaming(block: 0, total: 1), "The previous fast lane must not add a phantom block")
         if pauseDuringPlan {
             try await Task.sleep(nanoseconds: 200_000_000)
             XCTAssertTrue(audio.isExplicitlyPaused)
             XCTAssertFalse(audio.isPlaying)
+            XCTAssertTrue(speech.requests.isEmpty, "Preparing the next batch while paused cannot dispatch speech")
             vm.togglePlayPause()
         }
+        try await until { audio.hasQueuedSegments && vm.currentBlockIndex == 0 }
+        XCTAssertEqual(vm.status, .streaming(block: 0, total: 1), "The previous fast lane must not add a phantom block")
         try await until { audio.isPlaying && audio.hasAudibleProgress }
         XCTAssertEqual(audio.currentSegment?.text, narration)
         XCTAssertEqual(speech.requests.filter { $0 == narration }.count, 1)

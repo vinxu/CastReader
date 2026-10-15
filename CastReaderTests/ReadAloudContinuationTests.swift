@@ -50,7 +50,7 @@ final class ReadAloudHTTPFixture {
         }
     }
     private let lock = NSLock()
-    struct CapturedRequest { let path: String; let body: [String: Any] }
+    struct CapturedRequest { let path: String; let body: [String: Any]; let logicalRequestID: String? }
     private var inputs: [String] = []
     private var captured: [CapturedRequest] = []
     private let responder: (String, Int) -> Reply
@@ -86,7 +86,8 @@ final class ReadAloudHTTPFixture {
     fileprivate func reply(_ input: String, request: URLRequest, body: [String: Any]) -> Reply {
         lock.lock(); defer { lock.unlock() }
         inputs.append(input)
-        captured.append(CapturedRequest(path: request.url?.path ?? "", body: body))
+        captured.append(CapturedRequest(path: request.url?.path ?? "", body: body,
+                                       logicalRequestID: request.value(forHTTPHeaderField: "X-Request-ID")))
         return requestResponder?(request, body) ?? responder(input, inputs.filter { $0 == input }.count)
     }
     func service() -> TTSService { TTSService(api: APIService(session: session)) }
@@ -330,7 +331,7 @@ final class ReadAloudContinuationTests: XCTestCase {
         XCTAssertEqual(segments.map(\.segmentIndex), [0, 1, 2])
         XCTAssertEqual(fixture.requests.filter { $0 == "第一句。" }.count, 1)
     }
-    func testPauseWhilePrefetchIsInFlightWaitsForExplicitResumeWithoutDuplicateRequest() async throws {
+    func testPauseWhilePrefetchIsInFlightResumesSameLogicalRequestWithoutDuplicateAudio() async throws {
         let fixture = ReadAloudHTTPFixture { input, _ in
             .response(ReadAloudHTTPFixture.body(input, duration: 0.2), delay: input == "Bravo." ? 1.1 : 0)
         }
@@ -342,13 +343,18 @@ final class ReadAloudContinuationTests: XCTestCase {
         vm.dbgGenerate(0)
         try await waitUntil { vm.status.isLoading && player.currentSegment != nil && !player.isPlaying }
         vm.togglePlayPause()
-        try await waitUntil { vm.dbgPrefetchedIndex == 1 }
         try await Task.sleep(nanoseconds: 100_000_000)
         XCTAssertFalse(player.isPlaying)
+        XCTAssertTrue(player.isExplicitlyPaused)
+        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 1)
         XCTAssertEqual(vm.currentParagraphIndex, 0)
         vm.ensurePlaying()
         try await waitUntil { vm.isFinished }
-        XCTAssertEqual(fixture.requests.filter { $0 == "Bravo." }.count, 1)
+        let attempts = fixture.capturedRequests.filter { $0.body["input"] as? String == "Bravo." }
+        XCTAssertEqual(attempts.count, 2, "Resume replaces the cancelled transport")
+        XCTAssertNotNil(attempts.first?.logicalRequestID)
+        XCTAssertEqual(Set(attempts.compactMap(\.logicalRequestID)).count, 1)
+        XCTAssertEqual(vm.dbgSegments(for: 1).count, 1)
     }
     func testPauseAndResumeFirstRequestPreservesItsProducer() async throws {
         let fixture = ReadAloudHTTPFixture { input, _ in
@@ -362,12 +368,17 @@ final class ReadAloudContinuationTests: XCTestCase {
         vm.dbgGenerate(0)
         try await waitUntil { fixture.requests.count == 1 }
         vm.togglePlayPause()
-        try await waitUntil { vm.status == .ready }
+        try await Task.sleep(nanoseconds: 100_000_000)
         XCTAssertFalse(player.isPlaying)
+        XCTAssertTrue(player.isExplicitlyPaused)
+        XCTAssertTrue(vm.dbgSegments(for: 0).isEmpty)
         XCTAssertEqual(fixture.requests.count, 1)
         vm.ensurePlaying()
         try await waitUntil { vm.isFinished }
-        XCTAssertEqual(fixture.requests.count, 1)
+        XCTAssertEqual(fixture.requests.count, 2)
+        XCTAssertNotNil(fixture.capturedRequests.first?.logicalRequestID)
+        XCTAssertEqual(Set(fixture.capturedRequests.compactMap(\.logicalRequestID)).count, 1)
+        XCTAssertEqual(vm.dbgSegments(for: 0).count, 1)
     }
     func testDeactivateRejectsLateTailAndOldSessionCannotResume() async throws {
         let fixture = ReadAloudHTTPFixture { input, _ in

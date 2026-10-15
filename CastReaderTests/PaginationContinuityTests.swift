@@ -685,6 +685,12 @@ final class PaginationContinuityTests: XCTestCase {
         read.replaceLiveWebPage([ReadingParagraph(id: 0, text: newSource)], language: "en", autoplay: !paused,
             resumeAnchor: .init(segmentText: "The previously playing sentence is no longer present.",
                 sourceParagraphText: oldSource, segmentProgress: 0.7, wasPlaying: !paused))
+        if paused {
+            try await Task.sleep(for: .milliseconds(200))
+            XCTAssertTrue(fixture.requests.isEmpty, "Paused reflow must not synthesize replacement audio")
+            XCTAssertFalse(audio.isPlaying)
+            read.togglePlayPause()
+        }
         for _ in 0..<200 where read.resumeNotice == nil {
             try await Task.sleep(for: .milliseconds(10))
         }
@@ -700,7 +706,7 @@ final class PaginationContinuityTests: XCTestCase {
         XCTAssertFalse(audio.isPlaying)
     }
 
-    func testPausedReflowCanReachLaterPartWithoutResumingOrGeneratingPastCursor() async throws {
+    func testPausedReflowDefersGenerationUntilResumeAndRestoresLaterPart() async throws {
         let oldPro = ProManager.shared.debugForcePro
         ProManager.shared.debugForcePro = true
         defer { ProManager.shared.debugForcePro = oldPro }
@@ -722,6 +728,11 @@ final class PaginationContinuityTests: XCTestCase {
         read.replaceLiveWebPage(page, language: "en", autoplay: false,
             resumeAnchor: .init(segmentText: "Restored sentence. ", sourceParagraphText: source,
                 segmentProgress: 0.5, wasPlaying: false))
+        try await Task.sleep(for: .milliseconds(250))
+        XCTAssertTrue(fixture.requests.isEmpty, "A paused reflow cannot create new speech")
+        XCTAssertNil(audio.currentSegment)
+        XCTAssertTrue(read.isPlaybackPausedByUser)
+        read.togglePlayPause()
         #if targetEnvironment(macCatalyst)
         let expectedRestoredText = "Restored sentence."
         #else
@@ -731,11 +742,13 @@ final class PaginationContinuityTests: XCTestCase {
             try await Task.sleep(nanoseconds: 10_000_000)
         }
         XCTAssertEqual(audio.currentSegment?.text, expectedRestoredText)
-        XCTAssertFalse(audio.isPlaying)
-        XCTAssertTrue(read.isPlaybackPausedByUser)
+        XCTAssertFalse(read.isPlaybackPausedByUser)
         XCTAssertEqual(audio.playbackPosition, 2, accuracy: 0.2)
+        read.pausePlayback()
+        let requestsAtPause = fixture.requests.count
         try await Task.sleep(nanoseconds: 250_000_000)
-        XCTAssertFalse(fixture.requests.contains("Later suffix."), "The restore exemption ends at the paused cursor")
+        XCTAssertFalse(audio.isPlaying)
+        XCTAssertEqual(fixture.requests.count, requestsAtPause, "A later Pause closes generation admission again")
         XCTAssertNotNil(read.webHighlight)
     }
 
@@ -785,7 +798,8 @@ final class PaginationContinuityTests: XCTestCase {
             for _ in 0..<300 where read.currentParagraphIndex != 1 { try await Task.sleep(nanoseconds: 10_000_000) }
             XCTAssertEqual(read.currentParagraphIndex, 1)
             XCTAssertEqual(fixture.requests.filter { $0 == "I" }.count, 1)
-            XCTAssertEqual(fixture.requests.filter { $0 == "Body tail." }.count, 1)
+            XCTAssertEqual(fixture.requests.filter { $0 == "Body tail." }.count, 2,
+                "Resume retries the cancelled body request once")
         } else {
             for _ in 0..<300 where read.currentParagraphIndex != 1 { try await Task.sleep(nanoseconds: 10_000_000) }
             XCTAssertEqual(read.currentParagraphIndex, 1)
@@ -1600,7 +1614,9 @@ final class PaginationContinuityTests: XCTestCase {
             with: "</p><p style='position:absolute;left:252px;top:80px;width:200px;height:80px'>The prepared successor.</p>\"></iframe>")
         let renderedSource = wholePage ? wholePageSource : preparedCarry ? preparedCarrySource : source
         web.loadHTMLString(multipartPreload ? renderedSource.replacingOccurrences(of: "Slow.", with: "Slow first.") : renderedSource, baseURL: URL(string: document.sourceURL!))
-        for _ in 0..<300 where !read.hasReadableWebContent { try await Task.sleep(nanoseconds: 20_000_000) }
+        // A cold simulator WebContent/GPU launch can itself take over five
+        // seconds. This setup allowance is separate from page/audio deadlines.
+        for _ in 0..<750 where !read.hasReadableWebContent { try await Task.sleep(nanoseconds: 20_000_000) }
         XCTAssertTrue(read.hasReadableWebContent)
         _ = try await web.evaluateJavaScript("""
           (()=>{window.hostConfirmations=0;const confirm=CR.confirmPresentation;
@@ -1687,7 +1703,7 @@ final class PaginationContinuityTests: XCTestCase {
                   document.querySelector('iframe').contentDocument.querySelector('p').style.fontSize='26px';true
                   """)
                 for _ in 0..<250 {
-                    if fixture.requests.count >= 2, read.currentParagraphIndex == 0,
+                    if fixture.requests.count == 1, read.currentParagraphIndex == 0,
                        abs(audio.playbackPosition - position) < 0.15 { break }
                     try await Task.sleep(nanoseconds: 20_000_000)
                 }
@@ -1737,7 +1753,7 @@ final class PaginationContinuityTests: XCTestCase {
         }
         let turns = try await web.evaluateJavaScript("turns") as? Int
         XCTAssertEqual(turns, pageCount - 1)
-        XCTAssertEqual(fixture.requests.filter { $0 == (wholePage ? (multipartPreload ? "Slow first." : "Slow.") : "Slow rapidly onward.") }.count, reflowCarry ? 2 : 1)
+        XCTAssertEqual(fixture.requests.filter { $0 == (wholePage ? (multipartPreload ? "Slow first." : "Slow.") : "Slow rapidly onward.") }.count, 1, "Layout reflow must reuse the original source audio")
         if reflowCarry { XCTAssertTrue(didReflowCarry) }
     }
 

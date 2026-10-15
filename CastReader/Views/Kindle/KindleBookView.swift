@@ -1153,15 +1153,28 @@ private struct KindleReadPlaybackBar: View {
     }
 }
 
-private struct KindlePlayButtonContent: View {
+struct KindlePlayButtonContent: View {
     let isLoading: Bool
     let isPlaying: Bool
     let size: CGFloat
     var loadingMessage: String? = nil
 
     var body: some View {
+        // Keep raw loading in the parent's action/cancellation logic. Only the
+        // glyph and message wait: every AVPlayer item briefly buffers, even
+        // when the next paragraph has already been generated.
+        ReaderDebouncedWaitingPresentation(
+            stablePresentation: isPlaying ? ReadPlaybackPresentationState.playing : .paused,
+            rawWaiting: isLoading && !isPlaying,
+            waitingPresentation: .waiting
+        ) { presentation in
+            buttonContent(for: presentation)
+        }
+    }
+
+    private func buttonContent(for presentation: ReadPlaybackPresentationState) -> some View {
         ZStack {
-            if isLoading {
+            if presentation == .waiting {
                 Circle()
                     .fill(AppTheme.primary)
                 ProgressView()
@@ -1169,7 +1182,7 @@ private struct KindlePlayButtonContent: View {
                     .scaleEffect(size / 36)
                     .accessibilityIdentifier("kindlePlaybackLoadingIndicator")
             } else {
-                Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                Image(systemName: presentation == .playing ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: size))
                     .foregroundColor(AppTheme.primary)
             }
@@ -1177,7 +1190,7 @@ private struct KindlePlayButtonContent: View {
         .frame(width: size, height: size)
         // An overlay cannot reflow Kindle's viewport or trigger a page recapture.
         .overlay(alignment: .top) {
-            if isLoading, let loadingMessage {
+            if presentation == .waiting, let loadingMessage {
                 Text(loadingMessage)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(AppTheme.foreground)
@@ -1667,91 +1680,18 @@ private struct KindleLandscapeExplainOverlay: View {
         )
     }
 
-    @ViewBuilder
     private var controlPill: some View {
-        KindlePlaybackConsole(
-            isLandscape: true,
-            playbackStatus: playbackStatus,
-            statusMessage: voiceSwitch.progress?.localizedMessage,
-            voiceLanguage: vm.playbackLanguage,
+        // Share the portrait control's loading debounce, pause ownership and
+        // fixed button shell instead of replacing it with a bare spinner.
+        KindleExplainPlaybackBar(
+            vm: vm,
+            compact: true,
+            isContinuingPage: isContinuingPage,
+            start: start,
             previousPage: previousPage,
             nextPage: nextPage,
             showTOC: showTOC
-        ) {
-            centerPlayControl
-        }
-    }
-
-    private var playbackStatus: String {
-        if voiceSwitch.progress != nil || isContinuingPage || vm.isPreparingNext {
-            return AppLocalized("正在准备…")
-        }
-        switch vm.status {
-        case .idle: return AppLocalized("开始解读")
-        case .planning: return AppLocalized("正在准备…")
-        case .streaming: return vm.isPlaying ? AppLocalized("解读中") : AppLocalized("已暂停")
-        case .completed: return AppLocalized("解读完成")
-        case .error: return AppLocalized("重试解读")
-        }
-    }
-
-    private var isLoading: Bool {
-        if isContinuingPage || vm.isPreparingNext { return true }
-        if case .planning = vm.status { return true }
-        return false
-    }
-
-    @ViewBuilder
-    private var centerPlayControl: some View {
-        Group {
-        switch vm.status {
-        case .idle:
-            if isContinuingPage {
-                ProgressView().frame(width: 38, height: 38)
-            } else {
-                Button(action: start) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(AppTheme.primary)
-                }
-            }
-        case .planning:
-            ProgressView().frame(width: 38, height: 38)
-        case .streaming:
-            if isContinuingPage || vm.isPreparingNext {
-                ProgressView().frame(width: 38, height: 38)
-            } else {
-                Button { vm.togglePlayPause() } label: {
-                    Image(systemName: vm.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 44))
-                        .foregroundColor(AppTheme.primary)
-                }
-            }
-        case .completed:
-            if isContinuingPage {
-                ProgressView().frame(width: 38, height: 38)
-            } else {
-                Button(action: start) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(AppTheme.primary)
-                }
-            }
-        case .error:
-            if isContinuingPage {
-                ProgressView().frame(width: 38, height: 38)
-            } else {
-                Button(action: start) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(AppTheme.primary)
-                }
-            }
-        }
-        }
-        .accessibilityIdentifier("kindleExplainPlayPauseButton")
-        .accessibilityLabel(Text(playbackStatus))
-        .accessibilityValue(isLoading ? "loading" : (vm.isPlaying ? "playing" : "paused"))
+        )
     }
 }
 
@@ -3981,6 +3921,14 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             webView.scrollView.automaticallyAdjustsScrollIndicatorInsets = false
         }
         super.init()
+        AudioPlayerService.shared.speechGeneration.addBufferProvider { [weak self] in
+            guard let self else { return nil }
+            guard self.mode == .read, self.readVM?.isActive == true else { return [] }
+            let nextKey = self.preparedCandidate(afterKey: self.livePageKey ?? "")?.page.key
+            let next = nextKey.flatMap { self.cachedStartAudioCandidates[$0] }
+                ?? self.cachedStartAudio.flatMap { $0.pageKey == nextKey ? $0 : nil }
+            return self.pendingContinuationSegments + (next?.segments ?? [])
+        }
         // Do not hop to RunLoop.main here: receiving the will-set publication
         // synchronously is what prevents the first panel frame from resizing WK.
         observeVoicePanel()
@@ -10809,8 +10757,9 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     private func fulfilKindleSentenceDemand(_ session: KindleSentenceStreamSession) {
         guard sentenceStream === session, session.task == nil, let demand = session.demand,
               mode == .read, let vm = readVM, !vm.isPlaybackPausedByUser else { return }
-        // At most one confirmed page is hidden ahead of the visible page.
-        // The next word entering that page releases this back-pressure.
+        // Normally one confirmed source page is hidden ahead. An empty page
+        // or unfinished sentence may require up to three source/OCR captures
+        // in this bounded demand; this never grants extra TTS admission.
         guard session.buffer.currentPageKey == session.presentedKey || session.units.count > demand.count || session.ended else { return }
         session.task = Task { @MainActor [weak self, weak session, weak vm] in
             guard let self, let session, let vm else { return }
@@ -12267,7 +12216,7 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
             AudioSegment(
                 paragraphIndex: segment.paragraphIndex,
                 segmentIndex: 700_000_000 + (serial % 100_000) * 1_000 + offset,
-                audioData: segment.audioData,
+                audioData: segment.audioData, generationIdentity: segment.generationIdentity,
                 timestamps: segment.timestamps,
                 duration: segment.duration,
                 text: segment.text,
@@ -15290,14 +15239,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
     ) async throws -> [AudioSegment] {
         try requireReaderOperation(.ttsPreparation, reason: "detached-tts")
         let voice = voiceOverride ?? AppSettings.shared.voice(for: language)
-        return try await TTSService.shared.generatePrefetchSegments(
-            paragraphIndex: paragraphIndex,
-            text: text,
-            voice: voice,
-            speed: 1.0,
-            language: language,
-            presetPriority: presetPriority
-        )
+        let limit = ["zh", "ja", "ko"].contains(language) ? 160 : 560
+        guard text.utf16.count <= limit else { throw CancellationError() }
+        return try await SpeechGenerationContext.withAtomicUnit(text: text, maximumCharacters: limit) {
+            try await TTSService.shared.controlled(by: AudioPlayerService.shared.speechGeneration)
+                .generatePrefetchSegments(paragraphIndex: paragraphIndex, text: text,
+                    voice: voice, speed: 1, language: language, includeVoiceCode: true,
+                    speaker: nil, cloneRequestID: nil, presetPriority: presetPriority,
+                    onSegmentReady: nil)
+        }
     }
 
     private func nextVisualSyncSequence() -> UInt64 {

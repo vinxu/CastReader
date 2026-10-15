@@ -153,6 +153,38 @@ struct ResolvedMark: Identifiable, Equatable {
     var role: String? = nil     // P1：语义角色（key/caution/term/example），透传
 }
 
+/// Audio not yet committed to the player still occupies the shared budget.
+/// The weak provider disappears when the block/payload is discarded; replay
+/// caches release this reservation once their audio has entered the queue.
+@MainActor
+fileprivate final class ExplainAudioReservation {
+    private let control: SpeechGenerationControl
+    private var segments: [AudioSegment] = []
+    private var isPending = true
+
+    init(control: SpeechGenerationControl) {
+        self.control = control
+        control.addBufferProvider { [weak self] in
+            guard let self else { return nil }
+            return self.isPending ? self.segments : []
+        }
+    }
+    func append(_ segment: AudioSegment) {
+        segments.append(segment)
+        isPending = true
+        control.notify()
+    }
+    func release() {
+        isPending = false
+        segments.removeAll()
+        control.notify()
+    }
+    deinit {
+        let control = control
+        Task { @MainActor in control.notify() }
+    }
+}
+
 @MainActor
 final class ExplainViewModel: ObservableObject {
 
@@ -452,11 +484,14 @@ final class ExplainViewModel: ObservableObject {
         let voiceID: String
         var isComplete = true
         var sourceMarks: [QuickreadEvent]? = nil
+        var audioReservation: ExplainAudioReservation? = nil
     }
     // Pin only the immediate successor's first two media items. Raw narration
     // caches may contain a whole explanation, but decoder resources stay bounded.
     private var successorMedia: (index: Int, voiceID: String, lease: AudioPlayerService.PreparedMediaLease)?
-    private var requestedStreamingBlock: (index: Int, generation: UInt64)?
+    private var requestedStreamingBlock: (index: Int, generation: UInt64)? {
+        didSet { audio.speechGeneration.notify() }
+    }
     private var enqueuedStreamingBlocks: [Int: UInt64] = [:]
 
     struct PrefetchedFirstBlock {
@@ -500,9 +535,16 @@ final class ExplainViewModel: ObservableObject {
     /// One bounded successor belongs to the speculative job, not the old VM
     /// generation. Taking the page transfers this producer without restarting
     /// extract/TTS/compose. The regular rolling window supplies later blocks.
+    @MainActor fileprivate final class PrefetchedContinuationActivation {
+        var adopted = false
+    }
     fileprivate final class PrefetchedContinuationLease {
         let task: Task<PreparedContinuation?, Error>
-        init(task: Task<PreparedContinuation?, Error>) { self.task = task }
+        let activation: PrefetchedContinuationActivation
+        init(task: Task<PreparedContinuation?, Error>, activation: PrefetchedContinuationActivation) {
+            self.task = task
+            self.activation = activation
+        }
         deinit { task.cancel() }
     }
 
@@ -530,6 +572,8 @@ final class ExplainViewModel: ObservableObject {
     /// to enter `preparingBlocks`. Track that short gap explicitly so multiple
     /// plan/enqueue callbacks cannot launch the same block twice.
     private var scheduledBackgroundBlocks = Set<Int>()
+    private var backgroundPreparationTasks: [Int: Task<Void, Never>] = [:]
+    private var backgroundPreparationOwners: [Int: UUID] = [:]
     /// Keep two complete explanation blocks ahead of playback. At 1.5-2.0x a
     /// single block is routinely consumed before DeepSeek + TTS + compose can
     /// finish its successor, which presents as a silent stall between blocks.
@@ -587,6 +631,11 @@ final class ExplainViewModel: ObservableObject {
     private var prefetchedPlanCompletionTask: Task<Void, Never>?
     private var contentGeneration: UInt64 = 0 {
         didSet {
+            backgroundPreparationTasks.values.forEach { $0.cancel() }
+            backgroundPreparationTasks.removeAll()
+            backgroundPreparationOwners.removeAll()
+            scheduledBackgroundBlocks.removeAll()
+            prepared.values.forEach { $0.audioReservation?.release() }
             successorMedia = nil
             pendingAdoptedPageSourceKey = nil
             planSummary = nil
@@ -627,6 +676,7 @@ final class ExplainViewModel: ObservableObject {
 
     func pauseOwnedPlayback() {
         if let token = audioSessionToken { _ = audio.pause(session: token) }
+        if hasPendingForegroundPreparation { updatePendingPreparationPresentation(paused: true) }
     }
 
     @discardableResult
@@ -692,7 +742,7 @@ final class ExplainViewModel: ObservableObject {
         self.kindleSpeechDocument = speechPage.map { KindleFootnoteSpeech.explanationDocument(document, page: $0) }
         self.injectedQuickReadService = quickReadService
         self.now = now
-        self.speechGenerator = speechGenerator ?? TTSService.shared
+        self.speechGenerator = (speechGenerator ?? TTSService.shared).controlled(by: AudioPlayerService.shared.speechGeneration)
         self.analyticsContext = analyticsContext ?? AnalyticsContentContext.fallback(for: document)
         let initialLanguage = VoiceCatalog.normalizedLanguage(
             AppSettings.shared.explainLangOrNil
@@ -810,6 +860,7 @@ final class ExplainViewModel: ObservableObject {
     }
 
     deinit {
+        backgroundPreparationTasks.values.forEach { $0.cancel() }
         orchestrationTask?.cancel()
         accessRefreshTask?.cancel()
         pagePrefetchTask?.cancel()
@@ -902,6 +953,10 @@ final class ExplainViewModel: ObservableObject {
               let original = prepared[currentBlockIndex] else { return }
 
         let blockIndex = currentBlockIndex
+        backgroundPreparationTasks.values.forEach { $0.cancel() }
+        backgroundPreparationTasks.removeAll()
+        backgroundPreparationOwners.removeAll()
+        scheduledBackgroundBlocks.removeAll()
         // Future audio belongs to the old voice too. Preserve its narration
         // and source marks, then refill the bounded window with the new voice
         // while the current block is playing, not after its natural end.
@@ -914,6 +969,7 @@ final class ExplainViewModel: ObservableObject {
                 extractedSections[qualityIndex] = QuickreadSection(id: "retained-\(qualityIndex)",
                     text: cached.text, cinematic: QuickreadCinematic(events: cached.sourceMarks ?? cached.marks))
             }
+            cached.audioReservation?.release()
             prepared.removeValue(forKey: index)
         }
         let shouldAutoPlay = autoPlayOverride ?? (ownsAudioQueue && audio.isPlaying)
@@ -953,7 +1009,7 @@ final class ExplainViewModel: ObservableObject {
         _ = audio.clearQueue(session: session)
         if !resumeAfterSwitch { _ = audio.pause(session: session) }
         _ = audio.setMoreSegmentsExpected(true, session: session)
-        isPreparingNext = true
+        updatePendingPreparationPresentation(paused: !resumeAfterSwitch)
 
         let switchGeneration = contentGeneration
         voiceSwitchTask = Task { [weak self] in
@@ -967,7 +1023,7 @@ final class ExplainViewModel: ObservableObject {
                           self.settings.voice(for: self.playbackLanguage) == newVoiceID else { return }
                     if !installedPrefix {
                         self.installVoiceSwitchedBlock(block, replacing: original, blockIndex: blockIndex,
-                                                       autoPlay: resumeAfterSwitch && !self.audio.isExplicitlyPaused, session: session)
+                                                       autoPlay: resumeAfterSwitch || self.audio.hasPlaybackRequest, session: session)
                         self.enqueuedStreamingBlocks[blockIndex] = self.contentGeneration
                         installedPrefix = true
                         VoiceSwitchStatusCenter.shared.finish(switchID)
@@ -995,7 +1051,10 @@ final class ExplainViewModel: ObservableObject {
                     rebuilt,
                     replacing: original,
                     blockIndex: blockIndex,
-                    autoPlay: resumeAfterSwitch,
+                    // An explicit Resume may arrive while the replacement is
+                    // generating. Installation still checks the current Pause
+                    // flag, so a later Pause wins over either play intent.
+                    autoPlay: resumeAfterSwitch || self.audio.hasPlaybackRequest,
                     session: session
                 )
                 }
@@ -1027,6 +1086,15 @@ final class ExplainViewModel: ObservableObject {
         }
     }
 
+    private func ownsAudibleGeneration(block: Int, generation: UInt64, voiceID: String,
+                                       language: String, allowStartup: Bool = false) -> Bool {
+        guard isActive, ownsPlaybackSession, contentGeneration == generation,
+              settings.voice(for: language) == voiceID else { return false }
+        return (currentBlockIndex == block && ownsAudioQueue)
+            || (requestedStreamingBlock?.index == block && requestedStreamingBlock?.generation == generation)
+            || (allowStartup && currentBlockIndex < 0 && status == .planning)
+    }
+
     private func revoicePreparedBlock(
         _ original: PreparedBlock,
         blockIndex: Int,
@@ -1044,11 +1112,18 @@ final class ExplainViewModel: ObservableObject {
                 onPrefix: onPrefix, permitFirstWhilePaused: permitFirstWhilePaused)
         }
         var segments: [AudioSegment] = []
+        let reservation = ExplainAudioReservation(control: audio.speechGeneration)
+        let generation = contentGeneration
+        try await SpeechGenerationContext.withAtomicUnit(text: original.text, audibleDemand: { [weak self] in
+            self?.ownsAudibleGeneration(block: blockIndex, generation: generation, voiceID: voiceID, language: language) == true
+        }) {
         try await speechGenerator.generateBufferedSpeech(
             paragraphIndex: blockIndex, text: original.text, voice: voiceID, speed: 1,
             language: language, includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
             continuation: Self.subtitleContinuation(original.text, voice: voiceID, language: language),
-            beforeRequest: { _ in .interactive }, onSegmentReady: { segments.append($0) })
+            beforeRequest: { _ in .interactive }, onSegmentReady: { segments.append($0); reservation.append($0) })
+        }
+        try Task.checkCancellation()
         guard !segments.isEmpty else { throw QuickReadError.noBlock0 }
 
         var timeline: [ComposeTimestamp] = []
@@ -1096,7 +1171,8 @@ final class ExplainViewModel: ObservableObject {
             marks: marks,
             text: original.text,
             sentences: Self.splitSentences(original.text),
-            voiceID: voiceID
+            voiceID: voiceID,
+            audioReservation: reservation
         )
     }
 
@@ -1154,6 +1230,7 @@ final class ExplainViewModel: ObservableObject {
             )
         }
         _ = audio.setMoreSegmentsExpected(!block.isComplete, session: session)
+        block.audioReservation?.release()
     }
 
     private func finishVoiceSwitchIfNeeded() {
@@ -1455,6 +1532,7 @@ final class ExplainViewModel: ObservableObject {
         kindlePerfLog("prefetched-start total=\(totalBlocks) chars=\(doc.fullText.count) paras=\(doc.paragraphs.count)")
         adoptedPrefetchPlan = prefetched.planLease
         adoptedPrefetchContinuation = prefetched.continuationLease
+        prefetched.continuationLease.activation.adopted = true
         let generation = contentGeneration
         prefetchedPlanCompletionTask = Task { @MainActor [weak self] in
             do {
@@ -1624,18 +1702,24 @@ final class ExplainViewModel: ObservableObject {
         try QuickReadOutputLanguage.validateNarration(section.text, requested: language)
         var segs: [AudioSegment] = []
         let voiceID = settings.voice(for: language)
+        let reservation = ExplainAudioReservation(control: audio.speechGeneration)
+        let generation = contentGeneration
+        try await SpeechGenerationContext.withAtomicUnit(text: section.text, audibleDemand: { [weak self] in
+            self?.ownsAudibleGeneration(block: 0, generation: generation, voiceID: voiceID, language: language, allowStartup: true) == true
+        }) {
         try await speechGenerator.generateTTSForParagraph(
             paragraphIndex: 0, text: section.text,
             voice: voiceID, speed: 1.0, language: language,
             includeVoiceCode: true, speaker: nil, cloneRequestID: nil,
             continuation: Self.subtitleContinuation(section.text, voice: voiceID, language: language),
-            onCheckpoint: nil) { segs.append($0) }
+            onCheckpoint: nil) { segs.append($0); reservation.append($0) }
+        }
         guard !segs.isEmpty else { throw QuickReadError.noBlock0 }
         let duration = segs.reduce(0) { $0 + effectiveDuration($1) }
         let marks = ensureTiming(section.events, duration: duration)
         debugLog("fastlane prepare marks_raw=%d marks_timed=%d segs=%d duration=%.2f text=%d",
                  section.events.count, marks.count, segs.count, duration, section.text.count)
-        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID)
+        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID, audioReservation: reservation)
     }
 
     /// 快道执行：先 LLM(fast-block0) + TTS 决定 idxBase/scope，再启动质道。
@@ -1749,6 +1833,31 @@ final class ExplainViewModel: ObservableObject {
         status = .completed
     }
 
+    private var hasPendingForegroundPreparation: Bool {
+        activeVoiceSwitchID != nil
+            || requestedStreamingBlock?.generation == contentGeneration
+            || (status == .planning && (orchestrationTask != nil || fastTask != nil))
+    }
+
+    private func updatePendingPreparationPresentation(paused: Bool) {
+        // The producer remains owned so Play can resume it. A user-paused
+        // producer is dormant, not loading; showing loading disables Play.
+        isPreparingNext = !paused
+        if paused, let switchID = activeVoiceSwitchID {
+            VoiceSwitchStatusCenter.shared.finish(switchID)
+        }
+    }
+
+    private func preparePendingPlaybackControl(session: AudioPlaybackSessionToken) {
+        // A newly claimed Explain session can still see the outgoing mode's
+        // queue. User transport intent belongs to this pending producer, not
+        // that retired media; claim an empty queue before resuming generation.
+        if !audio.isQueueOwned(by: session) {
+            _ = audio.clearQueue(session: session)
+        }
+        _ = audio.setMoreSegmentsExpected(true, session: session)
+    }
+
     func togglePlayPause() {
         ReaderRunLog.write("EXPLAIN transport toggle source=\(document.sourceKind.rawValue) owned=\(ownsAudioQueue) playing=\(audio.isPlaying) position=\(audio.playbackPosition)")
         defer {
@@ -1766,6 +1875,19 @@ final class ExplainViewModel: ObservableObject {
         }
         if audio.hasTerminalPlaybackFailure {
             recoverPlaybackAfterOwnershipChange()
+            return
+        }
+        if ownsPlaybackSession, hasPendingForegroundPreparation,
+           (audio.currentSegment == nil || !ownsAudioQueue || activeVoiceSwitchID != nil),
+           let token = audioSessionToken {
+            let wasPaused = audio.isExplicitlyPaused
+            preparePendingPlaybackControl(session: token)
+            if wasPaused {
+                _ = audio.play(session: token)
+            } else {
+                _ = audio.pause(session: token)
+            }
+            updatePendingPreparationPresentation(paused: !wasPaused)
             return
         }
         guard ownsAudioQueue,
@@ -1798,12 +1920,18 @@ final class ExplainViewModel: ObservableObject {
         case .completed:
             replay()
         case .planning, .streaming:
-            if ownsAudioQueue,
+            if ownsPlaybackSession, hasPendingForegroundPreparation,
+               (audio.currentSegment == nil || !ownsAudioQueue || activeVoiceSwitchID != nil),
+               let token = audioSessionToken {
+                preparePendingPlaybackControl(session: token)
+                _ = audio.play(session: token)
+                updatePendingPreparationPresentation(paused: false)
+            } else if ownsAudioQueue,
                audio.currentSegment != nil || audio.hasQueuedSegments,
                let token = audioSessionToken {
                 _ = audio.play(session: token)
                 fillRollingPrefetchWindow(reason: "ensure-playing")
-            } else if !ownsAudioQueue {
+            } else {
                 recoverPlaybackAfterOwnershipChange()
             }
         }
@@ -2351,12 +2479,20 @@ final class ExplainViewModel: ObservableObject {
         kindlePerfLog("background-prepare schedule reason=\(reason) idx=\(idx) total=\(totalBlocks)")
         kindlePerfLog("kindleExplainBlockPrefetch start reason=\(reason) idx=\(idx) total=\(totalBlocks)")
         let generation = contentGeneration
-        Task { [weak self] in
+        let owner = UUID()
+        backgroundPreparationOwners[idx] = owner
+        backgroundPreparationTasks[idx] = Task { [weak self] in
             guard let self else { return }
+            defer {
+                if self.contentGeneration == generation, self.backgroundPreparationOwners[idx] == owner {
+                    self.backgroundPreparationTasks.removeValue(forKey: idx)
+                    self.backgroundPreparationOwners.removeValue(forKey: idx)
+                }
+            }
             do {
                 let pb = try await self.prepareBlock(idx, detachedTTS: true, generation: generation)
                 await MainActor.run {
-                    guard self.contentGeneration == generation else { return }
+                    guard self.contentGeneration == generation, self.backgroundPreparationOwners[idx] == owner else { return }
                     self.scheduledBackgroundBlocks.remove(idx)
                     if self.prepared[idx] == nil {
                         self.prepared[idx] = pb
@@ -2367,14 +2503,14 @@ final class ExplainViewModel: ObservableObject {
                 }
             } catch is CancellationError, TTSError.cancelled {
                 await MainActor.run {
-                    guard self.contentGeneration == generation else { return }
+                    guard self.contentGeneration == generation, self.backgroundPreparationOwners[idx] == owner else { return }
                     self.scheduledBackgroundBlocks.remove(idx)
                     self.kindlePerfLog("background-prepare cancelled reason=\(reason) idx=\(idx)")
                     self.fillRollingPrefetchWindow(reason: "producer-cancelled-\(idx)")
                 }
             } catch {
                 await MainActor.run {
-                    guard self.contentGeneration == generation else { return }
+                    guard self.contentGeneration == generation, self.backgroundPreparationOwners[idx] == owner else { return }
                     self.scheduledBackgroundBlocks.remove(idx)
                     self.kindlePerfLog("background-prepare miss reason=\(reason) idx=\(idx) error=\(error.localizedDescription)")
                 }
@@ -2545,6 +2681,12 @@ final class ExplainViewModel: ObservableObject {
         // TTS 讲解文本（收集全部 segment）
         var segs: [AudioSegment] = []
         let ttsStartedAt = Date()
+        let reservation = ExplainAudioReservation(control: audio.speechGeneration)
+        let generation = contentGeneration
+        try await SpeechGenerationContext.withAtomicUnit(text: section.text, audibleDemand: { [weak self] in
+            guard let self, jobId == self.jobId || (speculativePageSourceKey != nil && speculativePageSourceKey == self.pendingAdoptedPageSourceKey) else { return false }
+            return self.ownsAudibleGeneration(block: idx, generation: generation, voiceID: voiceID, language: language)
+        }) {
         if detachedTTS {
             try await speechGenerator.generateBufferedSpeech(
                 paragraphIndex: idx, text: section.text, voice: voiceID, speed: 1,
@@ -2567,7 +2709,7 @@ final class ExplainViewModel: ObservableObject {
                     }
                     try Task.checkCancellation()
                     return jobId == self.jobId || isAdoptedPage() ? .readAhead : .speculative
-                }, onSegmentReady: { segs.append($0) })
+                }, onSegmentReady: { segs.append($0); reservation.append($0) })
         } else {
             try await speechGenerator.generateTTSForParagraph(
                 paragraphIndex: idx,
@@ -2582,8 +2724,11 @@ final class ExplainViewModel: ObservableObject {
                 onCheckpoint: nil
             ) { segment in
                 segs.append(segment)
+                reservation.append(segment)
             }
         }
+        }
+        try Task.checkCancellation()
         let ttsMs = elapsedMs(since: ttsStartedAt)
 
         // 拼块时间线 → composeBlock 回填 at
@@ -2618,7 +2763,7 @@ final class ExplainViewModel: ObservableObject {
                  marks.count, segs.count, timeline.count, duration, section.text.count)
         kindlePerfLog("prepare-section idx=\(idx) qIdx=\(composeIdx) detached=\(detachedTTS ? "Y" : "N") ttsMs=\(ttsMs) composeMs=\(composeMs) totalMs=\(elapsedMs(since: startedAt)) sectionMarks=\(section.events.count) composedMarks=\(composedCount.map(String.init) ?? "nil") finalMarks=\(marks.count) segs=\(segs.count) text=\(section.text.count)")
 
-        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID)
+        return PreparedBlock(segments: segs, marks: marks, text: section.text, sentences: Self.splitSentences(section.text), voiceID: voiceID, audioReservation: reservation)
     }
 
     /// Publish audio and its immutable, already timed marks together. A later
@@ -2628,33 +2773,29 @@ final class ExplainViewModel: ObservableObject {
         voiceID: String, generation: UInt64, onPrefix: ((PreparedBlock) -> Void)? = nil, permitFirstWhilePaused: Bool = false) async throws -> PreparedBlock {
         var segments: [AudioSegment] = []
         var marks: [QuickreadEvent] = []
-        let demand = SpeechStreamBuffer(paragraphIndex: idx, voice: voiceID, language: language, requestID: UUID().uuidString)
+        let requestID = UUID().uuidString
+        let reservation = ExplainAudioReservation(control: audio.speechGeneration)
         let started = Date()
         do {
             for (unitIndex, unit) in units.enumerated() {
                 var group: [AudioSegment] = []
+                try await SpeechGenerationContext.withAtomicUnit(text: unit.text, audibleDemand: { [weak self] in
+                    self?.ownsAudibleGeneration(block: idx, generation: generation, voiceID: voiceID, language: language) == true
+                }) {
                 try await speechGenerator.generateBufferedSpeech(paragraphIndex: idx, text: unit.text,
                     voice: voiceID, speed: 1, language: language, includeVoiceCode: true,
-                    speaker: nil, cloneRequestID: demand.requestID,
+                    speaker: nil, cloneRequestID: requestID,
                     continuation: TTSContinuation(requestUnits: ClonedTTSStartup.requestUnits(unit.text, language: language, voice: voiceID),
                                                   nextSegmentIndex: segments.count, requiresSourceTiming: true),
-                    beforeRequest: { [weak self] checkpoint in
+                    beforeRequest: { [weak self] _ in
                         guard let self else { throw CancellationError() }
-                        while true {
-                            try Task.checkCancellation()
-                            guard self.isActive, self.contentGeneration == generation,
-                                  self.settings.voice(for: language) == voiceID else { throw CancellationError() }
-                            let current = self.currentBlockIndex == idx && self.ownsAudioQueue
-                            if (segments.isEmpty && permitFirstWhilePaused) || demand.canRequest(currentSegmentID: current ? self.audio.currentSegment?.id : nil,
-                                position: current ? self.audio.playbackPosition : 0,
-                                rate: Double(self.audio.playbackRate),
-                                paused: self.audio.isExplicitlyPaused || self.liveWebTurnIntentSuspended) {
-                                demand.beginRequest(checkpoint)
-                                return current || self.requestedStreamingBlock?.index == idx ? .interactive : .readAhead
-                            }
-                            try await Task.sleep(nanoseconds: 75_000_000)
-                        }
-                    }, onSegmentReady: { segment in group.append(segment) })
+                        try Task.checkCancellation()
+                        guard self.isActive, self.contentGeneration == generation,
+                              self.settings.voice(for: language) == voiceID else { throw CancellationError() }
+                        let current = self.currentBlockIndex == idx && self.ownsAudioQueue
+                        return current || self.requestedStreamingBlock?.index == idx ? .interactive : .readAhead
+                    }, onSegmentReady: { segment in group.append(segment); reservation.append(segment) })
+                }
                 try Task.checkCancellation()
                 guard contentGeneration == generation, settings.voice(for: language) == voiceID else { throw CancellationError() }
                 let offset = segments.reduce(0) { $0 + effectiveDuration($1) }
@@ -2668,18 +2809,19 @@ final class ExplainViewModel: ObservableObject {
                         var copy = event; copy.at = (copy.at ?? 0) + offset; return copy
                     }
                 segments.append(contentsOf: group); marks.append(contentsOf: timed)
-                group.forEach { demand.append($0) }
                 let block = PreparedBlock(segments: segments, marks: marks, text: section.text,
                     sentences: Self.splitSentences(section.text), voiceID: voiceID,
-                    isComplete: unitIndex == units.count - 1, sourceMarks: section.events)
+                    isComplete: unitIndex == units.count - 1, sourceMarks: section.events, audioReservation: reservation)
                 if let onPrefix { onPrefix(block) } else { publishNarration(block, idx: idx, generation: generation) }
                 if unitIndex == 0 {
                     ReaderRunLog.write("EXPLAIN short-block playable block=\(idx) firstMs=\(elapsedMs(since: started)) units=\(units.count)")
                 }
             }
             return PreparedBlock(segments: segments, marks: marks, text: section.text,
-                sentences: Self.splitSentences(section.text), voiceID: voiceID, sourceMarks: section.events)
+                sentences: Self.splitSentences(section.text), voiceID: voiceID, sourceMarks: section.events, audioReservation: reservation)
         } catch {
+            if error is CancellationError { throw error }
+            if case TTSError.cancelled = error { throw error }
             if contentGeneration == generation, prepared[idx]?.voiceID == voiceID,
                prepared[idx]?.isComplete == false {
                 prepared.removeValue(forKey: idx)
@@ -2708,6 +2850,7 @@ final class ExplainViewModel: ObservableObject {
                 _ = audio.loadSegment(segment, autoPlay: !audio.isExplicitlyPaused && !liveWebTurnIntentSuspended, session: session)
             }
             _ = audio.setMoreSegmentsExpected(!block.isComplete, session: session)
+            block.audioReservation?.release()
         } else if requested {
             enqueuedStreamingBlocks[idx] = generation
             enqueue(block, idx: idx)
@@ -2734,6 +2877,7 @@ final class ExplainViewModel: ObservableObject {
         status = .streaming(block: idx, total: totalBlocks)
         isPreparingNext = false
         _ = audio.setMoreSegmentsExpected(true, session: session)
+        pb.audioReservation?.release()
         for seg in pb.segments {
             _ = audio.loadSegment(
                 seg,
@@ -3195,6 +3339,7 @@ final class ExplainViewModel: ObservableObject {
             voiceOverride: voiceID,
             speculativePageSourceKey: pageSourceKey
         )
+        let activation = PrefetchedContinuationActivation()
         let continuationTask = Task { @MainActor [weak self] () throws -> PreparedContinuation? in
             let done = try await planTask.value
             try Task.checkCancellation()
@@ -3204,6 +3349,12 @@ final class ExplainViewModel: ObservableObject {
                   requestedLanguage == self.settings.explainLanguage, depth == self.settings.explainDepth,
                   voiceID == self.settings.voice(for: lang) else { throw CancellationError() }
             let section = try await service.extractBlock(jobId: b.job_id, blockIdx: 1)
+            // Source preparation may continue, but a speculative next page owns
+            // only its first paid unit. The same producer resumes on adoption.
+            while !activation.adopted {
+                try Task.checkCancellation()
+                try await Task.sleep(nanoseconds: 20_000_000)
+            }
             try Task.checkCancellation()
             let block = try await self.prepareSection(section, idx: 1, composeIdx: 1,
                 jobId: b.job_id, language: lang, detachedTTS: true, voiceOverride: voiceID,
@@ -3216,7 +3367,7 @@ final class ExplainViewModel: ObservableObject {
             ReaderRunLog.write("EXPLAIN prefetched successor ready block=1 job=\(b.job_id)")
             return PreparedContinuation(section: section, block: block, mediaLease: lease)
         }
-        let continuationLease = PrefetchedContinuationLease(task: continuationTask)
+        let continuationLease = PrefetchedContinuationLease(task: continuationTask, activation: activation)
         try Task.checkCancellation()
         guard accountBoundary == AccountContentIsolation.captureBoundaryToken(),
               requestedLanguage == settings.explainLanguage,
