@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "sourceCommit": "e43dc1ea54480619fa0d7c847f0daf4c27b7680f",
+  "testedCandidate": "f6ccd3ead85b36a8d7e65a4b55703ab5a35e7c03",
+  "applicationResourceFiles": 471,
+  "archiveAndPhysicalCandidateMatch": true,
+  "coreEvidence": "core-evidence.json",
+  "deviceAcceptance": "device-flow.json"
+}

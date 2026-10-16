@@ -1,5 +1,13 @@
 # AGENTS.md
 
+## iOS 1.2.52 Kindle 绑定修复重新送审（2026-10-16）
+
+- 最新已验收并送审应用源码为 main 合并 `e43dc1ea54480619fa0d7c847f0daf4c27b7680f`（PR #13），工作树 `/Users/xuxuheng/.codex/worktrees/ios-kindle-bind-recovery/CastReader`。App / Share / Widget / Safari 均 **1.2.52（89）**；保留当前 main 的 Mac 1.2.51（88）及所有既有阅读器实现。不得从主目录旧开发分支替换。
+- 修复 Amazon 登录页同站点帮助/隐私链接误判，受信点击外部打开并保留登录态；网络/WebContent 错误有显式重新加载，绑定及朗读重试重新记录分析会话。未扩大 WebView 导航白名单，未声称解释所有生产 navigation_blocked/tts_failed。
+- 正常 Release 真机（iPhone 15 Pro Max）保留既有 Amazon US 登录态，同步 29 本，真实书籍 30 段 / 131.592 秒已完成音频，逐词高亮、自动跨页、暂停/恢复通过。新账号输入登录与隐私链接返回路径在同修复源码模拟器验证；真机未退出重登。两区 Read/Explain × 常规/社区/私人音色按未变管线复用 10/15 证据，未伪称新跑完整矩阵。
+- 全量候选 **2306 PASS / 23 SKIP / 1 FAIL**；唯一失败为既有印尼语/马来语 NativeLanguageAuditTests 阈值，未放宽。受影响 Kindle、分析及朗读重试/暂停/所有权套件通过。继续执行祖先、Safari 与 Mac 工程保护校验。
+- 原 1.2.52（87）已撤回；Build `50400de5-fbb5-4a94-af50-eac8dc984fcc` 为 VALID / APP_STORE_ELIGIBLE。审核单 `636625fd-da28-4d97-a29d-135a3e56c424` 于北京时间 **12:10:22** 提交，版本及审核单回读 WAITING_FOR_REVIEW，审核通过自动发布。29 语、514 张截图和 8 段视频及顺序保留。完整记录：`docs/iOS-1.2.52-Release-Report.md`。下方为历史基线。
+
 ## Mac 1.2.51 iOS 对齐已送审（2026-10-16）
 
 - 正式应用源码为 main 合并 `f15aacffe48453063af719f2de36d3c15d5a4322`（PR #12），工作树 `/Users/xuxuheng/.codex/worktrees/mac-ios-parity-20261016/CastReader`。Mac App / Share / Widget **1.2.51（88）**，Global only，macOS 14.6+，arm64 / x86_64。归档与正常本机安装已验收，不能从主目录旧开发分支替换。

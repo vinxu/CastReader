@@ -1,0 +1,41 @@
+{
+  "status": "PASS",
+  "version": "1.2.52",
+  "build": "89",
+  "device": "iPhone 15 Pro Max / iOS 26.7.1",
+  "sourceCommit": "f6ccd3ead85b36a8d7e65a4b55703ab5a35e7c03",
+  "verifiedAt": "2026-10-16T11:43:57+08:00",
+  "authentication": "Preserved existing valid Amazon session; fresh credential login verified separately on simulator, not repeated on physical device",
+  "shelf": {
+    "booksBefore": 23,
+    "booksAfter": 29,
+    "complete": true,
+    "synchronizedAt": "11:36:31.707"
+  },
+  "reading": {
+    "book": "A Journey to the Centre of the Earth",
+    "voice": "bf_emma",
+    "rate": 1.5,
+    "completedSegments": 30,
+    "completedAudioSeconds": 131.592,
+    "wordHighlight": "PASS",
+    "automaticPageContinuation": "PASS",
+    "pauseResume": "PASS",
+    "pauseEvents": [
+      "11:39:35.729 [active] KINDLE_SENTENCE paused held=true p=21",
+      "11:43:57.960 [active] KINDLE_SENTENCE paused held=true p=30"
+    ],
+    "finalState": "paused",
+    "noInjectedAudioOrSkippedAppAuth": true
+  },
+  "evidence": [
+    "device-synced.png",
+    "device-reading-highlight.png",
+    "device-resume-verified.png",
+    "private/device-kindle.log"
+  ],
+  "limitations": [
+    "No new physical-device logout/credential login; preserved user cookies and reading anchors",
+    "Scope-based reuse of unchanged regional voice matrix recorded in core-evidence.json"
+  ]
+}

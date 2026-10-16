@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-10-16T04:10:56Z",
+  "versionId": "be73457d-4cfd-4e86-a165-5f0f49aa98f0",
+  "version": "1.2.52",
+  "versionState": "WAITING_FOR_REVIEW",
+  "buildId": "50400de5-fbb5-4a94-af50-eac8dc984fcc",
+  "buildNumber": "89",
+  "buildState": "VALID",
+  "buildAudienceType": "APP_STORE_ELIGIBLE",
+  "reviewSubmissionId": "636625fd-da28-4d97-a29d-135a3e56c424",
+  "reviewState": "WAITING_FOR_REVIEW",
+  "submittedDate": "2026-10-16T04:10:22.745Z",
+  "releaseType": "AFTER_APPROVAL",
+  "reviewItems": 1
+}
