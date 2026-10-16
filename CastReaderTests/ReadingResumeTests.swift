@@ -2285,7 +2285,9 @@ extension ReadingResumeTests {
         let store = HistoryStore(directory: directory)
         store.record(doc)
         let speech = ControlledVoiceSwitchSpeech()
-        let vm = ReadAloudViewModel(document: doc, historyStore: store, speechGenerator: speech)
+        let analytics = ReadAnalyticsSessionCoordinator()
+        let vm = ReadAloudViewModel(document: doc, analyticsSessionCoordinator: analytics,
+                                   historyStore: store, speechGenerator: speech)
         defer {
             vm.stop(); vm.deactivate()
             Task { await speech.cancelAll() }
@@ -2317,7 +2319,9 @@ extension ReadingResumeTests {
         }
         XCTAssertFalse(audio.moreSegmentsExpected)
         XCTAssertNil(audio.currentSegment)
+        XCTAssertNil(analytics.sessionID, "the failed generation ended the previous read session")
         vm.togglePlayPause()
+        XCTAssertNotNil(analytics.sessionID, "explicit retry must start a new measurable read session")
         try await waitForRequest(speech, voice: "am_puck")
         await speech.release("am_puck", segments: [fresh])
         try await waitUntil("Retry must resume the verified position with the chosen voice") {
@@ -2325,6 +2329,8 @@ extension ReadingResumeTests {
         }
         XCTAssertEqual(audio.currentSegment?.audioData, fresh.audioData)
         XCTAssertEqual(try XCTUnwrap(vm.debugResumeFirstPlaybackSeconds), 3, accuracy: 0.6)
+        XCTAssertEqual(analytics.activeSnapshot?.firstAudioTracked, true,
+                       "recovered playback must still report first audio")
     }
 }
 

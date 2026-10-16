@@ -4001,6 +4001,10 @@ final class ReadAloudViewModel: ObservableObject {
             refreshAccessThenRetryResume()
             return
         }
+        // Generation failure terminates the previous analytics session. A
+        // user retry is a new attempt even when it resumes the saved audio
+        // cursor; otherwise successful recovery has no first-audio/milestones.
+        beginAnalyticsReadSessionIfNeeded(resume: true)
         let continuation = paragraphContinuation.flatMap { saved -> TTSContinuation? in
             guard ownsAudioQueue,
                   !audio.hasTerminalPlaybackFailure,

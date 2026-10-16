@@ -158,6 +158,8 @@ struct KindleLibraryConnectView: View {
                     .font(.caption)
                     .foregroundColor(AppTheme.destructive)
                     .lineLimit(2)
+                Button("重新加载") { model.loadLibrary() }
+                    .accessibilityIdentifier("kindleConnection.reload")
             }
 
             if model.showsEmptyShelfRecovery {
@@ -612,7 +614,9 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     private var onboardingAutomationTask: Task<Void, Never>?
     private var onboardingAttemptID = 0
     private var onboardingAutomationEnabled = false
-    private let connectionAnalytics: AnalyticsLibraryConnectionRecorder
+    private var connectionAnalytics: AnalyticsLibraryConnectionRecorder
+    private let openExternalURL: (URL) -> Void
+    private var needsLibraryReload = false
 
     var recoveryStorefronts: [KindleStorefront] {
         Array(store.orderedStorefrontCandidates.filter { $0.id != store.boundStorefrontID }.prefix(4))
@@ -630,8 +634,10 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     init(
         analyticsSession: AnalyticsLibraryConnectionSession,
-        entryTapAlreadyTracked: Bool
+        entryTapAlreadyTracked: Bool,
+        openExternalURL: @escaping (URL) -> Void = { UIApplication.shared.open($0) }
     ) {
+        self.openExternalURL = openExternalURL
         let config = WKWebViewConfiguration()
         config.websiteDataStore = CommercialWebSession.websiteDataStore
         config.defaultWebpagePreferences.allowsContentJavaScript = true
@@ -654,6 +660,15 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func recordConnectionPresented() { connectionAnalytics.presented() }
+
+    private func renewConnectionAttemptIfNeeded() {
+        guard connectionAnalytics.hasTerminalResult else { return }
+        connectionAnalytics = AnalyticsLibraryConnectionRecorder(
+            session: .init(source: .kindle, entryPoint: connectionAnalytics.session.entryPoint),
+            entryTapAlreadyTracked: false
+        )
+        connectionAnalytics.presented()
+    }
 
     func closeConnection() {
         connectionAnalytics.close()
@@ -685,22 +700,35 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
     }
 
     func retryOnboardingScan() {
+        renewConnectionAttemptIfNeeded()
         errorText = nil
         showsEmptyShelfRecovery = false
+        if needsLibraryReload {
+            loadLibrary()
+            return
+        }
         restartOnboardingAutomation(reason: "manual-retry")
     }
 
     func loadLibrary() {
+        renewConnectionAttemptIfNeeded()
+        needsLibraryReload = false
         currentReaderBook = nil
         showsEmptyShelfRecovery = false
+        errorText = nil
         statusText = AppLocalized("打开 Kindle 书架，然后点同步。")
         KindleRunLog.write("KINDLE shelf load reason=reload storefront=\(store.boundStorefrontID) sinceReaderOK=\(KindleSessionFreshness.sinceReaderOK) sinceShelfOK=\(KindleSessionFreshness.sinceShelfOK)")
         KindleSessionProbe.logCookies(reason: "shelf-load-reload")
         webView.load(URLRequest(url: KindleWebScripts.libraryURL(for: store.boundStorefront)))
+        if onboardingAutomationEnabled {
+            restartOnboardingAutomation(reason: "manual-reload")
+        }
     }
 
     func switchStorefront(to storefront: KindleStorefront) {
         guard storefront.isSelectable, storefront.id != store.boundStorefrontID else { return }
+        renewConnectionAttemptIfNeeded()
+        needsLibraryReload = false
         for context in ReaderSceneRegistry.shared.contexts { context.kindle.close() }
         KindlePlaybackCenter.shared.close()
         webView.stopLoading()
@@ -784,6 +812,23 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
     ) {
+        // Amazon's real sign-in page includes Privacy Notice, Conditions of
+        // Use and Help. Cancelling these as a terminal binding failure used
+        // to poison the recorder even if the user then logged in and synced.
+        // Open only an explicitly clicked, same-marketplace support document
+        // outside the binding WebView, keeping its cookies and form intact.
+        if navigationAction.navigationType == .linkActivated,
+           navigationAction.sourceFrame.isMainFrame,
+           let destination = navigationAction.request.url,
+           KindleStorefrontNavigationPolicy.isExternalSupportLink(
+               destination,
+               from: navigationAction.sourceFrame.request.url,
+               expectedStorefrontID: store.boundStorefrontID
+           ) {
+            decisionHandler(.cancel)
+            openExternalURL(destination)
+            return
+        }
         guard navigationAction.targetFrame?.isMainFrame == true,
               let destination = navigationAction.request.url else {
             decisionHandler(.allow)
@@ -827,13 +872,6 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
 
     private func rejectUnexpectedMainFrameDestination(_ destination: URL?) {
         webView.stopLoading()
-#if DEBUG
-        // Path-level evidence for live-gate diagnosis. Host and path only —
-        // never the query, which can carry tokens or account identifiers.
-        KindleRunLog.write(
-            "KINDLE shelf blocked destination host=\(destination?.host ?? "nil") path=\(destination?.path ?? "nil")"
-        )
-#endif
         let expectedID = store.boundStorefrontID
         let observed = KindleStorefront.storefront(url: destination)
         let code: String
@@ -859,10 +897,23 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             )
         }
 
-        let message = AppLocalized("当前 Amazon 站点与所选站点不一致。")
+        let message = code == "storefront_mismatch"
+            ? AppLocalized("当前 Amazon 站点与所选站点不一致。")
+            : AppLocalized("内容暂时无法打开，请重试")
+        failConnection(code: code, message: message)
+        showsEmptyShelfRecovery = code == "storefront_mismatch"
+    }
+
+    private func failConnection(code: String, message: String) {
+        // A running probe must not overwrite failure with awaitingLogin on
+        // its next tick. Only an explicit retry starts a fresh attempt.
+        onboardingAttemptID += 1
+        onboardingAutomationTask?.cancel()
+        onboardingAutomationTask = nil
+        needsLibraryReload = true
         statusText = message
         errorText = message
-        showsEmptyShelfRecovery = true
+        showsEmptyShelfRecovery = false
         if onboardingAutomationEnabled {
             onboardingState = .failed(message: message)
         }
@@ -871,6 +922,31 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             result: .failed,
             errorCode: code
         )
+    }
+
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        handleNavigationFailure(error)
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        handleNavigationFailure(error)
+    }
+
+    private func handleNavigationFailure(_ error: Error) {
+        let nsError = error as NSError
+        // Policy cancellations, external support links and replaced loads are
+        // expected. They must not terminate an otherwise usable login form.
+        guard !(nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorCancelled),
+              !(nsError.domain == "WebKitErrorDomain" && nsError.code == 102) else { return }
+        failConnection(
+            code: nsError.domain == NSURLErrorDomain && nsError.code == NSURLErrorTimedOut
+                ? "network_timeout" : "network_failed",
+            message: AppLocalized("网络连接失败，请检查网络后重试")
+        )
+    }
+
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        failConnection(code: "web_process_terminated", message: AppLocalized("内容暂时无法打开，请重试"))
     }
 
     func syncLibrary(
@@ -886,6 +962,7 @@ final class KindleLibrarySyncViewModel: NSObject, ObservableObject, WKNavigation
             return
         }
         guard !isSyncing else { return }
+        if expectedOnboardingAttemptID == nil { renewConnectionAttemptIfNeeded() }
         connectionAnalytics.record(.syncStarted, result: .started)
         isSyncing = true
         errorText = nil
