@@ -1,0 +1,16 @@
+{
+  "versionId": "e4b2526e-993e-406d-917e-a9b105f568e6",
+  "platform": "MAC_OS",
+  "version": "1.2.51",
+  "versionState": "WAITING_FOR_REVIEW",
+  "releaseType": "AFTER_APPROVAL",
+  "build": {
+    "id": "90cf6d55-7976-4040-969f-ad8ea06420ca",
+    "number": "88",
+    "processingState": "VALID",
+    "audience": "APP_STORE_ELIGIBLE",
+    "uploadedDate": "2026-10-15T12:01:21-07:00",
+    "usesNonExemptEncryption": false
+  },
+  "boundBuildId": "90cf6d55-7976-4040-969f-ad8ea06420ca"
+}

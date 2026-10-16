@@ -1,0 +1,10 @@
+{
+  "app": "/Users/xuxuheng/Documents/CastReader-Releases/Mac-1.2.51-88-20261016/CastReaderMac-1.2.51-88.xcarchive/Products/Applications/CastReaderMac.app",
+  "version": "1.2.51",
+  "build": "88",
+  "filesScanned": 230,
+  "markersChecked": 54,
+  "debugPositiveControlsPassed": true,
+  "releaseMatches": [],
+  "passed": true
+}

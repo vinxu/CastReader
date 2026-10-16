@@ -280,6 +280,7 @@
 		574FDD44C7D16765246A2831 /* ReadingDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B8E1F3F9B55D193AB2EE331 /* ReadingDocument.swift */; };
 		57ABF89A132D57AA22021DDF /* OCRTokenGeometryCoverageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A57B54CB5453E596A8FF73D5 /* OCRTokenGeometryCoverageTests.swift */; };
 		5952C675893D159005C44A67 /* ClipboardImportViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E90124AB6C4AFE0AB9993A2A /* ClipboardImportViewModel.swift */; };
+		597B8E53B683AB7B3502C2C6 /* PresetTTSRequestSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E26BC49F5BB030CE7FC1BCC7 /* PresetTTSRequestSchedulerTests.swift */; };
 		59FF5360095C9B2FF5FDEBE2 /* ReaderMoreButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DED4CAF3A29BB9776226E5 /* ReaderMoreButton.swift */; };
 		5A6D29028F350640E94AD96A /* OCRWordInkBoundsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CF8763DFD904B9F457AEA72 /* OCRWordInkBoundsTests.swift */; };
 		5A843BB0FE575CEE18DDDE37 /* LanguageDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020D39909BD79A47A92C8DE8 /* LanguageDetector.swift */; };
@@ -2772,6 +2773,7 @@
 				A3EEDF7062EF3B7D93493501 /* ReaderViewportTests.swift in Sources */,
 				94C5719D386F92355807B8F2 /* SpeechGenerationControlTests.swift in Sources */,
 				D79EC18993D8CD1BF6398383 /* ExplainGenerationControlTests.swift in Sources */,
+				597B8E53B683AB7B3502C2C6 /* PresetTTSRequestSchedulerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3481,7 +3483,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/MacExtensions.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 88;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -3492,7 +3494,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.2.48;
+				MARKETING_VERSION = 1.2.51;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.CastReaderMacShare;
 				PRODUCT_NAME = CastReaderMacShare;
 				REGISTER_APP_GROUPS = YES;
@@ -3534,7 +3536,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/MacExtensions.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 88;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -3545,7 +3547,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.2.48;
+				MARKETING_VERSION = 1.2.51;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.CastReaderMacShare;
 				PRODUCT_NAME = CastReaderMacShare;
 				REGISTER_APP_GROUPS = YES;
@@ -3565,7 +3567,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/MacExtensions.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 88;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -3576,7 +3578,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.2.48;
+				MARKETING_VERSION = 1.2.51;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.CastReaderMacWidget;
 				PRODUCT_NAME = CastReaderMacWidget;
 				REGISTER_APP_GROUPS = YES;
@@ -3598,7 +3600,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/MacExtensions.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 88;
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -3609,7 +3611,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
-				MARKETING_VERSION = 1.2.48;
+				MARKETING_VERSION = 1.2.51;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader.CastReaderMacWidget;
 				PRODUCT_NAME = CastReaderMacWidget;
 				REGISTER_APP_GROUPS = YES;
@@ -3659,7 +3661,7 @@
 				CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReaderMac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 88;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
@@ -3679,7 +3681,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.48;
+				MARKETING_VERSION = 1.2.51;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader;
 				PRODUCT_MODULE_NAME = CastReader;
 				PRODUCT_NAME = CastReaderMac;
@@ -4077,7 +4079,7 @@
 				CASTREADER_INTERNAL_DISTRIBUTION_CONTROLS = NO;
 				CODE_SIGN_ENTITLEMENTS = CastReader/CastReaderMac.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 76;
+				CURRENT_PROJECT_VERSION = 88;
 				DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER = NO;
 				DEVELOPMENT_ASSET_PATHS = "\"CastReader/Preview Content\"";
 				DEVELOPMENT_TEAM = KQW6UNZE8J;
@@ -4097,7 +4099,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.48;
+				MARKETING_VERSION = 1.2.51;
 				PRODUCT_BUNDLE_IDENTIFIER = com.same.castreader;
 				PRODUCT_MODULE_NAME = CastReader;
 				PRODUCT_NAME = CastReaderMac;

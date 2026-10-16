@@ -1,0 +1,409 @@
+{
+  "version": {
+    "id": "e4b2526e-993e-406d-917e-a9b105f568e6",
+    "version": "1.2.51",
+    "state": "PREPARE_FOR_SUBMISSION",
+    "releaseType": "AFTER_APPROVAL"
+  },
+  "build": {
+    "id": "90cf6d55-7976-4040-969f-ad8ea06420ca",
+    "number": "88",
+    "processingState": "VALID",
+    "buildAudienceType": "APP_STORE_ELIGIBLE",
+    "usesNonExemptEncryption": false
+  },
+  "locales": [
+    "ar-SA",
+    "cs",
+    "da",
+    "de-DE",
+    "el",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fi",
+    "fr-FR",
+    "he",
+    "hi",
+    "hu",
+    "id",
+    "it",
+    "ja",
+    "ko",
+    "ms",
+    "nl-NL",
+    "no",
+    "pl",
+    "pt-BR",
+    "ro",
+    "ru",
+    "sv",
+    "tr",
+    "vi",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "titleGuard": {
+    "policy": "preserve",
+    "unchanged": true,
+    "changedLocales": [
+
+    ]
+  },
+  "optionalPromotionalTextAbsentLocales": [
+    "ar-SA",
+    "cs",
+    "da",
+    "de-DE",
+    "el",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fi",
+    "fr-FR",
+    "he",
+    "hi",
+    "hu",
+    "id",
+    "it",
+    "ja",
+    "ko",
+    "ms",
+    "nl-NL",
+    "no",
+    "pl",
+    "pt-BR",
+    "ro",
+    "ru",
+    "sv",
+    "tr",
+    "vi",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "screenshots": {
+    "ko": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "id": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "fi": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "en-US": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "it": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "hu": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "de-DE": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "el": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "ja": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "hi": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "zh-Hans": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "cs": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "ru": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "fr-FR": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "tr": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "es-ES": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "no": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "nl-NL": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "zh-Hant": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "da": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "ro": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "pt-BR": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "pl": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "ar-SA": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "es-MX": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "vi": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "sv": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "he": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    },
+    "ms": {
+      "sets": [
+        {
+          "displayType": "APP_DESKTOP",
+          "complete": 5,
+          "total": 5
+        }
+      ],
+      "complete": 5,
+      "fallbackToPrimary": false
+    }
+  },
+  "reviewDetailsPresent": true,
+  "errors": [
+
+  ]
+}

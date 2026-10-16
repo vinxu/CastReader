@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## Mac 1.2.51 iOS 对齐已送审（2026-10-16）
+
+- 正式应用源码为 main 合并 `f15aacffe48453063af719f2de36d3c15d5a4322`（PR #12），工作树 `/Users/xuxuheng/.codex/worktrees/mac-ios-parity-20261016/CastReader`。Mac App / Share / Widget **1.2.51（88）**，Global only，macOS 14.6+，arm64 / x86_64。归档与正常本机安装已验收，不能从主目录旧开发分支替换。
+- 对齐共享 iOS 1.2.49–1.2.51 的有界生成、暂停取消、精确后缀恢复、播放所有权、loading 去抖、跨页与窗口/渲染修复；保留 Mac 逐句请求策略。工程保护基线更新到 `7ba15367`，新增关键播放测试必须保留，仍执行 `ruby scripts/verify-mac-project.rb`、`bash scripts/build-voice-toc-integration.sh --check` 和 Safari 原图校验。
+- 完整 Mac scheme **2,044 PASS / 0 FAIL / 4 条件跳过**；Global 英文 Read / Explain × 常规、社区、私人声音六格真实验收通过。首个 QuickRead 超时后正常重试成功。Kobo 官网真人验证未获当场授权，微信读书仅公开页冒烟；未把已登录书库跨页、Kindle 本轮手动新页指纹或 Intel 实机运行写成通过。
+- Build `90cf6d55-7976-4040-969f-ad8ea06420ca` 为 VALID / APP_STORE_ELIGIBLE，版本与审核单 `4449f4f0-9d25-4eb2-8b02-83a8c8783362` 于北京时间 **03:14:18** 回读 WAITING_FOR_REVIEW，审核通过自动发布。29 语说明、145 张原截图与原标题/副标题均已核对；完整记录 `docs/Mac-iOS-Parity-1.2.51.md`。下方为历史基线。
+
 ## Mac / iOS 主线增量整合（2026-10-13）
 
 - 主线保留 iOS 1.2.49（84）Duo、普通设备底部导航、锁屏翻页和暂停所有权；其工程基线为 `a95540d4`。合入 Mac 1.2.48（76）分支 `b0fbc157`，包含 Mac 原生侧栏、窗口/文件路由、28 语及额度购买界面。Mac 发布记录见 `docs/Mac-AppStore-Release-1.2.48.md`。
