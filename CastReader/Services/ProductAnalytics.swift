@@ -842,6 +842,12 @@ final class AnalyticsLibraryConnectionRecorder: @unchecked Sendable {
     private var terminalRecorded = false
     private var recordedKeys = Set<String>()
 
+    var hasTerminalResult: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return terminalRecorded
+    }
+
     init(
         session: AnalyticsLibraryConnectionSession,
         entryTapAlreadyTracked: Bool,

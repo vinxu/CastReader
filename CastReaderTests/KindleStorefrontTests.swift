@@ -2149,6 +2149,105 @@ final class KindleStorefrontTests: XCTestCase {
         }
     }
 
+    func testSupportLinksStayOutsideBindingAndRequireTrustedMarketplace() throws {
+        for storefront in KindleStorefront.selectable {
+            let domain = try XCTUnwrap(KindleStorefront.registrableDomain(for: storefront.canonicalHost))
+            let signIn = URL(string: "https://www.\(domain)/ap/signin")!
+            let support = URL(string: "https://www.\(domain)/gp/help/customer/display.html/ref=ap_signin_notification_privacy_notice?nodeId=468496")!
+            for path in ["/gp/help/customer/display.html/ref=ap_signin_notification_privacy_notice", "/gp/aw/help/ref=ap_mobile_signin_notification_privacy_notice", "/help"] {
+                XCTAssertTrue(KindleStorefrontNavigationPolicy.isExternalSupportLink(
+                    URL(string: "https://www.\(domain)\(path)?nodeId=468496"),
+                    from: signIn, expectedStorefrontID: storefront.id
+                ))
+            }
+            XCTAssertFalse(KindleStorefrontNavigationPolicy.allowsMainFrame(
+                support, expectedStorefrontID: storefront.id
+            ), "external support must never become a permitted binding destination")
+            for raw in [
+                "http://www.\(domain)/help",
+                "https://www.\(domain):444/help",
+                "https://user@www.\(domain)/help",
+                "https://www.\(domain).example.org/help",
+                "https://www.\(domain)/gp/help/customer/display.html.evil",
+                "https://www.\(domain)/gp/aw/help.evil",
+                "https://www.\(domain)/ap/signin",
+                "https://www.\(domain)/Kindle-eBooks/b",
+            ] {
+                XCTAssertFalse(KindleStorefrontNavigationPolicy.isExternalSupportLink(
+                    URL(string: raw), from: signIn, expectedStorefrontID: storefront.id
+                ), raw)
+            }
+            XCTAssertFalse(KindleStorefrontNavigationPolicy.isExternalSupportLink(
+                support, from: URL(string: "https://evil.example/ap/signin"),
+                expectedStorefrontID: storefront.id
+            ))
+            let other = storefront.id == "us" ? "jp" : "us"
+            XCTAssertFalse(KindleStorefrontNavigationPolicy.isExternalSupportLink(
+                support, from: signIn, expectedStorefrontID: other
+            ))
+        }
+    }
+
+    @MainActor
+    func testNavigationTimeoutStopsOnboardingProbeUntilExplicitRetry() async throws {
+        let model = KindleLibrarySyncViewModel()
+        model.startOnboardingAutomation()
+        model.webView.stopLoading()
+        model.webView(model.webView, didFailProvisionalNavigation: nil, withError: URLError(.timedOut))
+        let failedState = model.onboardingState
+        guard case .failed = failedState else { return XCTFail("timeout must leave the login wait state") }
+        XCTAssertNotNil(model.errorText)
+        XCTAssertFalse(model.showsEmptyShelfRecovery, "network failure is not evidence of an empty/wrong shelf")
+        try await Task.sleep(nanoseconds: 1_100_000_000)
+        XCTAssertEqual(model.onboardingState, failedState, "a stale probe must not hide the failure")
+        model.retryOnboardingScan()
+        XCTAssertNil(model.errorText)
+        model.closeConnection()
+    }
+
+    @MainActor
+    func testNavigationCancellationDoesNotFailBinding() {
+        let model = KindleLibrarySyncViewModel()
+        model.webView(model.webView, didFailProvisionalNavigation: nil, withError: URLError(.cancelled))
+        model.webView(model.webView, didFail: nil, withError: NSError(domain: "WebKitErrorDomain", code: 102))
+        XCTAssertNil(model.errorText)
+        XCTAssertFalse(model.showsEmptyShelfRecovery)
+        model.closeConnection()
+    }
+
+    @MainActor
+    func testPrivacyLinkInRealWebViewPreservesLoginAndDoesNotFailBinding() async throws {
+        let storefront = KindleLibraryStore.shared.boundStorefront
+        let domain = try XCTUnwrap(KindleStorefront.registrableDomain(for: storefront.canonicalHost))
+        let signIn = try XCTUnwrap(URL(string: "https://www.\(domain)/ap/signin"))
+        let support = try XCTUnwrap(URL(string: "https://www.\(domain)/gp/aw/help/ref=ap_mobile_signin_notification_privacy_notice?nodeId=468496"))
+        var opened: [URL] = []
+        let model = KindleLibrarySyncViewModel(
+            analyticsSession: .init(source: .kindle, entryPoint: "kindle_connect"),
+            entryTapAlreadyTracked: true,
+            openExternalURL: { opened.append($0) }
+        )
+        model.webView.loadHTMLString("""
+            <!doctype html><html><body>
+            <input id="login" value="test-form-preserved">
+            <a id="privacy" href="\(support.absoluteString)">Privacy Notice</a>
+            </body></html>
+            """, baseURL: signIn)
+        try await waitUntilLoaded(model.webView)
+        try await model.webView.evaluateJavaScript("document.getElementById('privacy').click()")
+        for _ in 0..<100 {
+            if !opened.isEmpty || model.errorText != nil { break }
+            try await Task.sleep(nanoseconds: 30_000_000)
+        }
+        XCTAssertEqual(opened, [support])
+        XCTAssertNil(model.errorText)
+        XCTAssertFalse(model.showsEmptyShelfRecovery)
+        XCTAssertEqual(model.webView.url, signIn)
+        let value = try await model.webView.evaluateJavaScript("document.getElementById('login').value") as? String
+        XCTAssertEqual(value, "test-form-preserved")
+        model.closeConnection()
+    }
+
     private func deduplicated(_ values: [String]) -> [String] {
         var seen = Set<String>()
         return values.filter { seen.insert($0).inserted }

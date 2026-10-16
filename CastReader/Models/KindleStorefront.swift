@@ -643,6 +643,37 @@ enum KindleDomainDriftSentinel {
 }
 
 enum KindleStorefrontNavigationPolicy {
+    /// Legal/help links are separate browser documents, not a change of the
+    /// bound marketplace. Never add them to the WebView navigation allowlist.
+    /// The caller must also require a user-activated link in the main frame.
+    static func isExternalSupportLink(
+        _ destination: URL?,
+        from source: URL?,
+        expectedStorefrontID: String?
+    ) -> Bool {
+        guard let expected = KindleStorefront.entry(id: expectedStorefrontID),
+              allowsMainFrame(
+                source,
+                expectedStorefrontID: expected.id,
+                expectedAuthenticationReturnPath: expected.libraryURL.path
+              ),
+              let destination,
+              destination.scheme?.lowercased() == "https",
+              destination.user == nil, destination.password == nil,
+              destination.port == nil || destination.port == 443,
+              let domain = KindleStorefront.registrableDomain(for: expected.canonicalHost),
+              destination.host?.lowercased() == "www." + domain else {
+            return false
+        }
+        let path = destination.path
+        return path == "/help" || path == "/help/"
+            || path == "/gp/aw/help" || path == "/gp/aw/help/"
+            || path.hasPrefix("/gp/aw/help/ref=")
+            || path == "/gp/help/customer/display.html"
+            || path == "/gp/help/customer/display.html/"
+            || path.hasPrefix("/gp/help/customer/display.html/ref=")
+    }
+
     /// Recognition is intentionally broader than navigation. A destination is
     /// safe only when it is the canonical host of the expected active
     /// marketplace; this keeps aliases, historical CN links and cross-site

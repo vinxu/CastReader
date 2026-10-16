@@ -1479,6 +1479,8 @@ final class AppFirstOpenServiceTests: XCTestCase {
             syncReceiptOutbox: outbox
         )
 
+        XCTAssertFalse(recorder.hasTerminalResult)
+
         XCTAssertFalse(recorder.record(
             .syncCompleted,
             result: .success,
@@ -1489,6 +1491,7 @@ final class AppFirstOpenServiceTests: XCTestCase {
             result: .success,
             bookCount: 3
         ), "a failed synchronous receipt must be surfaced")
+        XCTAssertFalse(recorder.hasTerminalResult)
         store.failPersist = false
         XCTAssertTrue(recorder.record(
             .syncCompleted,
