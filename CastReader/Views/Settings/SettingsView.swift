@@ -116,6 +116,10 @@ struct SettingsView: View {
                             Text(language.nativeName).tag(language.rawValue)
                         }
                     }
+                    if SupportedTTSLanguage(identifier: settings.imageTextLanguage)?.requiresCloudOCR == true {
+                        Text(AppLocalized("Bengali, Marathi, Punjabi and Tamil use cloud text recognition. Sign in and select the photo's language."))
+                            .font(.footnote).foregroundStyle(AppTheme.mutedForeground)
+                    }
                     Text("识别语言不准确时，可在导入或拍摄前指定图片中的语言。")
                         .font(.footnote)
                         .foregroundStyle(AppTheme.mutedForeground)

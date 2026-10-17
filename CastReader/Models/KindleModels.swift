@@ -62,7 +62,7 @@ struct KindleBook: Identifiable, Codable, Equatable {
 
 enum KindleReadingDirection: String, Equatable { case ltr, rtl }
 enum KindleWritingMode: String, Equatable { case horizontal, vertical }
-enum KindleOCREngine: String, Equatable { case vision, tesseract }
+enum KindleOCREngine: String, Equatable { case vision, tesseract, googleVision }
 
 struct KindleOCRRoute: Equatable {
     let primary: KindleOCREngine
@@ -93,6 +93,9 @@ struct KindleLanguageProfile: Equatable {
 /// Tesseract paths.
 enum KindleOCRRoutingContract {
     static func route(for profile: KindleLanguageProfile) -> KindleOCRRoute {
+        if SupportedTTSLanguage(identifier: profile.language)?.requiresCloudOCR == true {
+            return KindleOCRRoute(primary: .googleVision, fallback: nil)
+        }
         if profile.language == "ja", profile.writingMode == .vertical {
             return KindleOCRRoute(primary: .tesseract, fallback: nil)
         }

@@ -126,6 +126,26 @@ final class SafariLiveReadingUITests: XCTestCase {
 }
 
 class CastReaderUITests: XCTestCase {
+    func testCloudOCRLanguageChoiceUsesTheSharedImagePreference() {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate",
+            "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global",
+            "-interfaceLanguage", "en", "-image_text_language_v1", "pa"]
+        app.launch()
+        dismissSelfOpenSystemAlertIfPresent()
+        let plus = app.buttons["plusImportButton"]
+        XCTAssertTrue(plus.waitForExistence(timeout: 10)); plus.tap()
+        let picker = app.descendants(matching: .any)["importOptions.photoLanguage"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 8))
+        XCTAssertTrue(picker.label.contains("Punjabi") || String(describing: picker.value).contains("Punjabi"), picker.debugDescription)
+        let note = app.staticTexts["Bengali, Marathi, Punjabi and Tamil use cloud text recognition. Sign in and select the photo's language."]
+        XCTAssertTrue(note.exists)
+        let shot = XCTAttachment(screenshot: app.screenshot()); shot.name = "four-language-import-punjabi"; shot.lifetime = .keepAlways; add(shot)
+        app.buttons["importOptionsCancel"].tap()
+    }
+
 
     func testGrowthReadyStartsListeningBeforeTrialPaywall() {
         continueAfterFailure = false

@@ -55,6 +55,7 @@ extension ReadingSourceKind {
 enum OCRWordBoxSource: String, Equatable {
     case unknown
     case visionTextRange
+    case googleVisionWord
     case tesseractWord
     case proportional
 }

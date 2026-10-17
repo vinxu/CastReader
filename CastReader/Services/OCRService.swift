@@ -455,6 +455,12 @@ actor OCRService {
         orientationSettled: Bool = false
     ) async throws -> ReadingDocument {
         try Task.checkCancellation()
+        let selectedLanguage = languageHint ?? PhotoOCRLanguagePreference.selected()
+        if let selectedLanguage,
+           SupportedTTSLanguage(identifier: selectedLanguage)?.requiresCloudOCR == true {
+            return try await CloudOCRService.shared.recognize(image: image,
+                language: SupportedTTSLanguage(identifier: selectedLanguage)!.rawValue, title: title)
+        }
         // 报纸常常是横着拍的（人把版面转过来看）。EXIF 归正解决不了这种
         // **内容级**旋转，而版面理解假设「行是水平的、栏是垂直的」——
         // 方向不对时列检测必然失效，读出来就是乱跳。
@@ -493,7 +499,7 @@ actor OCRService {
         #endif
 
         let visionLocales = SupportedTTSLanguage.allCases
-            .filter { $0 != .hindi }
+            .filter { $0 != .hindi && !$0.requiresCloudOCR }
             .map(\.visionRecognitionLanguage)
         var visionProbe: ReadingDocument?
         var lastError: Error = OCRError.noText
@@ -743,6 +749,10 @@ actor OCRService {
             do {
                 let document: ReadingDocument
                 switch engine {
+                case .googleVision:
+                    document = try await CloudOCRService.shared.recognize(image: image,
+                        language: profile.language, title: title,
+                        singleFlow: paragraphStrategy == .kindleSingleFlow)
                 case .vision:
                     document = try await recognizeKindleWithVision(
                         image: image,

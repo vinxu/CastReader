@@ -272020,6 +272020,125 @@
           }
         }
       }
+    },
+    "Bengali, Marathi, Punjabi and Tamil use cloud text recognition. Sign in and select the photo's language.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bengali, Marathi, Punjabi and Tamil use cloud text recognition. Sign in and select the photo's language."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "孟加拉语、马拉地语、旁遮普语和泰米尔语使用云端文字识别。请登录并选择照片中的语言。"
+          }
+        }
+      }
+    },
+    "Sign in to recognize this language.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to recognize this language."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先登录，再识别这种语言。"
+          }
+        }
+      }
+    },
+    "Cloud text recognition is unavailable. Please try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cloud text recognition is unavailable. Please try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "云端文字识别暂时不可用，请稍后重试。"
+          }
+        }
+      }
+    },
+    "The recognized text could not be positioned on this image. Please try another photo.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The recognized text could not be positioned on this image. Please try another photo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法在这张照片上准确定位文字，请换一张照片重试。"
+          }
+        }
+      }
+    },
+    "This image is too large. Please crop the page and try again.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This image is too large. Please crop the page and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片过大，请裁剪页面后重试。"
+          }
+        }
+      }
+    },
+    "Too many recognition requests. Please try again later.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many recognition requests. Please try again later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "识别请求过于频繁，请稍后重试。"
+          }
+        }
+      }
+    },
+    "No text was found. Please try a clearer photo.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No text was found. Please try a clearer photo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到文字，请换一张更清晰的照片重试。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

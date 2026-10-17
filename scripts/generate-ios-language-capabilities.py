@@ -7,7 +7,7 @@ import sys
 root = pathlib.Path(__file__).resolve().parents[1]
 config = json.loads((root / "config/ios-language-capabilities.json").read_text())
 languages = config["languages"]
-assert len(languages) == 28 and len({x["code"] for x in languages}) == 28
+assert len(languages) == 32 and len({x["code"] for x in languages}) == 32
 assert not set(config["excluded"]) & {x["code"] for x in languages}
 assert config['serviceRegions']['global'] == [x['code'] for x in languages]
 assert config['serviceRegions']['cn'] == [x['code'] for x in languages if x['engine'] == 'kokoro']
@@ -29,6 +29,8 @@ for prop, field in [('localeIdentifier', 'locale'), ('nativeName', 'nativeName')
     lines += [f'    var {prop}: String {{', '        switch self {']
     lines += [f'        case .{x["swiftCase"]}: return {quote(x[field])}' for x in languages]
     lines += ['        }', '    }']
+cloud_cases = ', '.join('.' + x['swiftCase'] for x in languages if x.get('ocr') == 'google-vision')
+lines += [f'    var requiresCloudOCR: Bool {{ [{cloud_cases}].contains(self) }}']
 lines += ['''    var isGoogle: Bool { engine == "google" || engine == "google-wavenet" }
     var bundledOCRModel: String? {
         switch self {

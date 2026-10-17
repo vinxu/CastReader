@@ -25,6 +25,9 @@ final class KindleOfflineOCRService: KindleOfflineRecognizing {
             guard let profile = KindleLanguageContract.profile(language: language) else {
                 throw OCRError.unsupportedLanguages([language])
             }
+            guard SupportedTTSLanguage(identifier: language)?.requiresCloudOCR != true else {
+                throw OCRError.unsupportedLanguages([language])
+            }
             if language == "zh-Hant" {
                 // The bundled Tesseract fallback is simplified Chinese only.
                 // Traditional pages use the on-device Vision Traditional model.

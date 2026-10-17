@@ -198,7 +198,7 @@ final class MultilingualContractTests: XCTestCase {
             XCTAssertEqual(profile.language, language.rawValue)
             XCTAssertEqual(profile.tesseractModel, language.bundledOCRModel ?? "")
             if language.bundledOCRModel == nil {
-                XCTAssertEqual(KindleOCRRoutingContract.route(for: profile).engines, [.vision])
+                XCTAssertEqual(KindleOCRRoutingContract.route(for: profile).engines, language.requiresCloudOCR ? [.googleVision] : [.vision])
             }
         }
         XCTAssertNil(KindleLanguageContract.profile(language: "nn"))
@@ -207,7 +207,7 @@ final class MultilingualContractTests: XCTestCase {
     }
 
     func testGlobalExpansionDoesNotExpandChinaServiceScope() {
-        XCTAssertEqual(SupportedTTSLanguage.supported(in: .globalGateway).count, 28)
+        XCTAssertEqual(SupportedTTSLanguage.supported(in: .globalGateway).count, 32)
         XCTAssertEqual(Set(SupportedTTSLanguage.supported(in: .chinaGateway).map(\.rawValue)),
                        Set(["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi"]))
         XCTAssertFalse(SupportedTTSLanguage.hebrew.isSupported(in: .chinaGateway))
@@ -428,8 +428,8 @@ final class MultilingualContractTests: XCTestCase {
     }
 
     func testScopeAliasesAndExcludedNeighbours() {
-        XCTAssertEqual(SupportedTTSLanguage.allCases.count, 28)
-        XCTAssertEqual(SupportedTTSLanguage.allCases.filter(\.isGoogle).count, 19)
+        XCTAssertEqual(SupportedTTSLanguage.allCases.count, 32)
+        XCTAssertEqual(SupportedTTSLanguage.allCases.filter(\.isGoogle).count, 23)
         for (alias, expected) in ["tl-PH": "fil", "iw-IL": "he", "in-ID": "id", "zh-Hant": "zh", "nob": "nb"] {
             XCTAssertEqual(SupportedTTSLanguage(identifier: alias)?.rawValue, expected)
         }
