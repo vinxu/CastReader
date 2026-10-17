@@ -30,9 +30,13 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
     case romanian = "ro"
     case turkish = "tr"
     case vietnamese = "vi"
+    case bengali = "bn"
+    case marathi = "mr"
+    case punjabi = "pa"
+    case tamil = "ta"
     var id: String { rawValue }
-    static let policyVersion = "ios-28-2026-10-08.2"
-    static let excludedCodes: Set<String> = ["am", "bn", "gu", "kn", "ml", "mr", "pa", "sk", "ta", "uk", "ur"]
+    static let policyVersion = "ios-32-2026-10-17.1"
+    static let excludedCodes: Set<String> = ["am", "gu", "kn", "ml", "sk", "uk", "ur"]
     /// Product scope is distinct from the currently available server catalog.
     static func supported(in route: ServiceRoute) -> [Self] {
         route == .chinaGateway ? allCases.filter { chinaCodes.contains($0.rawValue) } : allCases
@@ -70,6 +74,10 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .romanian: return "ro-RO"
         case .turkish: return "tr-TR"
         case .vietnamese: return "vi-VN"
+        case .bengali: return "bn-IN"
+        case .marathi: return "mr-IN"
+        case .punjabi: return "pa-IN"
+        case .tamil: return "ta-IN"
         }
     }
     var nativeName: String {
@@ -102,6 +110,10 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .romanian: return "Română"
         case .turkish: return "Türkçe"
         case .vietnamese: return "Tiếng Việt"
+        case .bengali: return "বাংলা"
+        case .marathi: return "मराठी"
+        case .punjabi: return "ਪੰਜਾਬੀ"
+        case .tamil: return "தமிழ்"
         }
     }
     var engine: String {
@@ -134,6 +146,10 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .romanian: return "google"
         case .turkish: return "google"
         case .vietnamese: return "google"
+        case .bengali: return "google"
+        case .marathi: return "google"
+        case .punjabi: return "google"
+        case .tamil: return "google"
         }
     }
     var defaultVoiceID: String {
@@ -166,6 +182,10 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .romanian: return ""
         case .turkish: return ""
         case .vietnamese: return ""
+        case .bengali: return ""
+        case .marathi: return ""
+        case .punjabi: return ""
+        case .tamil: return ""
         }
     }
     var defaultVoiceName: String {
@@ -198,8 +218,13 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         case .romanian: return ""
         case .turkish: return ""
         case .vietnamese: return ""
+        case .bengali: return ""
+        case .marathi: return ""
+        case .punjabi: return ""
+        case .tamil: return ""
         }
     }
+    var requiresCloudOCR: Bool { [.bengali, .marathi, .punjabi, .tamil].contains(self) }
     var isGoogle: Bool { engine == "google" || engine == "google-wavenet" }
     var bundledOCRModel: String? {
         switch self {
@@ -247,6 +272,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
     static func canonicalCode(_ identifier: String) -> String { normalizedIdentifier(identifier) }
     private static let aliases: [String: String] = [
         "ara": "ar",
+        "ben": "bn",
         "ces": "cs",
         "chi": "zh",
         "cze": "cs",
@@ -270,10 +296,12 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         "iw": "he",
         "jpn": "ja",
         "kor": "ko",
+        "mar": "mr",
         "may": "ms",
         "msa": "ms",
         "nld": "nl",
         "nob": "nb",
+        "pan": "pa",
         "pol": "pl",
         "por": "pt",
         "ron": "ro",
@@ -281,6 +309,7 @@ enum SupportedTTSLanguage: String, CaseIterable, Identifiable {
         "rus": "ru",
         "spa": "es",
         "swe": "sv",
+        "tam": "ta",
         "tgl": "fil",
         "tl": "fil",
         "tur": "tr",

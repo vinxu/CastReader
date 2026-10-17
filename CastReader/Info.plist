@@ -37,9 +37,9 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>拍下书本、文档或屏幕上的文字，CastReader 在本机识别后即可为你朗读（边读边高亮跟随），或生成 AI 讲解并在原文上做手写标注。照片仅在设备上识别，不会上传。</string>
+	<string>拍摄文字，用于朗读、逐词高亮和 AI 讲解。 部分语言需通过 CastReader 将图片发送至 Google 进行文字识别。</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>从相册选取含文字的图片，CastReader 在本机识别后即可为你朗读，或生成 AI 讲解并在原文上做手写标注。图片仅在设备上识别，不会上传。</string>
+	<string>选择包含文字的照片，用于朗读、逐词高亮和 AI 讲解。 部分语言需通过 CastReader 将图片发送至 Google 进行文字识别。</string>
 	<key>CastReaderPrivateKeychainAccessGroup</key>
 	<string>$(AppIdentifierPrefix)$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CastReaderInternalDistributionControlsEnabled</key>

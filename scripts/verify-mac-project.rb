@@ -88,6 +88,16 @@ Dir.mktmpdir('CastReaderProjectBaseline') do |temp|
         abort 'FAIL: Invalid iOS version' unless settings['MARKETING_VERSION'].match?(/\A\d+\.\d+\.\d+\z/)
         %w[MARKETING_VERSION CURRENT_PROJECT_VERSION].each { |key| settings[key] = object.build_settings[key] }
       end
+      if object.isa == 'PBXSourcesBuildPhase'
+        # Additive OCR integration: keep every frozen source and its settings.
+        allowed = { 'CastReader' => ['CloudOCRService.swift'], 'CastReaderTests' => ['CloudOCRTests.swift'] }.fetch(old.name, [])
+        old_ids = object.files.map(&:uuid)
+        added = project.objects_by_uuid[object.uuid].files.reject { |f| old_ids.include?(f.uuid) }
+        require_equal(added.map { |f| f.file_ref.path }.sort, allowed.sort, "Approved #{old.name} source additions")
+        added.each { |f| require_equal(f.settings, nil, "Default compilation settings for #{f.file_ref.path}") }
+        actual = Marshal.load(Marshal.dump(actual))
+        actual['files'] = actual['files'].reject { |id| added.any? { |f| f.uuid == id } }
+      end
       require_equal(actual, object.to_hash,
                     "Preserved #{old.name} #{object.isa}")
     end

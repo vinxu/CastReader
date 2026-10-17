@@ -1,0 +1,13 @@
+{
+  "version": "1.2.52",
+  "build": "89",
+  "manifestVersion": "1.2.55",
+  "localizedLanguages": 28,
+  "deviceFamilies": [
+    1,
+    2
+  ],
+  "extensionPoint": "com.apple.Safari.web-extension",
+  "contentSHA256": "646101eb388680da1fdcb80dd56c124c8217a3f2bcaf8bd575335ae8cf08093f",
+  "status": "PASS"
+}

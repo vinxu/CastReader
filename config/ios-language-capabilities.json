@@ -1,19 +1,58 @@
 {
-  "version": "ios-28-2026-10-08.2",
+  "version": "ios-32-2026-10-17.1",
   "serviceRegions": {
-    "global": ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi", "nl", "ko", "ar", "ru", "pl", "sv", "da", "nb", "fi", "cs", "el", "hu", "fil", "he", "id", "ms", "ro", "tr", "vi"],
-    "cn": ["en", "zh", "ja", "es", "fr", "de", "pt", "it", "hi"]
+    "global": [
+      "en",
+      "zh",
+      "ja",
+      "es",
+      "fr",
+      "de",
+      "pt",
+      "it",
+      "hi",
+      "nl",
+      "ko",
+      "ar",
+      "ru",
+      "pl",
+      "sv",
+      "da",
+      "nb",
+      "fi",
+      "cs",
+      "el",
+      "hu",
+      "fil",
+      "he",
+      "id",
+      "ms",
+      "ro",
+      "tr",
+      "vi",
+      "bn",
+      "mr",
+      "pa",
+      "ta"
+    ],
+    "cn": [
+      "en",
+      "zh",
+      "ja",
+      "es",
+      "fr",
+      "de",
+      "pt",
+      "it",
+      "hi"
+    ]
   },
   "excluded": [
     "am",
-    "bn",
     "gu",
     "kn",
     "ml",
-    "mr",
-    "pa",
     "sk",
-    "ta",
     "uk",
     "ur"
   ],
@@ -394,6 +433,62 @@
       ],
       "offlineVoice": "",
       "offlineName": ""
+    },
+    {
+      "code": "bn",
+      "swiftCase": "bengali",
+      "nativeName": "বাংলা",
+      "locale": "bn-IN",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "ben"
+      ],
+      "offlineVoice": "",
+      "offlineName": "",
+      "ocr": "google-vision"
+    },
+    {
+      "code": "mr",
+      "swiftCase": "marathi",
+      "nativeName": "मराठी",
+      "locale": "mr-IN",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "mar"
+      ],
+      "offlineVoice": "",
+      "offlineName": "",
+      "ocr": "google-vision"
+    },
+    {
+      "code": "pa",
+      "swiftCase": "punjabi",
+      "nativeName": "ਪੰਜਾਬੀ",
+      "locale": "pa-IN",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "pan"
+      ],
+      "offlineVoice": "",
+      "offlineName": "",
+      "ocr": "google-vision"
+    },
+    {
+      "code": "ta",
+      "swiftCase": "tamil",
+      "nativeName": "தமிழ்",
+      "locale": "ta-IN",
+      "engine": "google",
+      "direction": "ltr",
+      "aliases": [
+        "tam"
+      ],
+      "offlineVoice": "",
+      "offlineName": "",
+      "ocr": "google-vision"
     }
   ]
 }

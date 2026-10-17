@@ -1,0 +1,49 @@
+{
+  "devicesAndConfigurations" : [
+    {
+      "device" : {
+        "architecture" : "arm64",
+        "deviceId" : "06A0CA96-A47D-495A-B9B4-DECAD8AE4BC7",
+        "deviceName" : "CastReader Four Language UI",
+        "modelName" : "iPhone 17",
+        "osBuildNumber" : "23F77",
+        "osVersion" : "26.5",
+        "platform" : "iOS Simulator"
+      },
+      "expectedFailures" : 0,
+      "failedTests" : 0,
+      "passedTests" : 115,
+      "skippedTests" : 0,
+      "testPlanConfiguration" : {
+        "configurationId" : "1",
+        "configurationName" : "Test Scheme Action"
+      }
+    }
+  ],
+  "environmentDescription" : "CastReader · Built with macOS 26.7.1",
+  "expectedFailures" : 0,
+  "failedTests" : 0,
+  "finishTime" : 1792247846.186,
+  "passedTests" : 115,
+  "result" : "Passed",
+  "runtimeWarnings" : [
+
+  ],
+  "skippedTests" : 0,
+  "startTime" : 1792247731.419,
+  "statistics" : [
+
+  ],
+  "testFailures" : [
+
+  ],
+  "title" : "Test - CastReader",
+  "topInsights" : [
+    {
+      "category" : "Longest Test Runs",
+      "impact" : "57% of duration",
+      "text" : "1 longest test run with outlier durations exceeding 1.30s (three standard deviations)"
+    }
+  ],
+  "totalTestCount" : 115
+}

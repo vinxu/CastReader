@@ -1231,6 +1231,21 @@ struct HomeView: View {
     private func handleCaptureLaunchTextIfNeeded() {
         struct Once { static var done = false }
         guard !Once.done else { return }
+        // Opt-in public-image acceptance uses the normal capture, account,
+        // preprocessing and OCR path. No OCR response or audio is injected.
+        if let name = UserDefaults.standard.string(forKey: "CastReaderAcceptanceImageName"),
+           ["bn.jpg", "mr.jpg", "pa.jpg", "ta.jpg"].contains(name),
+           let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+           let image = UIImage(contentsOfFile: directory.appendingPathComponent(name).path),
+           let boundary = AccountContentIsolation.captureBoundaryToken() {
+            Once.done = true
+            accountScopedImportTask = Task {
+                await runCapture(expectedBoundary: boundary) {
+                    await captureVM.process(image: image)
+                }
+            }
+            return
+        }
         if let path = UserDefaults.standard.string(forKey: "CastReaderAcceptanceDocumentPath"),
            let format = SupportedDocumentFormat(fileExtension: URL(fileURLWithPath: path).pathExtension),
            let boundary = AccountContentIsolation.captureBoundaryToken() {
@@ -1793,6 +1808,21 @@ private struct ImportOptionsSheet: View {
         _selectedMode = State(initialValue: panel.fixedScenario == nil || panel == .studyChallenge ? .read : .explain)
     }
 
+    private var photoLanguagePicker: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(AppLocalized("图片文字语言")).font(.subheadline.weight(.medium))
+            Picker(AppLocalized("图片文字语言"), selection: $settings.imageTextLanguage) {
+                Text(AppLocalized("自动检测")).tag("")
+                ForEach(SupportedTTSLanguage.currentServiceLanguages, id: \.rawValue) { language in
+                    Text("\(language.nativeName) · \(language.catalogName)").tag(language.rawValue)
+                }
+            }
+            .accessibilityIdentifier("importOptions.photoLanguage")
+            Text(AppLocalized("Bengali, Marathi, Punjabi and Tamil use cloud text recognition. Sign in and select the photo's language."))
+                .font(.caption).foregroundStyle(.secondary)
+        }
+    }
+
     private var activeScenario: ExplainContentType? {
         panel.fixedScenario ?? selectedScenario
     }
@@ -1812,6 +1842,7 @@ private struct ImportOptionsSheet: View {
                     if activeScenario != nil || selectedMode == .explain {
                         depthPicker
                     }
+                    if ServiceRouting.current == .globalGateway { photoLanguagePicker }
                     sourceList
                     if Constants.Features.cloudStorageEnabled {
                         cloudSourceList

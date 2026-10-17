@@ -74,6 +74,75 @@ final class KindleWebViewContainerTests: XCTestCase {
         }
     }
 
+    func testHeldCJKWordRangeHasUniformOpacityAtOverlapsAndPreservesPageGaps() throws {
+        let size = CGSize(width: 400, height: 200)
+        let contentRect = CGRect(origin: .zero, size: size)
+        let page = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.white.setFill(); context.fill(contentRect)
+        }
+        // Adjacent Japanese tokens overlap before padding; duplicate OCR boxes
+        // must not double-paint either. Separate columns/lines must stay empty.
+        let boxes = [CGRect(x: 0.1, y: 0.6, width: 0.12, height: 0.12),
+                     CGRect(x: 0.21, y: 0.6, width: 0.13, height: 0.12),
+                     CGRect(x: 0.7, y: 0.6, width: 0.12, height: 0.12),
+                     CGRect(x: 0.1, y: 0.3, width: 0.12, height: 0.12)]
+        for direction in [LayoutDirection.leftToRight, .rightToLeft] {
+            for duplicate in [false, true] {
+                let words = boxes + (duplicate ? [boxes[0]] : [])
+                let renderer = ImageRenderer(content: KindleContinuousReadVisualHold(
+                    image: page, highlightRectsNorm: words,
+                    imageRect: contentRect, highlightContentRect: contentRect)
+                    .frame(width: size.width, height: size.height)
+                    .environment(\.layoutDirection, direction))
+                renderer.scale = 1
+                let image = try XCTUnwrap(renderer.uiImage)
+                assertUniformCJKHighlight(image)
+            }
+        }
+    }
+
+    func testIPadHeldCJKWordRangeHasUniformOpacityAtOverlaps() throws {
+        let size = CGSize(width: 400, height: 200)
+        let contentRect = CGRect(origin: .zero, size: size)
+        let page = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor.white.setFill(); context.fill(contentRect)
+        }
+        let boxes = [CGRect(x: 0.1, y: 0.6, width: 0.12, height: 0.12),
+                     CGRect(x: 0.21, y: 0.6, width: 0.13, height: 0.12),
+                     CGRect(x: 0.7, y: 0.6, width: 0.12, height: 0.12),
+                     CGRect(x: 0.1, y: 0.3, width: 0.12, height: 0.12)]
+        let words = boxes.enumerated().map { OCRWord(id: $0.offset, text: "日本語", bboxNorm: $0.element) }
+        let document = ReadingDocument(title: "CJK range", sourceKind: .photo, language: "ja",
+            paragraphs: [.init(id: 0, text: "日本語", words: words)],
+            imageData: page.pngData(), imagePixelSize: size)
+        let read = ReadAloudViewModel(document: document, restoresSavedReadingPosition: false)
+        read.currentParagraphIndex = 0
+        read.photoHighlightWordIndex = 0
+        read.photoHighlightWordRange = 0..<words.count
+        for direction in [LayoutDirection.leftToRight, .rightToLeft] {
+            let renderer = ImageRenderer(content: KindleIPadReadHoldView(
+                state: .init(image: page, document: document, wordBoxes: nil),
+                imageRect: contentRect, owner: read)
+                .frame(width: size.width, height: size.height)
+                .environment(\.layoutDirection, direction))
+            renderer.scale = 1
+            assertUniformCJKHighlight(try XCTUnwrap(renderer.uiImage))
+        }
+    }
+
+    private func assertUniformCJKHighlight(_ image: UIImage,
+                                           file: StaticString = #filePath, line: UInt = #line) {
+        let interior = orangeCoverage(image, band: CGRect(x: 56, y: 64, width: 2, height: 8))
+        let overlap = orangeCoverage(image, band: CGRect(x: 85, y: 64, width: 2, height: 8))
+        XCTAssertGreaterThan(interior, 1, file: file, line: line)
+        XCTAssertEqual(overlap, interior, accuracy: 0.08,
+            "Adjacent word boxes must have the same opacity as their intersection", file: file, line: line)
+        XCTAssertLessThan(orangeCoverage(image, band: CGRect(x: 180, y: 60, width: 30, height: 16)),
+                          0.01, "Do not join different columns", file: file, line: line)
+        XCTAssertLessThan(orangeCoverage(image, band: CGRect(x: 45, y: 90, width: 60, height: 15)),
+                          0.01, "Do not join separate lines", file: file, line: line)
+    }
+
     func testIPadAndPhotoHighlightsFollowSourceWordOrderUnderRTLInterface() throws {
         let size = CGSize(width: 400, height: 240)
         let page = UIGraphicsImageRenderer(size: size).image { context in

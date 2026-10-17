@@ -322,6 +322,49 @@ final class KindleContinuousInputTests: XCTestCase {
         XCTAssertEqual(vm.document.id, document.id)
     }
 
+    func testCompletedSentenceReleasesPageDemandWithoutWordTimestamps() async throws {
+        let texts = ["A complete sentence across two visual pages.", "The following page continues."]
+        let fixture = ReadAloudHTTPFixture { input, _ in
+            var body = try! JSONSerialization.jsonObject(with: ReadAloudHTTPFixture.body(input, duration: 0.6)) as! [String: Any]
+            body["timestamps"] = []
+            return .response(try! JSONSerialization.data(withJSONObject: body))
+        }
+        defer { fixture.close() }
+        let audio = try player()
+        let vm = ReadAloudViewModel(document: .init(title: "No word timing", sourceKind: .kindle, language: "en",
+            paragraphs: [.init(id: 0, text: texts[0])]), audioService: audio, ttsService: fixture.service())
+        defer { vm.deactivate(); audio.stop() }
+        var demand: (UUID, Int)?
+        var completed: [Int] = []
+        let token = try XCTUnwrap(vm.configureKindleContinuousInput(onUnitCompleted: { token, paragraph in
+            completed.append(paragraph)
+            XCTAssertTrue(vm.isKindleSpeechUnitCompleted(paragraph))
+            XCTAssertNil(vm.photoHighlightWordRange, "A source snapshot must not repaint the completed sentence")
+            XCTAssertEqual(audio.currentSegment?.paragraphIndex, paragraph)
+            XCTAssertGreaterThanOrEqual(audio.currentTime, 0.5, "Loading or pause must not count as completion")
+            if paragraph == 0 {
+                XCTAssertEqual(demand?.0, token)
+                XCTAssertEqual(demand?.1, 1)
+                XCTAssertTrue(vm.appendKindleSpeech([.init(id: 1, text: texts[1])],
+                    token: token, afterCount: 1, endOfContent: true))
+            }
+        }) { demand = ($0, $1) })
+        vm.dbgGenerate(0)
+        try await waitUntil { audio.hasAudibleProgress }
+        vm.pausePlayback()
+        try await Task.sleep(nanoseconds: 200_000_000)
+        XCTAssertTrue(completed.isEmpty)
+        XCTAssertFalse(vm.isKindleSpeechUnitCompleted(0), "Pausing must preserve the active highlight")
+        XCTAssertEqual(demand?.0, token)
+        vm.togglePlayPause()
+        try await waitUntil { vm.isFinished }
+        XCTAssertEqual(completed, [0, 1])
+        XCTAssertEqual(fixture.requests, texts, "The completed cross-page sentence must not be replayed")
+        XCTAssertTrue(vm.isKindleSpeechUnitCompleted(1))
+        vm.dbgGenerate(1)
+        XCTAssertFalse(vm.isKindleSpeechUnitCompleted(1), "An explicit replay must admit fresh highlights")
+    }
+
     func testRestoredParagraphCursorStillConnectsContinuousSourceBeforePlayback() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }

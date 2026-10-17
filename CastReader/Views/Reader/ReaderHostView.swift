@@ -2197,6 +2197,9 @@ private struct ReaderLanguageAcceptanceMetricsView: View {
     let sourceKind: String
     let mode: String
     private var highlight: String {
+        if read.document.sourceKind == .photo, let word = read.photoHighlightWordIndex {
+            return "photo:\(read.currentParagraphIndex):\(word)"
+        }
         if let cue = read.webHighlight {
             return "web:\(cue.paragraphIndex):\(cue.segSeq):\(cue.wordIndex):\(cue.charStart):\(cue.charEnd)"
         }
@@ -2205,12 +2208,35 @@ private struct ReaderLanguageAcceptanceMetricsView: View {
         }
         return read.highlightRange.map(NSStringFromRange) ?? ""
     }
+    private var photoMetrics: [String: Any] {
+        guard read.document.sourceKind == .photo else { return [:] }
+        let paragraphs = read.document.paragraphs
+        var value: [String: Any] = [
+            "wordCount": paragraphs.reduce(0) { $0 + $1.words.count },
+            "allGoogleBoxes": paragraphs.flatMap(\.words).allSatisfy { $0.bboxSource == .googleVisionWord }
+        ]
+        if let wordIndex = read.photoHighlightWordIndex,
+           paragraphs.indices.contains(read.currentParagraphIndex),
+           paragraphs[read.currentParagraphIndex].words.indices.contains(wordIndex) {
+            let word = paragraphs[read.currentParagraphIndex].words[wordIndex]
+            value["word"] = word.text
+            value["box"] = [word.bboxNorm.minX, word.bboxNorm.minY, word.bboxNorm.width, word.bboxNorm.height]
+            value["wordIndex"] = wordIndex
+        }
+        if let stamp = audio.currentSegment?.timestamps.last(where: { $0.startTime <= audio.currentTime }) {
+            value["spokenWord"] = stamp.word
+            value["spokenStart"] = stamp.startTime
+            value["spokenEnd"] = stamp.endTime
+        }
+        return value
+    }
     private var metrics: String {
         var readError = "", explainError = ""
         if case .error(let message) = read.status { readError = message }
         if case .error(let message) = explain.status { explainError = message }
         let data: [String: Any] = [
             "sourceKind": sourceKind, "mode": mode, "language": read.acceptanceReadingLanguage,
+            "photo": photoMetrics,
             "readStartGates": read.acceptanceStartGates,
             "readStartState": ["active": read.isActive, "loading": read.status.isLoading,
                 "streaming": read.status.isStreaming, "buffering": read.isBuffering,

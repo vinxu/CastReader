@@ -1241,7 +1241,7 @@ final class AppSettings: ObservableObject {
         static let clonedVoicesByLanguage = "active_cloned_voice_by_language_v2"
         static let speed = "tts_speed"
         static let explainLang = "explain_language"
-        static let imageTextLanguage = "image_text_language_v1"
+        static let imageTextLanguage = PhotoOCRLanguagePreference.key
         static let explainDepth = "explain_depth"
         static let highlightColor = "highlight_color_hex"
         static let autoScroll = "auto_scroll"

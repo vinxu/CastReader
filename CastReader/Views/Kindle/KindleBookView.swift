@@ -53,6 +53,23 @@ private final class KindlePlaybackStartCancellation: @unchecked Sendable {
     }
 }
 
+/// Paint a spoken range as one translucent shape. CJK OCR boxes often touch
+/// or overlap; separate translucent views (and per-word borders) darken their
+/// intersections. A single non-zero fill keeps the same physical word boxes
+/// and opacity, including ranges split across lines, columns or vertical text.
+struct KindleReadHighlightShape: Shape {
+    let rects: [CGRect]
+
+    func path(in bounds: CGRect) -> Path {
+        var path = Path()
+        for rect in rects where !rect.isEmpty && !rect.isNull && !rect.isInfinite {
+            path.addRoundedRect(in: rect.insetBy(dx: -2, dy: -1),
+                                cornerSize: CGSize(width: 3, height: 3))
+        }
+        return path
+    }
+}
+
 struct KindleContinuousReadVisualHold: View {
     let image: UIImage
     let highlightRectsNorm: [CGRect]
@@ -69,25 +86,10 @@ struct KindleContinuousReadVisualHold: View {
                     .position(x: paintedRect.midX, y: paintedRect.midY)
 
                 if let highlightContentRect {
-                  ForEach(highlightRectsNorm.indices, id: \.self) { index in
-                    let rect = ReadingGeometry
-                        .displayRect(
-                            forNorm: highlightRectsNorm[index],
-                            in: highlightContentRect
-                        )
-                        .insetBy(dx: -2, dy: -1)
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.52))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .stroke(
-                                    Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.30),
-                                    lineWidth: 1
-                                )
-                        }
-                        .frame(width: max(1, rect.width), height: max(1, rect.height))
-                        .position(x: rect.midX, y: rect.midY)
-                  }
+                    KindleReadHighlightShape(rects: highlightRectsNorm.map {
+                        ReadingGeometry.displayRect(forNorm: $0, in: highlightContentRect)
+                    })
+                    .fill(Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.52))
                 }
             }
             .clipped()
@@ -183,11 +185,8 @@ struct KindleIPadReadHoldView: View {
             Image(uiImage: state.image).resizable()
                 .frame(width: imageRect.width, height: imageRect.height)
                 .position(x: imageRect.midX, y: imageRect.midY)
-            ForEach(rects.indices, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 3).fill(AppTheme.primary.opacity(0.4))
-                    .frame(width: rects[index].width + 4, height: rects[index].height + 2)
-                    .position(x: rects[index].midX, y: rects[index].midY)
-            }
+            KindleReadHighlightShape(rects: rects)
+                .fill(AppTheme.primary.opacity(0.4))
         }
         .environment(\.layoutDirection, .leftToRight)
     }
@@ -2850,6 +2849,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         await visualSyncTask?.value
         return handled
     }
+    func completeSentenceForTesting(paragraph: Int) async {
+        guard let session = sentenceStream else { return }
+        completeKindleSentenceUnit(session, paragraph: paragraph)
+        await visualSyncTask?.value
+    }
+    func canPrepareSentenceSourceForTesting(paragraph: Int) -> Bool {
+        sentenceStream?.canPrepareSource(playingParagraph: paragraph) ?? false
+    }
+    var sentencePresentedKeyForTesting: String? { sentenceStream?.presentedKey }
     func highlightRangeForTesting(paragraph: Int, range: Range<Int>) async {
         await highlightWordRange(paragraphIndex: paragraph, range: range, sequence: nextVisualSyncSequence())
     }
@@ -10707,7 +10715,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         liveStartIndexKind = .playbackChunk
         resetViewModels(document: document, restoresReadingPosition: restoresReadingPosition)
         rebuildKindleSentenceRoutes(session)
-        session.inputToken = readVM?.configureKindleContinuousInput { [weak self, weak session] token, count in
+        session.inputToken = readVM?.configureKindleContinuousInput(onUnitCompleted: { [weak self, weak session] token, paragraph in
+            guard let self, let session, self.sentenceStream === session,
+                  session.inputToken == token else { return }
+            self.completeKindleSentenceUnit(session, paragraph: paragraph)
+        }) { [weak self, weak session] token, count in
             guard let self, let session, self.sentenceStream === session else { return }
             session.demand = (token, count)
             self.fulfilKindleSentenceDemand(session)
@@ -10760,7 +10772,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // Normally one confirmed source page is hidden ahead. An empty page
         // or unfinished sentence may require up to three source/OCR captures
         // in this bounded demand; this never grants extra TTS admission.
-        guard session.buffer.currentPageKey == session.presentedKey || session.units.count > demand.count || session.ended else { return }
+        guard session.canPrepareSource(playingParagraph: vm.currentParagraphIndex)
+                || session.units.count > demand.count || session.ended else { return }
         session.task = Task { @MainActor [weak self, weak session, weak vm] in
             guard let self, let session, let vm else { return }
             defer {
@@ -10913,8 +10926,29 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     /// A source anchor, never the WebView's speculative page key, owns the
     /// visible page and persistent reading position.
-    private func paintKindleSentenceHighlight(paragraph: Int, range: Range<Int>) -> Bool {
+    private func completeKindleSentenceUnit(_ session: KindleSentenceStreamSession, paragraph: Int) {
+        guard sentenceStream === session, mode == .read,
+              session.units.indices.contains(paragraph),
+              let last = session.units[paragraph].anchors.indices.last else { return }
+        // Do not fabricate word timing for sentence-highlight languages. Once
+        // the whole unit has actually finished, its final source page is exact.
+        // This also releases source demand if no visual cue ever crossed pages.
+        if session.units[paragraph].anchors[last].pageKey != session.presentedKey {
+            _ = paintKindleSentenceHighlight(paragraph: paragraph, range: last..<(last + 1), completing: true)
+        }
+        KindleRunLog.write("KINDLE_SENTENCE completed p=\(paragraph) key=\(Self.keyLog(session.units[paragraph].anchors[last].pageKey))")
+        fulfilKindleSentenceDemand(session)
+    }
+
+    private func paintKindleSentenceHighlight(paragraph: Int, range: Range<Int>, completing: Bool = false) -> Bool {
         guard let session = sentenceStream else { return false }
+        // Range updates can be queued on RunLoop.main or read by a source
+        // snapshot after media completion. They must not restore the old page.
+        guard completing || readVM?.isKindleSpeechUnitCompleted(paragraph) != true else { return true }
+        // A coarse range can keep the same first-page anchor when the current
+        // spoken unit changes. Wake pending lookahead without waiting for a
+        // visible page change or for that unit to finish.
+        defer { fulfilKindleSentenceDemand(session) }
         guard session.units.indices.contains(paragraph) else { return true }
         let unit = session.units[paragraph]
         let anchors = range.compactMap { unit.anchors.indices.contains($0) ? unit.anchors[$0] : nil }
@@ -17691,6 +17725,15 @@ private final class KindleSentenceStreamSession {
     var confirmedKey: String?
     var holdSerial = 0
     var holdOldKey: String?
+    func canPrepareSource(playingParagraph: Int) -> Bool {
+        guard let sourceKey = buffer.currentPageKey else { return false }
+        if sourceKey == presentedKey { return true }
+        // One confirmed page ahead of the *spoken unit*, which may itself span
+        // pages. Gating only on the first highlighted page deadlocks CJK ranges.
+        // A following page outside this unit remains bounded by the same gate.
+        return units.indices.contains(playingParagraph)
+            && units[playingParagraph].anchors.last?.pageKey == sourceKey
+    }
     init(scope: KindleSentenceBuffer.Scope, presentedKey: String) {
         buffer = KindleSentenceBuffer(scope: scope)
         self.presentedKey = presentedKey
