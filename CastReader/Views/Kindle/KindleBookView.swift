@@ -53,6 +53,23 @@ private final class KindlePlaybackStartCancellation: @unchecked Sendable {
     }
 }
 
+/// Paint a spoken range as one translucent shape. CJK OCR boxes often touch
+/// or overlap; separate translucent views (and per-word borders) darken their
+/// intersections. A single non-zero fill keeps the same physical word boxes
+/// and opacity, including ranges split across lines, columns or vertical text.
+struct KindleReadHighlightShape: Shape {
+    let rects: [CGRect]
+
+    func path(in bounds: CGRect) -> Path {
+        var path = Path()
+        for rect in rects where !rect.isEmpty && !rect.isNull && !rect.isInfinite {
+            path.addRoundedRect(in: rect.insetBy(dx: -2, dy: -1),
+                                cornerSize: CGSize(width: 3, height: 3))
+        }
+        return path
+    }
+}
+
 struct KindleContinuousReadVisualHold: View {
     let image: UIImage
     let highlightRectsNorm: [CGRect]
@@ -69,25 +86,10 @@ struct KindleContinuousReadVisualHold: View {
                     .position(x: paintedRect.midX, y: paintedRect.midY)
 
                 if let highlightContentRect {
-                  ForEach(highlightRectsNorm.indices, id: \.self) { index in
-                    let rect = ReadingGeometry
-                        .displayRect(
-                            forNorm: highlightRectsNorm[index],
-                            in: highlightContentRect
-                        )
-                        .insetBy(dx: -2, dy: -1)
-                    RoundedRectangle(cornerRadius: 3, style: .continuous)
-                        .fill(Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.52))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 3, style: .continuous)
-                                .stroke(
-                                    Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.30),
-                                    lineWidth: 1
-                                )
-                        }
-                        .frame(width: max(1, rect.width), height: max(1, rect.height))
-                        .position(x: rect.midX, y: rect.midY)
-                  }
+                    KindleReadHighlightShape(rects: highlightRectsNorm.map {
+                        ReadingGeometry.displayRect(forNorm: $0, in: highlightContentRect)
+                    })
+                    .fill(Color(red: 242 / 255, green: 101 / 255, blue: 34 / 255, opacity: 0.52))
                 }
             }
             .clipped()
@@ -183,11 +185,8 @@ struct KindleIPadReadHoldView: View {
             Image(uiImage: state.image).resizable()
                 .frame(width: imageRect.width, height: imageRect.height)
                 .position(x: imageRect.midX, y: imageRect.midY)
-            ForEach(rects.indices, id: \.self) { index in
-                RoundedRectangle(cornerRadius: 3).fill(AppTheme.primary.opacity(0.4))
-                    .frame(width: rects[index].width + 4, height: rects[index].height + 2)
-                    .position(x: rects[index].midX, y: rects[index].midY)
-            }
+            KindleReadHighlightShape(rects: rects)
+                .fill(AppTheme.primary.opacity(0.4))
         }
         .environment(\.layoutDirection, .leftToRight)
     }
