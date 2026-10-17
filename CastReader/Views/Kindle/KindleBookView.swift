@@ -2849,6 +2849,15 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         await visualSyncTask?.value
         return handled
     }
+    func completeSentenceForTesting(paragraph: Int) async {
+        guard let session = sentenceStream else { return }
+        completeKindleSentenceUnit(session, paragraph: paragraph)
+        await visualSyncTask?.value
+    }
+    func canPrepareSentenceSourceForTesting(paragraph: Int) -> Bool {
+        sentenceStream?.canPrepareSource(playingParagraph: paragraph) ?? false
+    }
+    var sentencePresentedKeyForTesting: String? { sentenceStream?.presentedKey }
     func highlightRangeForTesting(paragraph: Int, range: Range<Int>) async {
         await highlightWordRange(paragraphIndex: paragraph, range: range, sequence: nextVisualSyncSequence())
     }
@@ -10706,7 +10715,11 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         liveStartIndexKind = .playbackChunk
         resetViewModels(document: document, restoresReadingPosition: restoresReadingPosition)
         rebuildKindleSentenceRoutes(session)
-        session.inputToken = readVM?.configureKindleContinuousInput { [weak self, weak session] token, count in
+        session.inputToken = readVM?.configureKindleContinuousInput(onUnitCompleted: { [weak self, weak session] token, paragraph in
+            guard let self, let session, self.sentenceStream === session,
+                  session.inputToken == token else { return }
+            self.completeKindleSentenceUnit(session, paragraph: paragraph)
+        }) { [weak self, weak session] token, count in
             guard let self, let session, self.sentenceStream === session else { return }
             session.demand = (token, count)
             self.fulfilKindleSentenceDemand(session)
@@ -10759,7 +10772,8 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // Normally one confirmed source page is hidden ahead. An empty page
         // or unfinished sentence may require up to three source/OCR captures
         // in this bounded demand; this never grants extra TTS admission.
-        guard session.buffer.currentPageKey == session.presentedKey || session.units.count > demand.count || session.ended else { return }
+        guard session.canPrepareSource(playingParagraph: vm.currentParagraphIndex)
+                || session.units.count > demand.count || session.ended else { return }
         session.task = Task { @MainActor [weak self, weak session, weak vm] in
             guard let self, let session, let vm else { return }
             defer {
@@ -10912,6 +10926,20 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
 
     /// A source anchor, never the WebView's speculative page key, owns the
     /// visible page and persistent reading position.
+    private func completeKindleSentenceUnit(_ session: KindleSentenceStreamSession, paragraph: Int) {
+        guard sentenceStream === session, mode == .read,
+              session.units.indices.contains(paragraph),
+              let last = session.units[paragraph].anchors.indices.last else { return }
+        // Do not fabricate word timing for sentence-highlight languages. Once
+        // the whole unit has actually finished, its final source page is exact.
+        // This also releases source demand if no visual cue ever crossed pages.
+        if session.units[paragraph].anchors[last].pageKey != session.presentedKey {
+            _ = paintKindleSentenceHighlight(paragraph: paragraph, range: last..<(last + 1))
+        }
+        KindleRunLog.write("KINDLE_SENTENCE completed p=\(paragraph) key=\(Self.keyLog(session.units[paragraph].anchors[last].pageKey))")
+        fulfilKindleSentenceDemand(session)
+    }
+
     private func paintKindleSentenceHighlight(paragraph: Int, range: Range<Int>) -> Bool {
         guard let session = sentenceStream else { return false }
         guard session.units.indices.contains(paragraph) else { return true }
@@ -17690,6 +17718,15 @@ private final class KindleSentenceStreamSession {
     var confirmedKey: String?
     var holdSerial = 0
     var holdOldKey: String?
+    func canPrepareSource(playingParagraph: Int) -> Bool {
+        guard let sourceKey = buffer.currentPageKey else { return false }
+        if sourceKey == presentedKey { return true }
+        // One confirmed page ahead of the *spoken unit*, which may itself span
+        // pages. Gating only on the first highlighted page deadlocks CJK ranges.
+        // A following page outside this unit remains bounded by the same gate.
+        return units.indices.contains(playingParagraph)
+            && units[playingParagraph].anchors.last?.pageKey == sourceKey
+    }
     init(scope: KindleSentenceBuffer.Scope, presentedKey: String) {
         buffer = KindleSentenceBuffer(scope: scope)
         self.presentedKey = presentedKey

@@ -131,6 +131,50 @@ final class KindleReadingSettingsOwnershipTests: XCTestCase {
         try await assertSentencePageRoutes(refocused: false)
     }
 
+    func testJapaneseWholeSentenceAcrossPagesAdvancesAtRealCompletion() async throws {
+        try await loadFixture(initializeControls: false)
+        model.setReaderSurfaceAttached(true)
+        model.setReaderPresented(true)
+        _ = makeRefocusOwner()
+        _ = try await model.webView.evaluateJavaScript("""
+          Object.defineProperty(window,'__crKindleLiveHighlightWords',{value:()=>
+            JSON.stringify({ok:true,rects:1})}); true;
+        """)
+        let pages = japanesePages(["固定化した法則を改め、", "新しい世界へ進みます。"])
+        let units = try model.prepareSentenceStreamForTesting(pages: pages, refocused: false)
+        XCTAssertEqual(units, [0], "The Japanese sentence must remain one speech unit across the page boundary")
+        let count = pages.reduce(0) { $0 + $1.paragraphs[0].words.count }
+        _ = await model.paintSentenceForTesting(paragraph: 0, range: 0..<count)
+        XCTAssertEqual(model.sentencePresentedKeyForTesting, "fixture-0")
+        XCTAssertTrue(model.canPrepareSentenceSourceForTesting(paragraph: 0),
+            "Prefetch must follow the spoken unit even when its whole-sentence highlight starts on the old page")
+        await model.completeSentenceForTesting(paragraph: 0)
+        XCTAssertEqual(model.sentencePresentedKeyForTesting, "fixture-1",
+            "Actual audio completion proves the tail on the next page was consumed")
+        await model.completeSentenceForTesting(paragraph: 0)
+        XCTAssertEqual(model.sentencePresentedKeyForTesting, "fixture-1", "Duplicate completion must not turn another page")
+    }
+
+    func testSentenceLookaheadStaysBoundedByThePlayingUnit() async throws {
+        let pages = japanesePages(["前のページです。", "次のページです。", "その次のページです。"])
+        let units = try model.prepareSentenceStreamForTesting(pages: pages, refocused: false)
+        XCTAssertEqual(units, [0, 1, 2])
+        XCTAssertFalse(model.canPrepareSentenceSourceForTesting(paragraph: 0))
+        XCTAssertFalse(model.canPrepareSentenceSourceForTesting(paragraph: 1))
+        XCTAssertTrue(model.canPrepareSentenceSourceForTesting(paragraph: 2))
+        XCTAssertFalse(model.canPrepareSentenceSourceForTesting(paragraph: 3))
+    }
+
+    private func japanesePages(_ texts: [String]) -> [ReadingDocument] {
+        texts.map { text in
+            ReadingDocument(title: "Japanese page fixture", sourceKind: .kindle, language: "ja",
+                paragraphs: [.init(id: 0, text: text, words: text.enumerated().map {
+                    OCRWord(id: $0.offset, text: String($0.element),
+                        bboxNorm: CGRect(x: Double($0.offset) * 0.03, y: 0.5, width: 0.03, height: 0.05))
+                })])
+        }
+    }
+
     private func assertSentencePageRoutes(refocused: Bool) async throws {
         try await loadFixture(initializeControls: false)
         model.setReaderSurfaceAttached(true)

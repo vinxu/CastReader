@@ -914,22 +914,29 @@ final class ReadAloudViewModel: ObservableObject {
     private final class KindleContinuousInput {
         let token = UUID()
         let demand: (UUID, Int) -> Void
+        let onUnitCompleted: ((UUID, Int) -> Void)?
         var inFlight = false
         var waiting = false
         var ended = false
         var sourceFailed = false
-        init(demand: @escaping (UUID, Int) -> Void) { self.demand = demand }
+        init(onUnitCompleted: ((UUID, Int) -> Void)?, demand: @escaping (UUID, Int) -> Void) {
+            self.onUnitCompleted = onUnitCompleted
+            self.demand = demand
+        }
     }
     private var kindleContinuousInput: KindleContinuousInput?
 
     @discardableResult
-    func configureKindleContinuousInput(demand: @escaping (UUID, Int) -> Void) -> UUID? {
+    func configureKindleContinuousInput(
+        onUnitCompleted: ((UUID, Int) -> Void)? = nil,
+        demand: @escaping (UUID, Int) -> Void
+    ) -> UUID? {
         // init/metadata binding may already have restored a durable paragraph
         // cursor. That is still an unstarted VM and must accept its source
         // producer; otherwise reopening a book stops at the first visual page.
         guard document.sourceKind == .kindle, !isActive, generationEpoch == 0,
               kindleContinuousInput == nil else { return nil }
-        let input = KindleContinuousInput(demand: demand)
+        let input = KindleContinuousInput(onUnitCompleted: onUnitCompleted, demand: demand)
         kindleContinuousInput = input
         webParagraphs = document.paragraphs
         return input.token
@@ -1155,6 +1162,13 @@ final class ReadAloudViewModel: ObservableObject {
                 "READ completion accepted para=\(self.currentParagraphIndex) " +
                 "status=\(Self.statusLogValue(self.status))"
             )
+            // A sentence-level highlight can stay on its first source page
+            // for the entire audio unit. Media completion, not the availability
+            // of word timestamps, proves that its final source was consumed.
+            if self.isActive, let input = self.kindleContinuousInput,
+               self.audio.currentSegment?.paragraphIndex == self.currentParagraphIndex {
+                input.onUnitCompleted?(input.token, self.currentParagraphIndex)
+            }
             self.advance()
         }
         audio.onPlaybackError = { [weak self] code in
