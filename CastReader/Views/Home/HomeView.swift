@@ -1231,6 +1231,21 @@ struct HomeView: View {
     private func handleCaptureLaunchTextIfNeeded() {
         struct Once { static var done = false }
         guard !Once.done else { return }
+        // Opt-in public-image acceptance uses the normal capture, account,
+        // preprocessing and OCR path. No OCR response or audio is injected.
+        if let name = UserDefaults.standard.string(forKey: "CastReaderAcceptanceImageName"),
+           ["bn.jpg", "mr.jpg", "pa.jpg", "ta.jpg"].contains(name),
+           let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+           let image = UIImage(contentsOfFile: directory.appendingPathComponent(name).path),
+           let boundary = AccountContentIsolation.captureBoundaryToken() {
+            Once.done = true
+            accountScopedImportTask = Task {
+                await runCapture(expectedBoundary: boundary) {
+                    await captureVM.process(image: image)
+                }
+            }
+            return
+        }
         if let path = UserDefaults.standard.string(forKey: "CastReaderAcceptanceDocumentPath"),
            let format = SupportedDocumentFormat(fileExtension: URL(fileURLWithPath: path).pathExtension),
            let boundary = AccountContentIsolation.captureBoundaryToken() {

@@ -5000,3 +5000,95 @@ final class CoreReleaseLiveUITests: XCTestCase {
         try save(app, "complete")
     }
 }
+
+/// Explicit opt-in device acceptance. Uses a real signed-in account and the
+/// deployed OCR/TTS APIs; only public image input and read-only metrics are added.
+final class GoogleOCRLiveUITests: XCTestCase {
+    override func setUpWithError() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["CASTREADER_OCR_LIVE"] == "1")
+        continueAfterFailure = false
+    }
+    private func state(_ app: XCUIApplication) -> [String: Any] {
+        let probe = app.descendants(matching: .any)["readerLanguagePlaybackMetrics"].firstMatch
+        guard probe.exists, let raw = probe.value as? String,
+              let result = try? JSONSerialization.jsonObject(with: Data(raw.utf8)) as? [String: Any] else { return [:] }
+        return result
+    }
+    private func wait(_ seconds: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let end = Date().addingTimeInterval(seconds)
+        repeat { if condition() { return true }; RunLoop.current.run(until: Date().addingTimeInterval(0.3)) } while Date() < end
+        return condition()
+    }
+    private func canonical(_ text: String) -> String {
+        String(text.precomposedStringWithCanonicalMapping.unicodeScalars.filter {
+            CharacterSet.letters.contains($0) || CharacterSet.decimalDigits.contains($0) || CharacterSet.nonBaseCharacters.contains($0)
+        })
+    }
+    private func verify(_ language: String) throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-interfaceLanguage", "en",
+            "-CastReaderSkipLibraryOnboarding", "-CastReaderSkipSignInGate", "-CastReaderDisableDebugPro",
+            "-CastReaderMultilingualAcceptance", "-CastReaderRegion", "global", "-CastReaderServiceRoute", "global",
+            "-image_text_language_v1", language, "-auto_play", "NO", "-CastReaderAcceptanceImageName", language + ".jpg"]
+        app.launch()
+        let play = app.buttons["readPlayPauseButton"].firstMatch
+        XCTAssertTrue(wait(120) {
+            let wholePage = app.buttons["Read whole page"].firstMatch
+            if wholePage.exists && wholePage.isHittable { wholePage.tap() }
+            return play.exists || app.alerts.firstMatch.exists
+        }, "OCR did not open the photo reader")
+        XCTAssertTrue(play.exists, "Actual OCR/import failed: " + app.debugDescription)
+        let initial = state(app), photo = initial["photo"] as? [String: Any] ?? [:]
+        XCTAssertEqual(initial["sourceKind"] as? String, "photo")
+        XCTAssertEqual(initial["language"] as? String, language)
+        XCTAssertEqual(photo["allGoogleBoxes"] as? Bool, true)
+        XCTAssertGreaterThan(photo["wordCount"] as? Int ?? 0, 70)
+        XCTAssertTrue(app.descendants(matching: .any)["photoReaderCanvas"].firstMatch.exists)
+        if state(app)["playing"] as? Bool != true { play.tap() }
+        XCTAssertTrue(wait(100) { self.state(app)["playing"] as? Bool == true && (self.state(app)["time"] as? Double ?? 0) > 1 })
+        XCTAssertTrue((state(app)["readVoiceID"] as? String ?? "").hasPrefix("api_" + language + "_wavenet_"))
+        var observations: [[String: Any]] = [], distinct = Set<String>(), aligned = 0, compared = 0
+        let end = Date().addingTimeInterval(95)
+        while Date() < end {
+            let value = state(app)
+            if value["playing"] as? Bool == true, let photo = value["photo"] as? [String: Any],
+               let cue = value["highlight"] as? String, !cue.isEmpty,
+               let word = photo["word"] as? String, let spoken = photo["spokenWord"] as? String,
+               let box = photo["box"] as? [Double], box.count == 4 {
+                XCTAssertGreaterThan(box[2], 0); XCTAssertGreaterThan(box[3], 0)
+                XCTAssertGreaterThanOrEqual(box[0], 0); XCTAssertGreaterThanOrEqual(box[1], 0)
+                XCTAssertLessThanOrEqual(box[0] + box[2], 1.00001); XCTAssertLessThanOrEqual(box[1] + box[3], 1.00001)
+                if distinct.insert(cue).inserted {
+                    observations.append(value)
+                    let a = canonical(word), b = canonical(spoken)
+                    if !a.isEmpty && !b.isEmpty { compared += 1; if a == b { aligned += 1 } }
+                    if distinct.count == 6 || distinct.count == 16 {
+                        let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                        shot.name = "google-ocr-" + language + "-highlight-" + String(distinct.count); shot.lifetime = .keepAlways; add(shot)
+                    }
+                }
+            }
+            if distinct.count >= 18 && (value["paragraph"] as? Int ?? 0) > 0 { break }
+            RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        }
+        XCTAssertGreaterThanOrEqual(distinct.count, 12, "Word highlighting must advance with real AVPlayer time")
+        XCTAssertGreaterThan(compared, 10)
+        XCTAssertGreaterThanOrEqual(Double(aligned) / Double(max(1, compared)), 0.75, "Visible OCR word must track the current native TTS token")
+        if state(app)["playing"] as? Bool == true { play.tap() }
+        XCTAssertTrue(wait(8) { self.state(app)["playing"] as? Bool == false })
+        let paused = state(app)
+        RunLoop.current.run(until: Date().addingTimeInterval(2))
+        XCTAssertEqual(state(app)["playing"] as? Bool, false)
+        play.tap()
+        XCTAssertTrue(wait(45) { self.state(app)["playing"] as? Bool == true && (self.state(app)["time"] as? Double ?? 0) > 1 })
+        let receipt: [String: Any] = ["language":language,"initial":initial,"observations":observations,"aligned":aligned,"compared":compared,"paused":paused,"resumed":state(app),"provider":"live-production"]
+        let evidence = XCTAttachment(data: try JSONSerialization.data(withJSONObject: receipt, options: [.sortedKeys,.prettyPrinted]), uniformTypeIdentifier: "public.json")
+        evidence.name = "google-ocr-" + language + "-live"; evidence.lifetime = .keepAlways; add(evidence)
+        if state(app)["playing"] as? Bool == true { play.tap() }
+        app.terminate()
+    }
+    func testBengaliPhotoReadAndHighlight() throws { try verify("bn") }
+    func testMarathiPhotoReadAndHighlight() throws { try verify("mr") }
+    func testPunjabiPhotoReadAndHighlight() throws { try verify("pa") }
+    func testTamilPhotoReadAndHighlight() throws { try verify("ta") }
+}
