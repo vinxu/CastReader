@@ -338,6 +338,8 @@ final class KindleContinuousInputTests: XCTestCase {
         var completed: [Int] = []
         let token = try XCTUnwrap(vm.configureKindleContinuousInput(onUnitCompleted: { token, paragraph in
             completed.append(paragraph)
+            XCTAssertTrue(vm.isKindleSpeechUnitCompleted(paragraph))
+            XCTAssertNil(vm.photoHighlightWordRange, "A source snapshot must not repaint the completed sentence")
             XCTAssertEqual(audio.currentSegment?.paragraphIndex, paragraph)
             XCTAssertGreaterThanOrEqual(audio.currentTime, 0.5, "Loading or pause must not count as completion")
             if paragraph == 0 {
@@ -352,11 +354,15 @@ final class KindleContinuousInputTests: XCTestCase {
         vm.pausePlayback()
         try await Task.sleep(nanoseconds: 200_000_000)
         XCTAssertTrue(completed.isEmpty)
+        XCTAssertFalse(vm.isKindleSpeechUnitCompleted(0), "Pausing must preserve the active highlight")
         XCTAssertEqual(demand?.0, token)
         vm.togglePlayPause()
         try await waitUntil { vm.isFinished }
         XCTAssertEqual(completed, [0, 1])
         XCTAssertEqual(fixture.requests, texts, "The completed cross-page sentence must not be replayed")
+        XCTAssertTrue(vm.isKindleSpeechUnitCompleted(1))
+        vm.dbgGenerate(1)
+        XCTAssertFalse(vm.isKindleSpeechUnitCompleted(1), "An explicit replay must admit fresh highlights")
     }
 
     func testRestoredParagraphCursorStillConnectsContinuousSourceBeforePlayback() async throws {

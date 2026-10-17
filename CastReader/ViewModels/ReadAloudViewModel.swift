@@ -919,6 +919,7 @@ final class ReadAloudViewModel: ObservableObject {
         var waiting = false
         var ended = false
         var sourceFailed = false
+        var completedUnit: (paragraph: Int, epoch: UInt64)?
         init(onUnitCompleted: ((UUID, Int) -> Void)?, demand: @escaping (UUID, Int) -> Void) {
             self.onUnitCompleted = onUnitCompleted
             self.demand = demand
@@ -940,6 +941,13 @@ final class ReadAloudViewModel: ObservableObject {
         kindleContinuousInput = input
         webParagraphs = document.paragraphs
         return input.token
+    }
+
+    /// Completion belongs to one playback generation; replay/voice changes
+    /// invalidate it even when they restart the same paragraph.
+    func isKindleSpeechUnitCompleted(_ paragraph: Int) -> Bool {
+        guard let completed = kindleContinuousInput?.completedUnit else { return false }
+        return completed.paragraph == paragraph && completed.epoch == generationEpoch
     }
 
     /// The expected count is the append cursor. Repeated deliveries, an old
@@ -1167,6 +1175,9 @@ final class ReadAloudViewModel: ObservableObject {
             // of word timestamps, proves that its final source was consumed.
             if self.isActive, let input = self.kindleContinuousInput,
                self.audio.currentSegment?.paragraphIndex == self.currentParagraphIndex {
+                input.completedUnit = (self.currentParagraphIndex, self.generationEpoch)
+                self.photoHighlightWordIndex = nil
+                self.photoHighlightWordRange = nil
                 input.onUnitCompleted?(input.token, self.currentParagraphIndex)
             }
             self.advance()
@@ -5798,7 +5809,7 @@ final class ReadAloudViewModel: ObservableObject {
     }
 
     private func updateHighlight(_ t: Double) {
-        guard pendingCarryPage == nil else { return }
+        guard pendingCarryPage == nil, !isKindleSpeechUnitCompleted(currentParagraphIndex) else { return }
         // A live web page can replace its paragraph array on a resize/page
         // commit while Combine still has one queued currentTime tick from the
         // old AVPlayerItem. Never index the replaceable page model until both

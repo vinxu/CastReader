@@ -10934,14 +10934,21 @@ final class KindleBookViewModel: NSObject, ObservableObject, WKNavigationDelegat
         // the whole unit has actually finished, its final source page is exact.
         // This also releases source demand if no visual cue ever crossed pages.
         if session.units[paragraph].anchors[last].pageKey != session.presentedKey {
-            _ = paintKindleSentenceHighlight(paragraph: paragraph, range: last..<(last + 1))
+            _ = paintKindleSentenceHighlight(paragraph: paragraph, range: last..<(last + 1), completing: true)
         }
         KindleRunLog.write("KINDLE_SENTENCE completed p=\(paragraph) key=\(Self.keyLog(session.units[paragraph].anchors[last].pageKey))")
         fulfilKindleSentenceDemand(session)
     }
 
-    private func paintKindleSentenceHighlight(paragraph: Int, range: Range<Int>) -> Bool {
+    private func paintKindleSentenceHighlight(paragraph: Int, range: Range<Int>, completing: Bool = false) -> Bool {
         guard let session = sentenceStream else { return false }
+        // Range updates can be queued on RunLoop.main or read by a source
+        // snapshot after media completion. They must not restore the old page.
+        guard completing || readVM?.isKindleSpeechUnitCompleted(paragraph) != true else { return true }
+        // A coarse range can keep the same first-page anchor when the current
+        // spoken unit changes. Wake pending lookahead without waiting for a
+        // visible page change or for that unit to finish.
+        defer { fulfilKindleSentenceDemand(session) }
         guard session.units.indices.contains(paragraph) else { return true }
         let unit = session.units[paragraph]
         let anchors = range.compactMap { unit.anchors.indices.contains($0) ? unit.anchors[$0] : nil }
